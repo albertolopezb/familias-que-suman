@@ -1,0 +1,29 @@
+# ---------- Android (proyecto en la raíz) ----------
+*.iml
+.gradle/
+.kotlin/
+/local.properties
+/.idea/
+/build/
+/app/build/
+/captures/
+.externalNativeBuild
+.cxx
+*.apk
+*.aab
+
+# Llaves de firma: nunca en el repo
+*.jks
+*.keystore
+
+# Firebase: se comparte por fuera del repo
+/app/google-services.json
+
+# ---------- Backend ----------
+.env
+backend/.env
+backend/data/
+
+# ---------- Sistema ----------
+.DS_Store
+Thumbs.db

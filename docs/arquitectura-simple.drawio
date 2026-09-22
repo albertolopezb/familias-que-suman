@@ -1,0 +1,130 @@
+<mxfile host="app.diagrams.net" modified="2026-09-09T00:00:00.000Z" agent="Claude" version="24.0.0" type="device">
+  <diagram id="arq-fqs-simple" name="Arquitectura">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1250" pageHeight="780" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="titulo" value="Familias que Suman — Arquitectura de solución" style="text;html=1;fontSize=20;fontStyle=1;fontColor=#1B3B6B;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="700" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- contenedores -->
+        <mxCell id="cApp" value="App Android" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 6;fillColor=#F4F7FA;strokeColor=#1B3B6B;strokeWidth=2;verticalAlign=top;align=left;spacingLeft=12;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#1B3B6B;" vertex="1" parent="1">
+          <mxGeometry x="40" y="130" width="240" height="270" as="geometry" />
+        </mxCell>
+        <mxCell id="cDocker" value="Servidor · Docker" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;dashPattern=8 6;fillColor=#F4F7FA;strokeColor=#1B3B6B;strokeWidth=2;verticalAlign=top;align=left;spacingLeft=12;spacingTop=8;fontSize=13;fontStyle=1;fontColor=#1B3B6B;" vertex="1" parent="1">
+          <mxGeometry x="590" y="130" width="560" height="360" as="geometry" />
+        </mxCell>
+
+        <!-- app -->
+        <mxCell id="nCompose" value="Jetpack Compose" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1B3B6B;fontColor=#1E293B;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="60" y="170" width="200" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="nRetrofit" value="Retrofit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1B3B6B;fontColor=#1E293B;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="60" y="226" width="200" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="nRoom" value="Room + DataStore" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1B3B6B;fontColor=#1E293B;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="60" y="282" width="200" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="nFcmSdk" value="SDK de Firebase" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1B3B6B;fontColor=#1E293B;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="60" y="338" width="200" height="42" as="geometry" />
+        </mxCell>
+
+        <!-- externos -->
+        <mxCell id="nFCM" value="Firebase Messaging" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1B3B6B;fontColor=#1E293B;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="350" y="150" width="190" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="nTunel" value="Cloudflare Tunnel" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1B3B6B;fontColor=#1E293B;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="345" y="250" width="200" height="110" as="geometry" />
+        </mxCell>
+
+        <!-- docker -->
+        <mxCell id="nCloudflared" value="cloudflared" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1B3B6B;fontColor=#1E293B;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="620" y="270" width="150" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="nAPI" value="API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E9B44C;strokeColor=#1B3B6B;strokeWidth=2;fontColor=#1B3B6B;fontSize=15;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="840" y="262" width="180" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="nDB" value="Base de datos" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=12;fillColor=#FFFFFF;strokeColor=#1B3B6B;fontColor=#1E293B;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="620" y="370" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="nS3" value="Almacenamiento&#10;de fotos" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1B3B6B;fontColor=#1E293B;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="840" y="380" width="180" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="nProm" value="Prometheus" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#94A3B8;fontColor=#64748B;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="170" width="130" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="nGraf" value="Grafana" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#94A3B8;fontColor=#64748B;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="820" y="170" width="130" height="42" as="geometry" />
+        </mxCell>
+
+        <!-- existente -->
+        <mxCell id="nExiste" value="Backend y panel web ya existentes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F1F5F9;strokeColor=#94A3B8;fontColor=#64748B;fontSize=12;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="820" y="560" width="330" height="52" as="geometry" />
+        </mxCell>
+
+        <!-- aristas -->
+        <mxCell id="e1" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1B3B6B;strokeWidth=2;fontSize=11;fontColor=#1B3B6B;exitX=1;exitY=0.5;entryX=0;entryY=0.5;verticalAlign=bottom;" edge="1" parent="1" source="nRetrofit" target="nTunel">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1B3B6B;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="nTunel" target="nCloudflared">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1B3B6B;strokeWidth=2;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="nCloudflared" target="nAPI">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e4" value="datos" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1B3B6B;strokeWidth=2;fontSize=11;fontColor=#1B3B6B;exitX=0.25;exitY=1;entryX=1;entryY=0.35;" edge="1" parent="1" source="nAPI" target="nDB">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e5" value="fotos" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1B3B6B;strokeWidth=2;fontSize=11;fontColor=#1B3B6B;exitX=0.75;exitY=1;entryX=0.75;entryY=0;" edge="1" parent="1" source="nAPI" target="nS3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e6" value="solicita push" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1B3B6B;strokeWidth=2;fontSize=11;fontColor=#1B3B6B;exitX=0.5;exitY=0;entryX=1;entryY=0.5;" edge="1" parent="1" source="nAPI" target="nFCM">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="930" y="110" /><mxPoint x="600" y="110" /><mxPoint x="600" y="173" /></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="e7" value="push" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1B3B6B;strokeWidth=2;fontSize=11;fontColor=#1B3B6B;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="nFCM" target="nFcmSdk">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="310" y="173" /><mxPoint x="310" y="359" /></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="e8" value="métricas" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#94A3B8;strokeWidth=1.5;fontSize=11;fontColor=#64748B;exitX=0.5;exitY=1;entryX=0.75;entryY=0;" edge="1" parent="1" source="nProm" target="nAPI">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#94A3B8;strokeWidth=1.5;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="nGraf" target="nProm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e10" value="decisión pendiente" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#C08A1E;strokeWidth=2;fontSize=11;fontColor=#8A6212;exitX=1;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="nAPI" target="nExiste">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points"><mxPoint x="1200" y="293" /><mxPoint x="1200" y="586" /></Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- leyendas -->
+        <mxCell id="legPend" value="&lt;b&gt;Pendiente de decidir&lt;/b&gt;&lt;br&gt;&lt;br&gt;1. API propia o BFF&lt;br&gt;2. Motor de BD (sugerido: PostgreSQL)&lt;br&gt;3. MinIO o AWS S3&lt;br&gt;4. Dónde se hospeda el servidor" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FDF3DC;strokeColor=#E9B44C;strokeWidth=2;fontColor=#8A6212;fontSize=12;align=left;verticalAlign=top;spacingLeft=14;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="520" width="290" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legSeg" value="&lt;b&gt;Seguridad&lt;/b&gt;&lt;br&gt;&lt;br&gt;· TLS por el túnel, sin puertos abiertos&lt;br&gt;· La API es la única entrada&lt;br&gt;· Sesión con JWT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#1B3B6B;fontColor=#1E293B;fontSize=12;align=left;verticalAlign=top;spacingLeft=14;spacingTop=10;" vertex="1" parent="1">
+          <mxGeometry x="370" y="520" width="290" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legNot" value="Gris = observabilidad, opcional · Punteado ámbar = decisión pendiente" style="text;html=1;fontSize=11;fontColor=#64748B;align=left;" vertex="1" parent="1">
+          <mxGeometry x="40" y="672" width="560" height="20" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
