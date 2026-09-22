@@ -16,16 +16,23 @@ Android Studio → **File → Open** → carpeta `familias-que-suman` → espera
 ## Estructura actual
 
 ```
-app/src/main/java/mx/tec/familiasquesuman/
-├── domain/        modelos de la app
-├── data/          repositorios: de dónde salen los datos
-├── ui/screens/    las pantallas
-├── ui/state/      ViewModels y estados de carga
-├── ui/components/ piezas reutilizables
-├── ui/navigation/ rutas y barra inferior
-└── ui/theme/      colores y tipografías de la marca
-
-backend/           servidor en Docker
+familias-que-suman/          ← se abre esta carpeta en Android Studio
+├── app/                     ← el módulo Android
+│   └── src/main/java/mx/tec/familiasquesuman/
+│       ├── domain/          ← modelos, Kotlin puro
+│       ├── data/            ← repositorios (hoy en memoria)
+│       ├── ui/theme/        ← colores y tipografías de la marca
+│       ├── ui/state/        ← ViewModels, UiState, Factory
+│       ├── ui/screens/      ← una carpeta por tarea
+│       ├── ui/components/   ← piezas reusables
+│       ├── ui/navigation/   ← rutas y barra inferior
+│       ├── FamiliasApplication.kt
+│       └── MainActivity.kt
+├── backend/                 ← docker-compose. Gradle lo ignora
+├── gradle/  build.gradle.kts  settings.gradle.kts  gradlew
+├── .gitignore
+├── .env.example
+└── README.md
 ```
 
 ## Etapas
@@ -35,6 +42,10 @@ backend/           servidor en Docker
 - [ ] **3. Cuenta y sesión** — registro, inicio de sesión e inscripciones
 - [ ] **4. Notificaciones** — recordatorios y avisos de favoritos
 - [ ] **5. Pruebas y entrega** — pruebas con familias reales y ajustes finales
+
+## Forma de trabajo
+
+Una rama por tarea, con el RF en el nombre: feat/RF-04-actividades.
 
 ## Documentación
 
