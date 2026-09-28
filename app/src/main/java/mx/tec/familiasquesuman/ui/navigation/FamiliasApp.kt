@@ -30,7 +30,6 @@ fun FamiliasApp() {
     val entrada by nav.currentBackStackEntryAsState()
     val rutaActual = entrada?.destination?.route
 
-    // Ocultar la barra de navegación en el Splash y en la Selección de Ciudad
     val mostrarBarraInferior = rutaActual != RutasInicio.SPLASH && rutaActual != RutasInicio.CIUDAD
 
     Scaffold(
