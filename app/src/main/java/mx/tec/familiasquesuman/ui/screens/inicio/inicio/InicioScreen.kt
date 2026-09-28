@@ -22,6 +22,7 @@ import mx.tec.familiasquesuman.ui.theme.*
 @Composable
 fun InicioScreen(
     ciudad: String,
+    onCambiarCiudad: (String) -> Unit,
     asociacion: Asociacion?,
     onExplorarClick: () -> Unit,
     onActividadesClick: () -> Unit,
@@ -39,7 +40,7 @@ fun InicioScreen(
         HeaderInicio(
             nombreFamilia = "Familia Rodríguez",
             ciudadActual = ciudad,
-            onCiudadClick = { },
+            onCiudadSeleccionada = onCambiarCiudad,
             onNotificacionesClick = { }
         )
 

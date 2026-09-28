@@ -7,7 +7,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import mx.tec.familiasquesuman.FamiliasApplication
 import mx.tec.familiasquesuman.ui.screens.inicio.AsociacionViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.ExplorarViewModel
-import mx.tec.familiasquesuman.ui.screens.inicio.inicio.InicioViewModel
+import mx.tec.familiasquesuman.ui.screens.inicio.InicioViewModel
 
 /**
  * Cómo se construye cada ViewModel de la app.
