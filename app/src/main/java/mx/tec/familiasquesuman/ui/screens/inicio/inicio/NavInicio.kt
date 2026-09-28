@@ -29,13 +29,8 @@ fun NavGraphBuilder.grafoInicio(
 ) {
     composable(RutasInicio.SPLASH) {
         SplashScreen(
-            onNavegarACiudad = {
+            onSplashFinished = {
                 nav.navigate(RutasInicio.CIUDAD) {
-                    popUpTo(RutasInicio.SPLASH) { inclusive = true }
-                }
-            },
-            onNavegarAInicio = {
-                nav.navigate(RutasInicio.INICIO) {
                     popUpTo(RutasInicio.SPLASH) { inclusive = true }
                 }
             }
