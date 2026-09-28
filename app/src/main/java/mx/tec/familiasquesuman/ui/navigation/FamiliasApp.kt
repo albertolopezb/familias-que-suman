@@ -17,6 +17,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import mx.tec.familiasquesuman.ui.components.PantallaPendiente
+import mx.tec.familiasquesuman.ui.screens.inicio.inicio.RutasInicio
+import mx.tec.familiasquesuman.ui.screens.inicio.inicio.grafoInicio
 import mx.tec.familiasquesuman.ui.theme.AcentoSuave
 import mx.tec.familiasquesuman.ui.theme.AcentoTexto
 import mx.tec.familiasquesuman.ui.theme.MarcaOro
