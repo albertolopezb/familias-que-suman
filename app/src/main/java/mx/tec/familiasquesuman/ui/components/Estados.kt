@@ -18,7 +18,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
 
-/** Lo que se ve mientras llega el primer resultado. */
 @Composable
 fun CargandoView(modifier: Modifier = Modifier) {
     Column(
@@ -30,7 +29,6 @@ fun CargandoView(modifier: Modifier = Modifier) {
     }
 }
 
-/** Lo que se ve cuando algo falló. Siempre ofrece una salida. */
 @Composable
 fun ErrorView(mensaje: String, onReintentar: () -> Unit, modifier: Modifier = Modifier) {
     Column(
