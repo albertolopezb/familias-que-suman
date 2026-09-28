@@ -1,4 +1,4 @@
-package mx.tec.familiasquesuman.ui.screens.inicio.inicio
+package mx.tec.familiasquesuman.ui.screens.inicio
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf

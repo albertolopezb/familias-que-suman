@@ -1,4 +1,4 @@
-package mx.tec.familiasquesuman.ui.screens.inicio.inicio
+package mx.tec.familiasquesuman.ui.screens.inicio
 
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -6,17 +6,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import mx.tec.familiasquesuman.ui.screens.inicio.AsociacionScreen
-import mx.tec.familiasquesuman.ui.screens.inicio.AsociacionViewModel
-import mx.tec.familiasquesuman.ui.screens.inicio.CiudadScreen
-import mx.tec.familiasquesuman.ui.screens.inicio.ExplorarScreen
-import mx.tec.familiasquesuman.ui.screens.inicio.ExplorarViewModel
-import mx.tec.familiasquesuman.ui.screens.inicio.InicioScreen
-import mx.tec.familiasquesuman.ui.screens.inicio.PermisoNotificacionesScreen
-import mx.tec.familiasquesuman.ui.screens.inicio.ProyectosScreen
-import mx.tec.familiasquesuman.ui.screens.inicio.SplashScreen
-import mx.tec.familiasquesuman.ui.screens.inicio.TestimoniosScreen
-import mx.tec.familiasquesuman.ui.screens.inicio.VisiteoScreen
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
 
 object RutasInicio {
@@ -40,8 +29,16 @@ fun NavGraphBuilder.grafoInicio(
 ) {
     composable(RutasInicio.SPLASH) {
         SplashScreen(
-            onNavegarACiudad = { nav.navigate(RutasInicio.CIUDAD) { popUpTo(RutasInicio.SPLASH) { inclusive = true } } },
-            onNavegarAInicio = { nav.navigate(RutasInicio.INICIO) { popUpTo(RutasInicio.SPLASH) { inclusive = true } } }
+            onNavegarACiudad = {
+                nav.navigate(RutasInicio.CIUDAD) {
+                    popUpTo(RutasInicio.SPLASH) { inclusive = true }
+                }
+            },
+            onNavegarAInicio = {
+                nav.navigate(RutasInicio.INICIO) {
+                    popUpTo(RutasInicio.SPLASH) { inclusive = true }
+                }
+            }
         )
     }
 
@@ -57,7 +54,9 @@ fun NavGraphBuilder.grafoInicio(
             ciudadActual = vm.ciudadElegida,
             onCiudadSeleccionada = { ciudad ->
                 vm.cambiarCiudad(ciudad)
-                nav.navigate(RutasInicio.INICIO) { popUpTo(RutasInicio.CIUDAD) { inclusive = true } }
+                nav.navigate(RutasInicio.INICIO) {
+                    popUpTo(RutasInicio.CIUDAD) { inclusive = true }
+                }
             }
         )
     }
@@ -68,6 +67,7 @@ fun NavGraphBuilder.grafoInicio(
 
         InicioScreen(
             ciudad = vm.ciudadElegida,
+            onCambiarCiudad = vm::cambiarCiudad,
             asociacion = asociacionDestacada,
             onExplorarClick = { nav.navigate(RutasInicio.EXPLORAR) },
             onActividadesClick = onNavegarAActividades,
