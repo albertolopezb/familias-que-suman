@@ -61,17 +61,18 @@ fun FamiliasApp() {
             }
         }
     ) { padding ->
+        // Agrega el llamado a tu grafo dentro de NavHost en FamiliasApp.kt:
         NavHost(
             navController = nav,
-            startDestination = Rutas.INICIO,
+            startDestination = RutasInicio.SPLASH,
             modifier = Modifier.padding(padding)
         ) {
-            // Cada quien reemplaza su PantallaPendiente por la real y agrega aquí
-            // las rutas internas de su tarea.
-            composable(Rutas.INICIO) { PantallaPendiente("Inicio") }
-            composable(Rutas.EXPLORAR) { PantallaPendiente("Explorar") }
-            composable(Rutas.MIS_ACTIVIDADES) { PantallaPendiente("Mis Actividades") }
-            composable(Rutas.PERFIL) { PantallaPendiente("Perfil") }
+            grafoInicio(
+                nav = nav,
+                onNavegarAActividades = { nav.navigate(Rutas.MIS_ACTIVIDADES) },
+                onNavegarACampanas = { nav.navigate(Rutas.EXPLORAR) }
+            )
+            // Las llamadas de los demás compañeros van aquí abajo
         }
     }
 }
