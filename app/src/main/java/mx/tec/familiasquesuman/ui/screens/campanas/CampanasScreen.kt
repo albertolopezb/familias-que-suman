@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.campanas
 
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -73,6 +74,7 @@ fun CampanasScreen(
     nombresAsociacion: Map<String, String> = emptyMap()
 ) {
     Column(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        EncabezadoApp()
         BarraSuperior(onBack = onBack, onAbrirFiltros = onAbrirFiltros)
 
         when (estado) {

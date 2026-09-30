@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.R
 import mx.tec.familiasquesuman.domain.Asociacion
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
 import mx.tec.familiasquesuman.ui.screens.inicio.componentes.*
 import mx.tec.familiasquesuman.ui.theme.*
 
@@ -35,18 +36,22 @@ fun InicioScreen(
     onProyectosClick: () -> Unit,
     onVisiteoClick: () -> Unit
 ) {
+    Column(modifier = Modifier.fillMaxSize()) {
+    // La barra de arriba (logo y perfil) queda fija, igual que en las demás pantallas.
+    EncabezadoApp()
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(GrisFondo)
             .verticalScroll(rememberScrollState())
     ) {
-        // Header con saludo y selector de ciudad
+        // Saludo y selector de ciudad; el perfil ya está en la barra de arriba.
         HeaderInicio(
             nombreFamilia = "Familia Rodríguez",
             ciudadActual = ciudad,
             onCiudadSeleccionada = onCambiarCiudad,
-            onNotificacionesClick = { }
+            onNotificacionesClick = { },
+            mostrarPerfil = false
         )
 
         Column(modifier = Modifier.padding(horizontal = 20.dp)) {
@@ -288,6 +293,7 @@ fun InicioScreen(
                 }
             }
         }
+    }
     }
 }
 

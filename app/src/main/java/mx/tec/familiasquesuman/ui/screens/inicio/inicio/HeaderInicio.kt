@@ -134,7 +134,7 @@ fun HeaderInicio(
             Spacer(modifier = Modifier.width(8.dp))
 
             // Perfil: abre el cuadrito con Mi perfil, Mis actividades, Notificaciones y Ajustes.
-            BotonPerfil()
+            if (mostrarPerfil) BotonPerfil()
         }
     }
 }

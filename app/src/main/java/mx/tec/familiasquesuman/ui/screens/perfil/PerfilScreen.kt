@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import mx.tec.familiasquesuman.domain.Familia
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
 import mx.tec.familiasquesuman.domain.Impacto
 import mx.tec.familiasquesuman.ui.components.CargandoView
 import mx.tec.familiasquesuman.ui.components.ErrorView
@@ -66,6 +67,7 @@ fun PerfilScreen(
     favoritosDisponibles: Boolean = accesosDisponibles
 ) {
     Column(modifier.fillMaxSize().background(Fondo)) {
+        EncabezadoApp()
         Surface(color = Superficie) {
             Text("Mi Perfil", modifier = Modifier.fillMaxWidth().padding(16.dp),
                 style = MaterialTheme.typography.headlineMedium, color = Tinta)
