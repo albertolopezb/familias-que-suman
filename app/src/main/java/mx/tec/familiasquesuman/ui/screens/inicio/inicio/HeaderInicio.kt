@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import mx.tec.familiasquesuman.ui.components.BotonPerfil
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.ui.theme.AmbarAcento
@@ -132,24 +133,8 @@ fun HeaderInicio(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Botón Notificaciones
-            Box {
-                IconButton(onClick = onNotificacionesClick) {
-                    Icon(
-                        imageVector = Icons.Outlined.Notifications,
-                        contentDescription = "Notificaciones",
-                        tint = AzulMarinoPrimario
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(AmbarAcento)
-                        .align(Alignment.TopEnd)
-                        .offset(x = (-8).dp, y = 8.dp)
-                )
-            }
+            // Perfil: abre el cuadrito con Mi perfil, Mis actividades, Notificaciones y Ajustes.
+            BotonPerfil()
         }
     }
 }

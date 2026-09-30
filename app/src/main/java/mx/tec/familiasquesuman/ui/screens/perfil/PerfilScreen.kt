@@ -7,6 +7,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import android.widget.Toast
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import mx.tec.familiasquesuman.notificaciones.Notificaciones
+import mx.tec.familiasquesuman.notificaciones.NotificacionesDemo
+import mx.tec.familiasquesuman.notificaciones.rememberPedirPermisoNotificaciones
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -116,15 +125,50 @@ private fun ContenidoPerfil(
                     style = MaterialTheme.typography.bodyMedium, color = TintaSuave)
             }
         }
+        AccesoPerfil("Mis actividades", Icons.Outlined.DateRange, onMisActividadesClick,
+            true, Modifier.fillMaxWidth())
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             AccesoPerfil("Mis favoritos", Icons.Outlined.FavoriteBorder, onFavoritosClick,
                 favoritosDisponibles, Modifier.weight(1f))
             AccesoPerfil("Insignias", IconoInsignia, onInsigniasClick,
                 accesosDisponibles, Modifier.weight(1f))
         }
-        AccesoPerfil("Mis actividades", Icons.Outlined.DateRange, onMisActividadesClick,
-            true, Modifier.fillMaxWidth())
+        ProbarNotificaciones()
     }
+}
+
+/** Los botones de la parte 3 para ver cómo llegan las notificaciones. */
+@Composable
+private fun ProbarNotificaciones() {
+    val contexto = LocalContext.current
+    var activadas by remember { mutableStateOf(Notificaciones.estanActivadas(contexto)) }
+    val pedirPermiso = rememberPedirPermisoNotificaciones { activadas = it }
+    val avisar: (Boolean) -> Unit = { enviada ->
+        Toast.makeText(
+            contexto,
+            if (enviada) "Listo, revisa tus notificaciones" else "Primero activa las notificaciones",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+    EtiquetaSeccion("NOTIFICACIONES")
+    if (!activadas) {
+        OutlinedButton(onClick = pedirPermiso, modifier = Modifier.fillMaxWidth()) {
+            Text("Activar notificaciones")
+        }
+    }
+    OutlinedButton(
+        onClick = { avisar(NotificacionesDemo.dispararRecordatorio(contexto)) },
+        modifier = Modifier.fillMaxWidth()
+    ) { Text("Mañana tienen actividad") }
+    OutlinedButton(
+        onClick = { avisar(NotificacionesDemo.dispararUrgencia(contexto)) },
+        modifier = Modifier.fillMaxWidth()
+    ) { Text("Se necesitan 5 voluntarios urgentes") }
+    OutlinedButton(
+        onClick = { avisar(NotificacionesDemo.dispararInscripcionConfirmada(contexto)) },
+        modifier = Modifier.fillMaxWidth()
+    ) { Text("Ya están inscritos") }
 }
 
 @Composable

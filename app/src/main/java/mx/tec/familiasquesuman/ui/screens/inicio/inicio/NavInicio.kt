@@ -64,7 +64,8 @@ fun NavGraphBuilder.grafoInicio(
             ciudad = vm.ciudadElegida,
             onCambiarCiudad = vm::cambiarCiudad,
             asociacion = asociacionDestacada,
-            onExplorarClick = { nav.navigate(RutasInicio.EXPLORAR) },
+            // Explorar lleva a las actividades.
+            onExplorarClick = onNavegarAActividades,
             onActividadesClick = onNavegarAActividades,
             onDonarClick = onNavegarACampanas,
             onProyectosClick = { nav.navigate(RutasInicio.PROYECTOS) },

@@ -2,11 +2,8 @@ package mx.tec.familiasquesuman.ui.screens.actividades.componentes
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import mx.tec.familiasquesuman.R
 import mx.tec.familiasquesuman.ui.theme.Inter
 
 /**
@@ -52,35 +49,29 @@ object Web {
     val VerdeTema = Color(0xFF16A34A)
 }
 
-/** Lora: la letra de los títulos del sitio. */
-val Lora = FontFamily(
-    Font(R.font.lora_semibold, FontWeight.SemiBold),
-    Font(R.font.lora_bold, FontWeight.Bold)
-)
-
 /** Los tamaños del sitio, con los nombres de Tailwind que usa (text-2xl, text-lg…). */
 object TextoWeb {
     /** h1 de la página: font-lora text-2xl font-bold */
     val Titulo = TextStyle(
-        fontFamily = Lora, fontWeight = FontWeight.Bold,
+        fontFamily = Inter, fontWeight = FontWeight.Bold,
         fontSize = 24.sp, lineHeight = 30.sp, color = Web.Primario
     )
 
     /** Título de la tarjeta: font-lora text-lg font-semibold leading-tight */
     val TituloTarjeta = TextStyle(
-        fontFamily = Lora, fontWeight = FontWeight.SemiBold,
+        fontFamily = Inter, fontWeight = FontWeight.SemiBold,
         fontSize = 18.sp, lineHeight = 22.sp, color = Web.Texto
     )
 
     /** Encabezado de sección del detalle: font-lora text-sm font-semibold */
     val Seccion = TextStyle(
-        fontFamily = Lora, fontWeight = FontWeight.SemiBold,
+        fontFamily = Inter, fontWeight = FontWeight.SemiBold,
         fontSize = 14.sp, lineHeight = 20.sp, color = Web.Texto
     )
 
     /** "ACTIVIDADES PASADAS": text-sm uppercase tracking-wide */
     val Rotulo = TextStyle(
-        fontFamily = Lora, fontWeight = FontWeight.SemiBold,
+        fontFamily = Inter, fontWeight = FontWeight.SemiBold,
         fontSize = 14.sp, lineHeight = 20.sp, letterSpacing = 0.35.sp, color = Web.TextoApagado
     )
 

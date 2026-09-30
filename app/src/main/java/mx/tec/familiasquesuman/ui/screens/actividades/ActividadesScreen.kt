@@ -67,7 +67,7 @@ fun ActividadesScreen(
             .fillMaxSize()
             .background(Web.Fondo)
     ) {
-        EncabezadoApp(ciudad = ciudad, onCiudadClick = onCiudadClick)
+        EncabezadoApp()
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),

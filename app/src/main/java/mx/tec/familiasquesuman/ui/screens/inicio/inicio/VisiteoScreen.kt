@@ -64,7 +64,7 @@ fun VisiteoScreen(
         .filter { busqueda.isBlank() || it.nombre.contains(busqueda.trim(), ignoreCase = true) }
 
     Column(modifier = Modifier.fillMaxSize().background(Web.Fondo)) {
-        EncabezadoApp(ciudad = ciudad, onCiudadClick = {})
+        EncabezadoApp()
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 64.dp),
