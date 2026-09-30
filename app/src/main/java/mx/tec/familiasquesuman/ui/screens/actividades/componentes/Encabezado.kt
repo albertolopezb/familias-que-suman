@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,13 +30,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mx.tec.familiasquesuman.R
 import mx.tec.familiasquesuman.ui.components.BotonPerfil
+import mx.tec.familiasquesuman.ui.components.SelectorCiudad
 
 /**
  * La barra de arriba: logo a la izquierda y el perfil a la derecha, sobre blanco
- * y con una línea abajo. La ciudad solo se cambia desde el Inicio.
+ * y con una línea abajo. El Inicio además enseña el selector de ciudad.
  */
 @Composable
-fun EncabezadoApp(modifier: Modifier = Modifier) {
+fun EncabezadoApp(
+    modifier: Modifier = Modifier,
+    // Solo el Inicio pasa la ciudad; en las demás pantallas no hay selector.
+    ciudad: String? = null,
+    onCiudadSeleccionada: (String) -> Unit = {}
+) {
     Column(modifier = modifier.fillMaxWidth().background(Web.Tarjeta)) {
         Row(
             modifier = Modifier
@@ -53,7 +60,13 @@ fun EncabezadoApp(modifier: Modifier = Modifier) {
                     .width(120.dp)
                     .height(40.dp)
             )
-            BotonPerfil()
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (ciudad != null) {
+                    SelectorCiudad(ciudad, onCiudadSeleccionada)
+                    Spacer(Modifier.width(8.dp))
+                }
+                BotonPerfil()
+            }
         }
         HorizontalDivider(color = Web.Borde, thickness = 1.dp)
     }

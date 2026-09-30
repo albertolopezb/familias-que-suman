@@ -37,22 +37,16 @@ fun InicioScreen(
     onVisiteoClick: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
-    // La barra de arriba (logo y perfil) queda fija, igual que en las demás pantallas.
-    EncabezadoApp()
+    // La barra de arriba (logo, ciudad y perfil) queda fija, igual que en las demás pantallas.
+    EncabezadoApp(ciudad = ciudad, onCiudadSeleccionada = onCambiarCiudad)
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(GrisFondo)
             .verticalScroll(rememberScrollState())
     ) {
-        // Saludo y selector de ciudad; el perfil ya está en la barra de arriba.
-        HeaderInicio(
-            nombreFamilia = "Familia Rodríguez",
-            ciudadActual = ciudad,
-            onCiudadSeleccionada = onCambiarCiudad,
-            onNotificacionesClick = { },
-            mostrarPerfil = false
-        )
+        // Saludo; la ciudad y el perfil están en la barra de arriba.
+        HeaderInicio(nombreFamilia = "Familia Rodríguez")
 
         Column(modifier = Modifier.padding(horizontal = 20.dp)) {
             // Banner Principal con Imagen de fondo + Overlay azul transparente
