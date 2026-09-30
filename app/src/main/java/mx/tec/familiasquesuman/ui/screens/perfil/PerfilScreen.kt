@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -49,6 +50,7 @@ fun PerfilScreen(
     onFavoritosClick: () -> Unit,
     onInsigniasClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onMisActividadesClick: () -> Unit = {},
     accesosDisponibles: Boolean = true,
     etiquetasMensuales: List<String> = listOf("May", "Jun", "Jul", "Ago", "Sep"),
     valoresMensuales: List<Int> = emptyList(),
@@ -64,7 +66,7 @@ fun PerfilScreen(
             is UiState.Error -> ErrorView(estado.mensaje, onReintentar)
             is UiState.Exito -> ContenidoPerfil(
                 estado.datos, onFavoritosClick, onInsigniasClick, accesosDisponibles,
-                etiquetasMensuales, valoresMensuales, favoritosDisponibles
+                etiquetasMensuales, valoresMensuales, favoritosDisponibles, onMisActividadesClick
             )
         }
     }
@@ -78,7 +80,8 @@ private fun ContenidoPerfil(
     accesosDisponibles: Boolean,
     etiquetasMensuales: List<String>,
     valoresMensuales: List<Int>,
-    favoritosDisponibles: Boolean
+    favoritosDisponibles: Boolean,
+    onMisActividadesClick: () -> Unit
 ) {
     Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -119,6 +122,8 @@ private fun ContenidoPerfil(
             AccesoPerfil("Insignias", IconoInsignia, onInsigniasClick,
                 accesosDisponibles, Modifier.weight(1f))
         }
+        AccesoPerfil("Mis actividades", Icons.Outlined.DateRange, onMisActividadesClick,
+            true, Modifier.fillMaxWidth())
     }
 }
 

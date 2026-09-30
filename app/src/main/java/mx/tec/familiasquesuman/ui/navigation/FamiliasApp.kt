@@ -119,18 +119,19 @@ private fun BarraInferior(rutaActual: String?, onPestana: (Pestana) -> Unit) {
     Column(modifier = Modifier.fillMaxWidth().background(Web.Tarjeta).navigationBarsPadding()) {
         HorizontalDivider(color = Web.Borde, thickness = 1.dp)
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.SpaceAround
         ) {
             pestanas.forEach { pestana ->
                 val activa = rutaActual != null &&
-                    pestana.prefijos.any { rutaActual == it || rutaActual.startsWith("$it/") } &&
-                    rutaActual != RutasActividades.MIS_ACTIVIDADES
+                    pestana.prefijos.any { rutaActual == it || rutaActual.startsWith("$it/") }
                 Column(
+                    // Seis pestañas: cada una ocupa su sexto del ancho para que quepan las etiquetas.
                     modifier = Modifier
+                        .weight(1f)
                         .clip(RoundedCornerShape(12.dp))
                         .clickable { if (!activa || rutaActual != pestana.ruta) onPestana(pestana) }
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                        .padding(horizontal = 2.dp, vertical = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {

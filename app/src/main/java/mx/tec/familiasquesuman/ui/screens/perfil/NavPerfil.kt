@@ -106,6 +106,7 @@ fun NavGraphBuilder.grafoPerfil(nav: NavController, onEncuestaFinalizada: (() ->
             onReintentar = vm::reintentar,
             onFavoritosClick = { nav.navigate(RutasPerfil.FAVORITOS) { launchSingleTop = true } },
             onInsigniasClick = { nav.navigate(RutasPerfil.INSIGNIAS) { launchSingleTop = true } },
+            onMisActividadesClick = { nav.navigate(Rutas.MIS_ACTIVIDADES) { launchSingleTop = true } },
             accesosDisponibles = true,
             favoritosDisponibles = true
         )

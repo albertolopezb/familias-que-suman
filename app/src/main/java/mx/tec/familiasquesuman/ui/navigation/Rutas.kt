@@ -25,11 +25,12 @@ data class Pestana(
     val prefijos: List<String> = listOf(ruta)
 )
 
-/** Las cinco pestañas de familiasquesuman.com. Mis Actividades y Perfil van en el menú. */
+/** Las pestañas de la barra inferior. Mis Actividades se abre desde Perfil. */
 val pestanas = listOf(
     Pestana(Rutas.INICIO, "Inicio", IconosWeb.Casa),
     Pestana(RutasActividades.LISTA, "Actividades", IconosWeb.Personas, listOf("actividades")),
     Pestana(RutasInicio.PROYECTOS, "Proyectos", IconosWeb.Foco),
     Pestana(RutasCampanas.LISTA, "Donar", IconosWeb.ManoCorazon, listOf("campanas")),
-    Pestana(RutasInicio.VISITEO, "Directorio", IconosWeb.Ubicacion)
+    Pestana(RutasInicio.VISITEO, "Directorio", IconosWeb.Ubicacion),
+    Pestana(Rutas.PERFIL, "Perfil", IconosWeb.Usuario, listOf(Rutas.PERFIL, Rutas.MIS_ACTIVIDADES))
 )
