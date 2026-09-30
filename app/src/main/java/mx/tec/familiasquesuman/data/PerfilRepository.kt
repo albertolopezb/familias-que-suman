@@ -22,7 +22,7 @@ class PerfilRepository {
 
     /** Las próximas, con el nombre de quién las organiza. */
     suspend fun getProximasConAsociacion(): List<ActividadConAsociacion> {
-        val porId = DatosDePrueba.asociaciones.associateBy { it.id }
+        val porId = (DatosDePrueba.asociaciones + DatosDePrueba.organizadores).associateBy { it.id }
         return getProximas().mapNotNull { actividad ->
             porId[actividad.asociacionId]?.let { ActividadConAsociacion(actividad, it) }
         }
