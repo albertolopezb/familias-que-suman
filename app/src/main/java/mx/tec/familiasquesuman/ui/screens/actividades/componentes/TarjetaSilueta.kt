@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,8 +25,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import mx.tec.familiasquesuman.ui.theme.Borde
-import mx.tec.familiasquesuman.ui.theme.Superficie
 
 /**
  * Lo que se ve mientras la lista carga.
@@ -36,8 +35,7 @@ import mx.tec.familiasquesuman.ui.theme.Superficie
 @Composable
 fun TarjetaSilueta(
     modifier: Modifier = Modifier,
-    fraccionTitulo: Float = 0.88f,
-    fraccionSubtitulo: Float = 0.64f
+    fraccionTitulo: Float = 0.7f
 ) {
     val transicion = rememberInfiniteTransition(label = "silueta")
     val opacidad by transicion.animateFloat(
@@ -49,38 +47,61 @@ fun TarjetaSilueta(
         ),
         label = "opacidad"
     )
+    val forma = RoundedCornerShape(16.dp)
 
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Superficie)
-            .border(1.dp, Borde, RoundedCornerShape(16.dp))
-            .padding(14.dp)
-            .alpha(opacidad),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+            .clip(forma)
+            .background(Web.Tarjeta)
+            .border(1.dp, Web.Borde, forma)
+            .alpha(opacidad)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.Top
+        // El hueco de la foto
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp)
+                .padding(horizontal = 64.dp, vertical = 32.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Web.Secundario)
+        )
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(Borde)
-            )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Hueso(fraccion = fraccionTitulo, alto = 16.dp)
-                Hueso(fraccion = fraccionSubtitulo, alto = 12.dp)
-                Hueso(fraccion = 0.45f, alto = 12.dp)
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Web.Secundario)
+                )
+                Hueso(fraccion = fraccionTitulo, alto = 18.dp)
+            }
+            Hueso(fraccion = 0.55f, alto = 12.dp)
+            Hueso(fraccion = 0.75f, alto = 12.dp)
+            Hueso(fraccion = 1f, alto = 8.dp)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Web.Secundario)
+                )
+                Box(
+                    modifier = Modifier
+                        .width(44.dp)
+                        .height(44.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Web.Secundario)
+                )
             }
         }
-        Hueso(fraccion = 1f, alto = 6.dp)
     }
 }
 
@@ -91,6 +112,6 @@ private fun Hueso(fraccion: Float, alto: Dp) {
             .fillMaxWidth(fraccion)
             .height(alto)
             .clip(RoundedCornerShape(6.dp))
-            .background(Borde)
+            .background(Web.Secundario)
     )
 }

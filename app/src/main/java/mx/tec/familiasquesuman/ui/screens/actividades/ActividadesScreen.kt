@@ -1,158 +1,159 @@
 package mx.tec.familiasquesuman.ui.screens.actividades
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.DateRange
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.domain.ActividadConAsociacion
-import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoActividades
-import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Etiqueta
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.BotonAmarillo
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.CirculoDeIcono
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TarjetaActividad
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TarjetaSilueta
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TextoWeb
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TituloDePagina
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Web
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.actividadDeMuestra
 import mx.tec.familiasquesuman.ui.state.UiState
-import mx.tec.familiasquesuman.ui.theme.AcentoSuave
-import mx.tec.familiasquesuman.ui.theme.AcentoTexto
-import mx.tec.familiasquesuman.ui.theme.ErrorFondo
-import mx.tec.familiasquesuman.ui.theme.ErrorTexto
 import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
-import mx.tec.familiasquesuman.ui.theme.Fondo
-import mx.tec.familiasquesuman.ui.theme.Tinta
-import mx.tec.familiasquesuman.ui.theme.TintaSuave
 
 /**
- * Las actividades de voluntariado (RF-04, RF-05), con sus cuatro estados.
+ * Las actividades de voluntariado (RF-04, RF-05), calcadas de
+ * familiasquesuman.com/actividades, con sus cuatro estados.
  *
+ * Primero las próximas y abajo "Actividades pasadas", más tenues y sin botones.
  * La pantalla no conoce el ViewModel ni la navegación: recibe el estado y
- * funciones, y por eso sus previews corren sin app. Los cuatro estados se
- * revisan desde las previews de abajo, en el panel de Android Studio.
+ * funciones, y por eso sus previews corren sin app.
  */
 @Composable
 fun ActividadesScreen(
     estado: UiState<List<ActividadConAsociacion>>,
     ciudad: String,
     onActividadClick: (String) -> Unit,
-    onRegresar: () -> Unit,
+    onUnirme: (String) -> Unit,
+    onCompartir: (ActividadConAsociacion) -> Unit,
+    onIrAInicio: () -> Unit,
+    onCiudadClick: () -> Unit,
     onReintentar: () -> Unit,
+    onVerGuardadas: () -> Unit,
     onVerAsociaciones: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onForzarEstado: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Fondo)
+            .background(Web.Fondo)
     ) {
-        EncabezadoActividades(
-            titulo = "Actividades en Familia",
-            onRegresar = onRegresar,
-            accionDerecha = {
-                Etiqueta(texto = ciudad, fondo = AcentoSuave, color = AcentoTexto)
+        EncabezadoApp(ciudad = ciudad, onCiudadClick = onCiudadClick)
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 64.dp)
+        ) {
+            item(key = "titulo") {
+                TituloDePagina(
+                    titulo = "Actividades",
+                    subtitulo = "Actividades en $ciudad",
+                    migaAnterior = "Inicio",
+                    onMigaAnterior = onIrAInicio,
+                    // El botón oculto para revisar vacío y error sin servidor.
+                    modificadorTitulo = Modifier.pointerInput(onForzarEstado) {
+                        detectTapGestures(onLongPress = { onForzarEstado() })
+                    }
+                )
             }
-        )
 
-        when (estado) {
-            is UiState.Cargando -> ListaCargando()
+            when (estado) {
+                is UiState.Cargando -> items(2) { TarjetaSilueta(Modifier.padding(bottom = 16.dp)) }
 
-            is UiState.Error -> ErrorDeCarga(
-                mensaje = estado.mensaje,
-                onReintentar = onReintentar
-            )
-
-            is UiState.Exito ->
-                if (estado.datos.isEmpty()) {
-                    SinActividades(ciudad = ciudad, onVerAsociaciones = onVerAsociaciones)
-                } else {
-                    ListaConDatos(
-                        actividades = estado.datos,
-                        ciudad = ciudad,
-                        onActividadClick = onActividadClick
+                is UiState.Error -> item(key = "error") {
+                    ErrorDeCarga(
+                        mensaje = estado.mensaje,
+                        onReintentar = onReintentar,
+                        onVerGuardadas = onVerGuardadas
                     )
                 }
-        }
-    }
-}
 
-@Composable
-private fun ListaConDatos(
-    actividades: List<ActividadConAsociacion>,
-    ciudad: String,
-    onActividadClick: (String) -> Unit
-) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        item {
-            // Sin esta explicación la pantalla es una lista de tarjetas sin
-            // contexto: la primera vez nadie sabe qué se espera que haga.
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "PEQUEÑAS ACCIONES, GRAN IMPACTO",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TintaSuave
-                )
-                Text(
-                    text = "Voluntariados para ir en familia",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Tinta
-                )
-                Text(
-                    text = "Cada actividad dice para qué edades es y cuántos lugares " +
-                        "quedan. Abre la que les acomode para ver los detalles y apartar " +
-                        "los lugares de tu familia.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TintaSuave
-                )
-                Text(
-                    text = "${actividades.size} actividades en $ciudad",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Tinta,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
+                is UiState.Exito -> {
+                    val (pasadas, proximas) = estado.datos.partition { it.actividad.yaPaso }
+
+                    if (proximas.isEmpty()) {
+                        item(key = "vacia") {
+                            SinActividades(ciudad = ciudad, onVerAsociaciones = onVerAsociaciones)
+                        }
+                    }
+
+                    tarjetas(
+                        actividades = proximas,
+                        onActividadClick = onActividadClick,
+                        onUnirme = onUnirme,
+                        onCompartir = onCompartir
+                    )
+
+                    if (pasadas.isNotEmpty()) {
+                        item(key = "rotulo-pasadas") {
+                            Text(
+                                text = "ACTIVIDADES PASADAS",
+                                style = TextoWeb.Rotulo,
+                                modifier = Modifier.padding(top = 16.dp, bottom = 12.dp)
+                            )
+                        }
+                        tarjetas(
+                            actividades = pasadas,
+                            onActividadClick = onActividadClick,
+                            onUnirme = onUnirme,
+                            onCompartir = onCompartir,
+                            separacion = 12,
+                            opacidad = 0.6f
+                        )
+                    }
+                }
             }
         }
-
-        items(actividades, key = { it.actividad.id }) { item ->
-            TarjetaActividad(
-                item = item,
-                onClick = { onActividadClick(item.actividad.id) }
-            )
-        }
     }
 }
 
-/** Siluetas con la forma de la tarjeta real, para que el contenido no salte. */
-@Composable
-private fun ListaCargando() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        TarjetaSilueta(fraccionTitulo = 0.88f, fraccionSubtitulo = 0.62f)
-        TarjetaSilueta(fraccionTitulo = 0.74f, fraccionSubtitulo = 0.55f)
+private fun LazyListScope.tarjetas(
+    actividades: List<ActividadConAsociacion>,
+    onActividadClick: (String) -> Unit,
+    onUnirme: (String) -> Unit,
+    onCompartir: (ActividadConAsociacion) -> Unit,
+    separacion: Int = 16,
+    opacidad: Float = 1f
+) {
+    items(actividades, key = { it.actividad.id }) { item ->
+        TarjetaActividad(
+            item = item,
+            onClick = { onActividadClick(item.actividad.id) },
+            onUnirme = { onUnirme(item.actividad.id) },
+            onCompartir = { onCompartir(item) },
+            modifier = Modifier
+                .padding(bottom = separacion.dp)
+                .alpha(opacidad)
+        )
     }
 }
 
@@ -161,125 +162,135 @@ private fun ListaCargando() {
 private fun SinActividades(ciudad: String, onVerAsociaciones: () -> Unit) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Icon(
-            imageVector = Icons.Outlined.DateRange,
-            contentDescription = null,
-            tint = TintaSuave,
-            modifier = Modifier.size(44.dp)
+        CirculoDeIcono(
+            icono = IconosWeb.CalendarioVacio,
+            color = Web.Primario,
+            fondo = Web.Secundario
         )
         Text(
-            text = "No hay actividades programadas en $ciudad esta semana",
-            style = MaterialTheme.typography.titleLarge,
-            color = Tinta,
+            text = "No hay actividades próximas en $ciudad",
+            style = TextoWeb.TituloTarjeta,
             textAlign = TextAlign.Center
         )
         Text(
-            text = "Las asociaciones publican actividades nuevas cada lunes. " +
-                "Mientras tanto puedes conocer los centros verificados.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = TintaSuave,
+            text = "Las asociaciones publican fechas nuevas seguido. Mientras tanto " +
+                "puedes conocer a los centros que visitamos.",
+            style = TextoWeb.Cuerpo,
+            color = Web.TextoApagado,
             textAlign = TextAlign.Center
         )
-        OutlinedButton(onClick = onVerAsociaciones) {
-            Text("Ver asociaciones")
-        }
+        EnlaceBorde(texto = "Ver asociaciones", onClick = onVerAsociaciones)
     }
 }
 
 @Composable
-private fun ErrorDeCarga(mensaje: String, onReintentar: () -> Unit) {
+private fun ErrorDeCarga(
+    mensaje: String,
+    onReintentar: () -> Unit,
+    onVerGuardadas: () -> Unit
+) {
+    val forma = RoundedCornerShape(16.dp)
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .fillMaxWidth()
+            .clip(forma)
+            .background(Web.Tarjeta)
+            .border(1.dp, Web.Borde, forma)
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
+        CirculoDeIcono(icono = IconosWeb.SinWifi, color = Web.RojoTexto, fondo = Web.RojoFondo)
+        Text(
+            text = "No se pudieron cargar las actividades",
+            style = TextoWeb.TituloTarjeta,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = mensaje,
+            style = TextoWeb.Cuerpo,
+            color = Web.TextoApagado,
+            textAlign = TextAlign.Center
+        )
+        BotonAmarillo(
+            texto = "Reintentar",
+            onClick = onReintentar,
+            conFlechas = false,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(ErrorFondo)
-                .padding(horizontal = 14.dp, vertical = 13.dp),
-            verticalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            Text(
-                text = "No se pudieron cargar las actividades",
-                style = MaterialTheme.typography.labelLarge,
-                color = ErrorTexto
-            )
-            Text(
-                text = mensaje,
-                style = MaterialTheme.typography.bodyMedium,
-                color = ErrorTexto
-            )
-        }
-        OutlinedButton(onClick = onReintentar) {
-            Text("Reintentar")
-        }
+                .padding(top = 6.dp)
+        )
+        EnlaceBorde(texto = "Ver las que tengo guardadas", onClick = onVerGuardadas)
     }
 }
 
-@Preview(name = "Con datos", showBackground = true)
 @Composable
-private fun ActividadesConDatosPreview() {
+private fun EnlaceBorde(texto: String, onClick: () -> Unit) {
+    val forma = RoundedCornerShape(12.dp)
+    Text(
+        text = texto,
+        style = TextoWeb.Chip.copy(fontWeight = FontWeight.SemiBold),
+        color = Web.Primario,
+        modifier = Modifier
+            .clip(forma)
+            .border(1.dp, Web.Borde, forma)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+    )
+}
+
+@Composable
+private fun ActividadesPreview(estado: UiState<List<ActividadConAsociacion>>) {
     FamiliasQueSumanTheme {
         ActividadesScreen(
-            estado = UiState.Exito(listOf(actividadDeMuestra(8), actividadDeMuestra(2))),
-            ciudad = "Monterrey",
+            estado = estado,
+            ciudad = "Monterrey, N.L.",
             onActividadClick = {},
-            onRegresar = {},
+            onUnirme = {},
+            onCompartir = {},
+            onIrAInicio = {},
+            onCiudadClick = {},
             onReintentar = {},
+            onVerGuardadas = {},
             onVerAsociaciones = {}
         )
     }
+}
+
+@Preview(name = "Con datos", showBackground = true, heightDp = 1400)
+@Composable
+private fun ActividadesConDatosPreview() {
+    ActividadesPreview(
+        UiState.Exito(
+            listOf(
+                actividadDeMuestra(0),
+                actividadDeMuestra(8).let { it.copy(actividad = it.actividad.copy(id = "b")) },
+                actividadDeMuestra(3, yaPaso = true)
+                    .let { it.copy(actividad = it.actividad.copy(id = "c")) }
+            )
+        )
+    )
 }
 
 @Preview(name = "Cargando", showBackground = true)
 @Composable
 private fun ActividadesCargandoPreview() {
-    FamiliasQueSumanTheme {
-        ActividadesScreen(
-            estado = UiState.Cargando,
-            ciudad = "Monterrey",
-            onActividadClick = {},
-            onRegresar = {},
-            onReintentar = {},
-            onVerAsociaciones = {}
-        )
-    }
+    ActividadesPreview(UiState.Cargando)
 }
 
 @Preview(name = "Vacía", showBackground = true)
 @Composable
 private fun ActividadesVaciaPreview() {
-    FamiliasQueSumanTheme {
-        ActividadesScreen(
-            estado = UiState.Exito(emptyList()),
-            ciudad = "Monterrey",
-            onActividadClick = {},
-            onRegresar = {},
-            onReintentar = {},
-            onVerAsociaciones = {}
-        )
-    }
+    ActividadesPreview(UiState.Exito(emptyList()))
 }
 
 @Preview(name = "Error", showBackground = true)
 @Composable
 private fun ActividadesErrorPreview() {
-    FamiliasQueSumanTheme {
-        ActividadesScreen(
-            estado = UiState.Error("Revisa tu conexión e inténtalo otra vez."),
-            ciudad = "Monterrey",
-            onActividadClick = {},
-            onRegresar = {},
-            onReintentar = {},
-            onVerAsociaciones = {}
-        )
-    }
+    ActividadesPreview(UiState.Error("Revisa tu conexión e inténtalo otra vez."))
 }

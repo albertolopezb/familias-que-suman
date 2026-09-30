@@ -1,80 +1,198 @@
 package mx.tec.familiasquesuman.ui.screens.actividades.componentes
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import mx.tec.familiasquesuman.ui.theme.Fondo
-import mx.tec.familiasquesuman.ui.theme.Superficie
-import mx.tec.familiasquesuman.ui.theme.Tinta
+import androidx.compose.ui.unit.sp
+import mx.tec.familiasquesuman.R
 
 /**
- * El encabezado de las pantallas de actividades: flecha de regreso opcional,
- * título y un hueco a la derecha para lo que cada pantalla necesite.
+ * La barra de arriba del sitio: logo a la izquierda y la píldora de la ciudad
+ * a la derecha, sobre blanco y con una línea abajo.
  */
 @Composable
-fun EncabezadoActividades(
-    titulo: String,
-    modifier: Modifier = Modifier,
-    onRegresar: (() -> Unit)? = null,
-    accionDerecha: @Composable () -> Unit = {}
+fun EncabezadoApp(
+    ciudad: String,
+    onCiudadClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .shadow(1.dp)
-            .background(Superficie)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (onRegresar != null) {
-            BotonCircular(onClick = onRegresar)
+    Column(modifier = modifier.fillMaxWidth().background(Web.Tarjeta)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // El logo trae mucho margen blanco: el recorte deja solo las letras.
+            Image(
+                painter = painterResource(R.drawable.logo_familias),
+                contentDescription = "Familias que Suman",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(40.dp)
+            )
+            Row(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(Web.Secundario)
+                    .clickable(onClick = onCiudadClick)
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    IconosWeb.Ubicacion,
+                    contentDescription = null,
+                    tint = Web.Texto,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(text = ciudad, style = TextoWeb.Chip, color = Web.Texto)
+                Icon(
+                    IconosWeb.FlechaAbajo,
+                    contentDescription = "Cambiar ciudad",
+                    tint = Web.TextoApagado,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
         }
-        Text(
-            text = titulo,
-            style = MaterialTheme.typography.titleLarge,
-            color = Tinta,
-            modifier = Modifier.weight(1f)
-        )
-        accionDerecha()
+        HorizontalDivider(color = Web.Borde, thickness = 1.dp)
     }
 }
 
-/** El botón redondo de regresar, con su área táctil de 40 dp. */
+/**
+ * Migas de pan, título en Lora y subtítulo: el arranque de cada página del sitio.
+ * El título acepta un toque largo para que la lista pueda esconder ahí su botón
+ * de pruebas.
+ */
 @Composable
-fun BotonCircular(
-    onClick: () -> Unit,
+fun TituloDePagina(
+    titulo: String,
+    subtitulo: String,
+    modifier: Modifier = Modifier,
+    migaAnterior: String? = null,
+    onMigaAnterior: () -> Unit = {},
+    modificadorTitulo: Modifier = Modifier
+) {
+    Column(modifier = modifier.padding(top = 24.dp, bottom = 16.dp)) {
+        if (migaAnterior != null) {
+            Row(
+                modifier = Modifier.padding(bottom = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = migaAnterior,
+                    style = TextoWeb.Chico,
+                    modifier = Modifier.clickable(onClick = onMigaAnterior)
+                )
+                Icon(
+                    IconosWeb.FlechaDerecha,
+                    contentDescription = null,
+                    tint = Web.TextoApagado,
+                    modifier = Modifier.size(12.dp)
+                )
+                Text(
+                    text = titulo,
+                    style = TextoWeb.Chico.copy(fontWeight = FontWeight.Medium),
+                    color = Web.Texto
+                )
+            }
+        }
+        Text(text = titulo, style = TextoWeb.Titulo, modifier = modificadorTitulo)
+        Text(
+            text = subtitulo,
+            style = TextoWeb.Cuerpo.copy(lineHeight = 20.sp),
+            color = Web.TextoApagado,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+}
+
+/**
+ * La barra del detalle: "‹ Actividades" para regresar y, a la derecha, las
+ * píldoras que la pantalla necesite (compartir, favorito).
+ */
+@Composable
+fun BarraDeRegreso(
+    texto: String,
+    onRegresar: () -> Unit,
+    modifier: Modifier = Modifier,
+    acciones: @Composable () -> Unit = {}
+) {
+    Column(modifier = modifier.fillMaxWidth().background(Web.Fondo)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .clickable(onClick = onRegresar)
+                    .padding(vertical = 4.dp, horizontal = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    IconosWeb.FlechaIzquierda,
+                    contentDescription = "Regresar",
+                    tint = Web.Primario,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = texto,
+                    style = TextoWeb.Cuerpo.copy(fontWeight = FontWeight.Medium),
+                    color = Web.Primario
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { acciones() }
+        }
+        HorizontalDivider(color = Web.Borde, thickness = 1.dp)
+    }
+}
+
+/** El círculo con ícono grande de los estados vacío, error y sin conexión. */
+@Composable
+fun CirculoDeIcono(
+    icono: ImageVector,
+    color: Color,
+    fondo: Color,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
-            .size(40.dp)
+            .size(64.dp)
             .clip(CircleShape)
-            .background(Fondo)
-            .clickable(onClick = onClick),
+            .background(fondo),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.KeyboardArrowLeft,
-            contentDescription = "Regresar",
-            tint = Tinta
-        )
+        Icon(icono, contentDescription = null, tint = color, modifier = Modifier.size(28.dp))
     }
 }
