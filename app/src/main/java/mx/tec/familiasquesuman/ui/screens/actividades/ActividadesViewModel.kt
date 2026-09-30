@@ -6,6 +6,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import mx.tec.familiasquesuman.data.ActividadRepository
 import mx.tec.familiasquesuman.domain.ActividadConAsociacion
@@ -41,6 +42,17 @@ class ActividadesViewModel(
 
     init {
         cargar()
+        // Si el panel de administración guarda o borra una actividad, la lista
+        // se actualiza sola, sin volver a enseñar el estado de carga.
+        viewModelScope.launch {
+            actividadRepository.actividades.drop(1).collect {
+                if (modo == ModoDePrueba.NORMAL && _estado.value is UiState.Exito) {
+                    val actividades = actividadRepository.getActividadesConAsociacion()
+                    _guardadas.value = actividades
+                    _estado.value = UiState.Exito(actividades)
+                }
+            }
+        }
     }
 
     fun cargar() {

@@ -2,12 +2,10 @@ package mx.tec.familiasquesuman.ui.screens.actividades.componentes
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import mx.tec.familiasquesuman.R
 import mx.tec.familiasquesuman.ui.theme.Inter
+import mx.tec.familiasquesuman.ui.theme.Lora
 
 /**
  * Los colores y letras de familiasquesuman.com/actividades, medidos del sitio.
@@ -52,11 +50,6 @@ object Web {
     val VerdeTema = Color(0xFF16A34A)
 }
 
-/** Lora: la letra de los títulos del sitio. */
-val Lora = FontFamily(
-    Font(R.font.lora_semibold, FontWeight.SemiBold),
-    Font(R.font.lora_bold, FontWeight.Bold)
-)
 
 /** Los tamaños del sitio, con los nombres de Tailwind que usa (text-2xl, text-lg…). */
 object TextoWeb {

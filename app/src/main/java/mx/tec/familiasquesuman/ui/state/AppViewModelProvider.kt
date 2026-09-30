@@ -8,7 +8,11 @@ import mx.tec.familiasquesuman.FamiliasApplication
 import mx.tec.familiasquesuman.ui.screens.actividades.ActividadesViewModel
 import mx.tec.familiasquesuman.ui.screens.actividades.DetalleActividadViewModel
 import mx.tec.familiasquesuman.ui.screens.actividades.MisActividadesViewModel
+import mx.tec.familiasquesuman.ui.screens.admin.AccesoAdminViewModel
+import mx.tec.familiasquesuman.ui.screens.admin.AdminActividadesViewModel
+import mx.tec.familiasquesuman.ui.screens.admin.FormularioActividadViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.AsociacionViewModel
+import mx.tec.familiasquesuman.ui.screens.inicio.DirectorioViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.ExplorarViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.InicioViewModel
 import mx.tec.familiasquesuman.ui.screens.campanas.CampanasViewModel
@@ -83,6 +87,23 @@ object AppViewModelProvider {
                 familiasApplication().container.campanaRepository,
                 familiasApplication().container.actividadRepository
             )
+        }
+
+        // Proyectos y Directorio de Visiteo
+        initializer {
+            DirectorioViewModel(familiasApplication().container.actividadRepository)
+        }
+
+        // Administración
+        initializer { AccesoAdminViewModel() }
+        initializer {
+            AdminActividadesViewModel(
+                familiasApplication().container.actividadRepository,
+                familiasApplication().container.perfilRepository
+            )
+        }
+        initializer {
+            FormularioActividadViewModel(familiasApplication().container.actividadRepository)
         }
     }
 }

@@ -2,19 +2,19 @@ package mx.tec.familiasquesuman.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Marca
-val MarcaAzul = Color(0xFF1B3B6B)
-val MarcaOro = Color(0xFFE9B44C)
+// Marca. Valores medidos de familiasquesuman.com (--primary, --yellow, --border…).
+val MarcaAzul = Color(0xFF1D3972)
+val MarcaOro = Color(0xFFF9B11F)
 val MarcaCeleste = Color(0xFF6FA2CE)
 
 // Superficies
 val Fondo = Color(0xFFF8FAFC)
 val Superficie = Color(0xFFFFFFFF)
-val Borde = Color(0xFFE8EDF3)
+val Borde = Color(0xFFD7E0EA)
 
 // Texto
-val Tinta = Color(0xFF1E293B)
-val TintaSuave = Color(0xFF64748B)
+val Tinta = Color(0xFF141F38)
+val TintaSuave = Color(0xFF667799)
 
 // El oro puro NO se usa como texto sobre fondo claro: no pasa el contraste mínimo.
 // Para texto, AcentoTexto.
@@ -35,8 +35,8 @@ val CategoriaMoradoTexto = Color(0xFF6D28D9)
 val CategoriaAzulFondo = Color(0xFFDBEAFE)
 val CategoriaAzulTexto = Color(0xFF1D4ED8)
 
-val AzulMarinoPrimario = Color(0xFF1E293B)
-val AmbarAcento = Color(0xFFF59E0B)
+val AzulMarinoPrimario = Color(0xFF1D3972)
+val AmbarAcento = Color(0xFFF9B11F)
 val GrisFondo = Color(0xFFF8FAFC)
 val VerdeConfirmado = Color(0xFF10B981)
 

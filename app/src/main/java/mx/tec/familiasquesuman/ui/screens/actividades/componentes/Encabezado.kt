@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mx.tec.familiasquesuman.R
+import mx.tec.familiasquesuman.ui.navigation.LocalAbrirMenu
 
 /**
  * La barra de arriba del sitio: logo a la izquierda y la píldora de la ciudad
@@ -47,15 +48,32 @@ fun EncabezadoApp(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // El logo trae mucho margen blanco: el recorte deja solo las letras.
-            Image(
-                painter = painterResource(R.drawable.logo_familias),
-                contentDescription = "Familias que Suman",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .width(120.dp)
-                    .height(40.dp)
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // La hamburguesa del sitio. Abre el menú de FamiliasApp, donde
+                // también está la entrada al panel de administración.
+                val abrirMenu = LocalAbrirMenu.current
+                if (abrirMenu != null) {
+                    Icon(
+                        IconosWeb.Menu,
+                        contentDescription = "Abrir menú",
+                        tint = Web.Texto,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable(onClick = abrirMenu)
+                            .padding(6.dp)
+                            .size(22.dp)
+                    )
+                }
+                // El logo trae mucho margen blanco: el recorte deja solo las letras.
+                Image(
+                    painter = painterResource(R.drawable.logo_familias),
+                    contentDescription = "Familias que Suman",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .width(120.dp)
+                        .height(40.dp)
+                )
+            }
             Row(
                 modifier = Modifier
                     .clip(CircleShape)

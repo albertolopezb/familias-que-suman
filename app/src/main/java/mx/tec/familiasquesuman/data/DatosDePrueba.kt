@@ -5,10 +5,12 @@ import mx.tec.familiasquesuman.domain.Aportacion
 import mx.tec.familiasquesuman.domain.ArticuloMeta
 import mx.tec.familiasquesuman.domain.Asociacion
 import mx.tec.familiasquesuman.domain.Campana
+import mx.tec.familiasquesuman.domain.CentroVisiteo
 import mx.tec.familiasquesuman.domain.EstadoParticipacion
 import mx.tec.familiasquesuman.domain.Familia
 import mx.tec.familiasquesuman.domain.Impacto
 import mx.tec.familiasquesuman.domain.Participacion
+import mx.tec.familiasquesuman.domain.Proyecto
 import mx.tec.familiasquesuman.domain.TemaActividad
 
 // Datos falsos, idénticos a los del Figma. `internal`: solo los repositorios de
@@ -118,7 +120,8 @@ internal object DatosDePrueba {
             queHaremos = "Juegos, regalos, merienda y convivencia.",
             queLlevar = "Se junta una cantidad previa para hacer pagos de flautas, juguetes, pasteles, etc.",
             recomendaciones = "Ropa cómoda y sencilla.",
-            foto = "actividad_posada_sendero"),
+            // El sitio usa el logo de Regalando Estrellas también aquí.
+            foto = "actividad_regalando_estrellas"),
 
         // Ya pasaron
         Actividad("act3", "Festejo a los papás de Apadrina un niño", "o1",
@@ -239,6 +242,109 @@ internal object DatosDePrueba {
                 ArticuloMeta("c3-2", "Chamarras", 70, 12),
                 ArticuloMeta("c3-3", "Calcetines, par", 50, 8)
             ))
+    )
+
+    /** Los proyectos activos de familiasquesuman.com/proyectos. */
+    val proyectos = listOf(
+        Proyecto("pr1", "Trazo... Escribiendo una nueva historia",
+            "Somos un grupo de mujeres voluntarias que realizamos visitas quincenales al Centro de " +
+                "Reinserción Social de Escobedo para acompañar a mujeres privadas de la libertad " +
+                "mediante pláticas de desarrollo humano, talleres de acuarela y actividades que " +
+                "fortalecen su autoestima, creatividad y crecimiento personal.",
+            beneficiarios = "25 Mujeres", ciudad = "Monterrey", vigencia = null,
+            logo = "proyecto_trazo"),
+        Proyecto("pr2", "Voluntariado DIF Te Acompaña",
+            "Acompañar a adultos mayores o jóvenes vulnerables, en soledad, con discapacidad o con " +
+                "una red de apoyo reducida. Realizar visitas en familia mínimo una vez cada 15 días.",
+            beneficiarios = "200 adultos mayores", ciudad = "San Pedro Garza García", vigencia = null,
+            logo = "proyecto_dif"),
+        Proyecto("pr3", "Cocinando de Corazón a Corazón",
+            "Comedor comunitario diocesano que lleva alimento y esperanza a personas y familias en " +
+                "situación vulnerable. A través de una red de parroquias, los alimentos preparados " +
+                "se distribuyen en distintas comunidades.",
+            beneficiarios = null, ciudad = "Monterrey", vigencia = null,
+            logo = "proyecto_cocinando"),
+        Proyecto("pr4", "Forma-T",
+            "Clases impartidas por voluntarias en escuelas públicas enfocadas en la formación en " +
+                "valores, escuela para padres y apoyo académico para niños y jóvenes.",
+            beneficiarios = null, ciudad = "Monterrey", vigencia = null,
+            logo = "proyecto_forma_t"),
+        Proyecto("pr5", "Materno Infantil - REGALANDO ESTRELLAS",
+            "Visita al Hospital Materno Infantil el primer sábado al mes junto con más familias. Se " +
+                "sirven aproximadamente 200 desayunos y se llevan juguetes o kits de higiene personal.",
+            beneficiarios = "1500 Bebés, mamás, maternidad", ciudad = "Monterrey", vigencia = null,
+            logo = "actividad_regalando_estrellas"),
+        Proyecto("pr6", "Bibliotecas Infantiles - Familia Viva",
+            "Recolección de cuentos infantiles de preescolar, primaria y secundaria para crear una " +
+                "biblioteca infantil que se donará a instituciones con niños.",
+            beneficiarios = null, ciudad = "Monterrey", vigencia = null,
+            logo = "proyecto_bibliotecas"),
+        Proyecto("pr7", "Sendero - REGALANDO ESTRELLAS",
+            "Pláticas y convivencia con mujeres en situación vulnerable donde les pueden enseñar, " +
+                "convivir y compartir aprendizajes.",
+            beneficiarios = null, ciudad = "Monterrey", vigencia = null,
+            logo = "actividad_regalando_estrellas"),
+        Proyecto("pr8", "Escucha Corazón",
+            "Una visita al mes al colegio Mano Amiga Monterrey en donde darás acompañamiento a " +
+                "alumnas de primaria y secundaria.",
+            beneficiarios = null, ciudad = "Monterrey", vigencia = "Hasta 29 jun 2026",
+            logo = "proyecto_escucha_corazon")
+    )
+
+    /** Los centros verificados de familiasquesuman.com/directorio. */
+    val centros = listOf(
+        CentroVisiteo("ce1", "Morada del Anciano Desvalido Cadereyta", "Asilos",
+            "Asilo de ancianos donde se atienden 24 horas a 46 adultos mayores.",
+            "Atención a adultos mayores en abandono, soledad y falta de apoyo familiar. Se les " +
+                "ofrece refugio, alimentación, atención integral y compañía.",
+            listOf(
+                "Alimentos como: azúcar, leche, aceite, té, gelatina, mole en lata, saladitas, " +
+                    "servilletas, ensure, jugos y frutas",
+                "Limpieza: trapeadores, cubetas, botes de basura, guantes, cloro, fabuloso, pino, " +
+                    "jabón líquido, shampoo, desengrasantes, bolsas de basura"
+            ),
+            "Blvd José María González #1000, Cadereyta", logo = "centro_amad"),
+        CentroVisiteo("ce2", "Casa de la Misericordia", "Casas hogar",
+            "Casa Hogar que ofrece albergue, alimento y atención a jóvenes y adultos con " +
+                "enfermedades irreversibles.",
+            "Hogar de la Misericordia ofrece vida digna a personas con enfermedades irreversibles " +
+                "y/o terminales no contagiosas, en completo desamparo y sin recursos económicos.",
+            listOf(
+                "Pañales de adulto tamaño mediano y grande",
+                "Alimentos como aceite, atún en lata, azúcar, sal, galletas maría, arroz, pasta, " +
+                    "frijoles, leche deslactosada y de almendra",
+                "Productos de limpieza como fabuloso, bolsas de basura jumbo, jabón líquido para " +
+                    "manos, jabón para trastes, pinol y papel sanitario"
+            ),
+            "Monterrey", logo = "centro_misericordia"),
+        CentroVisiteo("ce3", "La Gran Familia", "Casas hogar",
+            "Casa Hogar de niños, niñas y adolescentes que fueron retirados de sus familias por " +
+                "falta de cuidados parentales.",
+            "La Gran Familia es una casa hogar que atiende a niños, niñas y adolescentes con " +
+                "situación familiar vulnerable desde hace 44 años. Ofrecen vivienda, alimentación, " +
+                "educación, salud mental y general.",
+            listOf(
+                "Visitas acompañadas de actividades de integración y socialización",
+                "Alimentos, ropa, productos de limpieza e higiene personal, útiles escolares",
+                "Tenis blancos y zapato escolar"
+            ),
+            "Villa de Santiago", logo = "centro_gran_familia"),
+        CentroVisiteo("ce4", "Comedor Apadrina un Niño", "Comedores",
+            "Comedor para apoyar a las familias de pacientes internados en la Clínica 25.",
+            "Comedor que sirve aproximadamente 200 comidas de lunes a viernes de 1:00 a 3:00 pm.",
+            listOf("Desechables", "Alimentos no perecederos"),
+            "Cuautla #208, Colonia 5 de Mayo, Monterrey", logo = "centro_apadrina"),
+        CentroVisiteo("ce5", "Apadrina un niño", "Casas hogar",
+            "Albergue para niños con cáncer y comedor para sus familias.",
+            "Apadrina un niño es un albergue donde pueden hospedarse niños que vengan a Monterrey a " +
+                "algún tratamiento médico. La casa recibe a 40 niños más un adulto que los acompañe.",
+            listOf(
+                "Alimentos no perecederos",
+                "Productos de higiene personal",
+                "Ropa de niño y adulto",
+                "Productos de limpieza"
+            ),
+            "Cuautla 208, Col. 5 de Mayo, Monterrey", logo = "centro_apadrina")
     )
 
     val proximasDeLaFamilia = listOf("act2")
