@@ -13,7 +13,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import mx.tec.familiasquesuman.ui.screens.inicio.RutasInicio
@@ -45,7 +44,6 @@ fun FamiliasApp() {
                             onClick = {
                                 if (rutaActual != pestana.ruta) {
                                     nav.navigate(pestana.ruta) {
-                                        // Mantiene la raíz en la pantalla de inicio limpia
                                         popUpTo(nav.graph.findStartDestination().id) {
                                             saveState = true
                                         }
