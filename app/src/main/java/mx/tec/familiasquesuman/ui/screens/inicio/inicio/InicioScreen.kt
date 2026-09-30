@@ -9,6 +9,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.BotonAmarillo
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TextoWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Web
@@ -40,21 +41,26 @@ fun InicioScreen(
     onDonarClick: () -> Unit,
     onProyectosClick: () -> Unit,
     onVisiteoClick: () -> Unit,
+    onCiudadClick: () -> Unit = {},
     onRecibirInformacion: () -> Unit = {},
     onConoceHistoria: () -> Unit = {}
 ) {
+    Column(modifier = Modifier.fillMaxSize()) {
+    // La barra del sitio (menú, logo y ciudad) queda fija arriba.
+    EncabezadoApp(ciudad = ciudad, onCiudadClick = onCiudadClick)
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(GrisFondo)
             .verticalScroll(rememberScrollState())
     ) {
-        // Header con saludo y selector de ciudad
+        // Saludo; la ciudad ya está en la barra de arriba.
         HeaderInicio(
             nombreFamilia = "Familia Rodríguez",
             ciudadActual = ciudad,
             onCiudadSeleccionada = onCambiarCiudad,
-            onNotificacionesClick = { }
+            onNotificacionesClick = { },
+            mostrarCiudad = false
         )
 
         Column(modifier = Modifier.padding(horizontal = 20.dp)) {
@@ -263,6 +269,7 @@ fun InicioScreen(
             MantenteInformado(onRecibirInformacion)
             NuestraHistoria(onConoceHistoria)
         }
+    }
     }
 }
 

@@ -26,7 +26,8 @@ fun HeaderInicio(
     nombreFamilia: String,
     ciudadActual: String,
     onCiudadSeleccionada: (String) -> Unit,
-    onNotificacionesClick: () -> Unit
+    onNotificacionesClick: () -> Unit,
+    mostrarCiudad: Boolean = true
 ) {
     var desplegado by remember { mutableStateOf(false) }
     val ciudades = listOf("Monterrey", "Hermosillo")
@@ -56,7 +57,7 @@ fun HeaderInicio(
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box {
+            if (mostrarCiudad) Box {
                 // Píldora de Ciudad
                 Surface(
                     modifier = Modifier
@@ -130,7 +131,7 @@ fun HeaderInicio(
                 }
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
+            if (mostrarCiudad) Spacer(modifier = Modifier.width(8.dp))
 
             // Botón Notificaciones
             Box {
