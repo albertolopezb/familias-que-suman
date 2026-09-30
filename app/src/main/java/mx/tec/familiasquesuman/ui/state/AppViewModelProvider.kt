@@ -8,6 +8,8 @@ import mx.tec.familiasquesuman.FamiliasApplication
 import mx.tec.familiasquesuman.ui.screens.inicio.AsociacionViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.ExplorarViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.InicioViewModel
+import mx.tec.familiasquesuman.ui.screens.campanas.CampanasViewModel
+import mx.tec.familiasquesuman.ui.screens.campanas.DetalleCampanaViewModel
 
 /**
  * Cómo se construye cada ViewModel de la app.
@@ -30,6 +32,12 @@ object AppViewModelProvider {
         }
         initializer {
             AsociacionViewModel(familiasApplication().container.actividadRepository)
+        }
+        initializer {
+            CampanasViewModel(familiasApplication().container.campanaRepository)
+        }
+        initializer {
+            DetalleCampanaViewModel(familiasApplication().container.campanaRepository)
         }
     }
 }
