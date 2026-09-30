@@ -47,3 +47,10 @@ val AzulCategoriaTexto = Color(0xFF0369A1)
 val MentaTarjetaFondo = Color(0xFFCCFBF1) // Pastel menta más vivo
 val MentaCategoriaFondo = Color(0xFF99F6E4) // Círculo de icono
 val MentaCategoriaTexto = Color(0xFF0F766E)
+
+// Colores de las partes 3 y 4 (campañas e inscripción) que siguen en uso.
+val Confirmado = Color(0xFF10B981)
+val ConfirmadoFondo = Color(0xFFD1FAE5)
+val ConfirmadoTexto = Color(0xFF047857)
+val CategoriaAzulFondo = Color(0xFFDBEAFE)
+val CategoriaAzulTexto = Color(0xFF1D4ED8)
