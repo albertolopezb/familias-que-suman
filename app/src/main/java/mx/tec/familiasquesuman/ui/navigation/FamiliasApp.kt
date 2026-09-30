@@ -17,6 +17,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import mx.tec.familiasquesuman.ui.screens.inicio.RutasInicio
+import mx.tec.familiasquesuman.ui.screens.inscripcion.grafoInscripcion
+import mx.tec.familiasquesuman.ui.screens.inscripcion.temporal.grafoTemporalParte3
 import mx.tec.familiasquesuman.ui.screens.inicio.grafoInicio
 import mx.tec.familiasquesuman.ui.theme.AcentoSuave
 import mx.tec.familiasquesuman.ui.theme.AcentoTexto
@@ -79,6 +81,8 @@ fun FamiliasApp() {
                 onNavegarAActividades = { nav.navigate(Rutas.MIS_ACTIVIDADES) },
                 onNavegarACampanas = { nav.navigate(Rutas.EXPLORAR) }
             )
+            grafoInscripcion(nav)
+            grafoTemporalParte3(nav) // TEMPORAL parte 3: se borra al integrar las partes 2 y 5
         }
     }
 }
