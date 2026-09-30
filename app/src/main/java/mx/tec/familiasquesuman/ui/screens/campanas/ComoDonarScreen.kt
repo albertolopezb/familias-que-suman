@@ -49,6 +49,10 @@ val CentrosDeAcopio = listOf(
     CentroAcopio("Parroquia San Bernabé", "Av. Aztlán 1500", "Sábados, 10:00 a 14:00")
 )
 
+/** El centro donde se entrega lo apartado: el de la asociación dueña de la campaña, si tiene uno. */
+fun centroDeEntrega(nombreAsociacion: String?): CentroAcopio? =
+    CentrosDeAcopio.firstOrNull { it.nombre == nombreAsociacion }
+
 val NecesidadesActuales = listOf(
     Necesidad("Arroz y frijol", "Bolsas de 1 kg cerradas"),
     Necesidad("Cobijas", "Usadas en buen estado"),

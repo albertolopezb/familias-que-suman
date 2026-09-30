@@ -151,6 +151,7 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController) {
         val vm: DetalleCampanaViewModel = viewModel(viewModelStoreOwner = padre, factory = AppViewModelProvider.Factory)
         val estado by vm.estado.collectAsStateWithLifecycle()
         val hecho by vm.ultimoApartado.collectAsStateWithLifecycle()
+        val nombreAsociacion by vm.nombreAsociacion.collectAsStateWithLifecycle()
 
         val campana = (estado as? UiState.Exito)?.datos
         val apartado = hecho
@@ -159,7 +160,8 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController) {
                 campana = campana,
                 hecho = apartado,
                 onVerComoEntregar = { nav.navigate(RutasCampanas.COMO_DONAR) },
-                onApartarAlgoMas = { nav.popBackStack() }
+                onApartarAlgoMas = { nav.popBackStack() },
+                nombreAsociacion = nombreAsociacion
             )
         }
     }

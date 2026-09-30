@@ -58,9 +58,10 @@ fun ApartadoConfirmadoScreen(
     hecho: ApartadoHecho,
     onVerComoEntregar: () -> Unit,
     onApartarAlgoMas: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    nombreAsociacion: String? = null
 ) {
-    val centro = CentrosDeAcopio.first()
+    val centro = centroDeEntrega(nombreAsociacion)
     val antes = (hecho.progresoAntes * 100).roundToInt()
     val ahora = (campana.progreso * 100).roundToInt()
 
@@ -108,8 +109,13 @@ fun ApartadoConfirmadoScreen(
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Cómo entregar", style = MaterialTheme.typography.titleMedium, color = Tinta)
                     FilaDato(IconoCalendario, "Antes del ${campana.cierra}")
-                    FilaDato(Icons.Default.LocationOn, "${centro.nombre}, ${centro.direccion}")
-                    FilaDato(IconoReloj, centro.horario)
+                    if (centro != null) {
+                        FilaDato(Icons.Default.LocationOn, "${centro.nombre}, ${centro.direccion}")
+                        FilaDato(IconoReloj, centro.horario)
+                    } else {
+                        // Esa asociación no tiene centro propio en la lista: se manda a ver todos.
+                        FilaDato(Icons.Default.LocationOn, "Consulta los centros de acopio en «Ver cómo entregar»")
+                    }
                 }
             }
             Text(
@@ -188,7 +194,8 @@ private fun ApartadoConfirmadoPreview() {
                 "kits", 45, 20, listOf(ArticuloMeta("c1-1", "Rosario blanco", 45, 14))
             ),
             hecho = ApartadoHecho("Rosario blanco", 2, progresoAntes = 18f / 45f),
-            onVerComoEntregar = {}, onApartarAlgoMas = {}
+            onVerComoEntregar = {}, onApartarAlgoMas = {},
+            nombreAsociacion = "Parroquia San Bernabé"
         )
     }
 }

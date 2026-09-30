@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.domain.ArticuloMeta
 import mx.tec.familiasquesuman.domain.Campana
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.BarraMeta
+import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoImagen
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.RenglonArticulo
 import mx.tec.familiasquesuman.ui.theme.AcentoSuave
 import mx.tec.familiasquesuman.ui.theme.Borde
@@ -149,7 +150,18 @@ private fun BotonCircular(onClick: () -> Unit, contenido: @Composable () -> Unit
 private fun Foto(completa: Boolean) {
     val colores = if (completa) listOf(Color(0xFFD1FAE5), Color(0xFF99F6D0))
     else listOf(AcentoSuave, Color(0xFFF5E2B0))
-    Box(modifier = Modifier.fillMaxWidth().height(140.dp).background(Brush.linearGradient(colores)))
+    Box(
+        modifier = Modifier.fillMaxWidth().height(140.dp).background(Brush.linearGradient(colores)),
+        contentAlignment = Alignment.Center
+    ) {
+        // Avisa que aquí va la foto de la campaña (extra: un drawable por campaña).
+        Icon(
+            imageVector = IconoImagen,
+            contentDescription = null,
+            tint = Color(0xFF64748B).copy(alpha = 0.55f),
+            modifier = Modifier.size(40.dp)
+        )
+    }
 }
 
 /** Bloque verde con "18 de 45 kits completos" y la barra. */
@@ -222,7 +234,8 @@ private fun DetalleCompletaPreview() {
         DetalleCampanaScreen(
             kits.copy(titulo = "Despensas de fin de mes", cierra = "30 de septiembre", unidadMeta = "despensas",
                 metaTotal = 300, completados = 300),
-            true, {}, {}, {}, {}
+            true, {}, {}, {}, {},
+            nombreAsociacion = "Banco de Alimentos Cáritas Monterrey"
         )
     }
 }
