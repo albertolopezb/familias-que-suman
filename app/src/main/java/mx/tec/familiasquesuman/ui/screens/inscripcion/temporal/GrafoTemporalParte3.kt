@@ -64,7 +64,7 @@ fun NavGraphBuilder.grafoTemporalParte3(nav: NavController) {
         val actividades by cuenta.actividades.collectAsStateWithLifecycle()
         val inscripciones by cuenta.inscripciones.collectAsStateWithLifecycle()
         val actividad = actividades.firstOrNull { it.id == actividadId } ?: return@composable
-        var simularSinCupo by rememberSaveable { mutableStateOf(actividadId == "act2") }
+        var simularSinCupo by rememberSaveable { mutableStateOf(actividadId == "act10") }
 
         DetalleTemporalScreen(
             actividad = actividad,

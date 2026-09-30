@@ -84,9 +84,9 @@ fun ActividadesTemporalScreen(
         AvisoTemporal("parte 2")
 
         Seccion("Casos de prueba de la parte 3")
-        BotonPrimario("✓ Inscripción exitosa · Preparar despensas", { onCasoDePrueba("act1", false) })
-        BotonSecundario("✗ Se acabaron los lugares · Tarde de lectura", { onCasoDePrueba("act2", true) })
-        BotonSecundario("! Edad mínima de 15 años · Clasificar ropa", { onCasoDePrueba("act3", false) })
+        BotonPrimario("✓ Inscripción exitosa · Preparar despensas", { onCasoDePrueba("act9", false) })
+        BotonSecundario("✗ Se acabaron los lugares · Tarde de lectura", { onCasoDePrueba("act10", true) })
+        BotonSecundario("! Edad mínima de 15 años · Clasificar ropa", { onCasoDePrueba("act11", false) })
 
         if (inscritas.isNotEmpty()) {
             Seccion("Mis próximas · inscritas")
