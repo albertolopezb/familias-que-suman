@@ -25,12 +25,37 @@ data class Actividad(
     val edadMinima: Int?,          // null = sin restricción de edad
     val descripcion: String,
     val cupoTotal: Int,
-    val lugaresDisponibles: Int
+    val lugaresDisponibles: Int,
+    // Parte 2: lo que muestra familiasquesuman.com/actividades. Todo lleva valor
+    // por defecto para que nadie que ya construya una Actividad tenga que cambiar.
+    val municipio: String = "",
+    val tema: TemaActividad = TemaActividad.GENERAL,
+    val aportacion: Aportacion = Aportacion.Ninguna,
+    val puntoDeEncuentro: String = "",
+    val acercaDelProyecto: String = "",
+    val queHaremos: String = "",
+    val queIncluye: String = "",
+    val queLlevar: String = "",
+    val recomendaciones: String = "",
+    val foto: String? = null,       // nombre del drawable, sin extensión
+    val yaPaso: Boolean = false
 ) {
     val ocupados: Int get() = cupoTotal - lugaresDisponibles
     val sinLugares: Boolean get() = lugaresDisponibles <= 0
     // Menos del 20 % libre: se pinta en ámbar
     val quedanPocos: Boolean get() = lugaresDisponibles in 1..(cupoTotal / 5).coerceAtLeast(1)
+    // Algunas actividades del sitio no publican cupo; en esas no hay barra.
+    val tieneCupo: Boolean get() = cupoTotal > 0
+}
+
+/** De qué va la actividad. Decide el ícono y su color, como en el sitio. */
+enum class TemaActividad { SALUD, CELEBRACION, MEDIO_AMBIENTE, GENERAL }
+
+/** Lo que cada familia lleva o paga para participar. */
+sealed interface Aportacion {
+    data object Ninguna : Aportacion
+    data class EnEspecie(val detalle: String = "") : Aportacion
+    data class Monetaria(val monto: String, val detalle: String = "") : Aportacion
 }
 
 data class ArticuloMeta(
@@ -75,4 +100,42 @@ data class Impacto(
     val actividadesRealizadas: Int,
     val horasDeServicio: Int,
     val campanasApoyadas: Int
+)
+
+// ---------------------------------------------------------------------------
+// Parte 2 · Actividades
+// ---------------------------------------------------------------------------
+
+/**
+ * Una actividad junto con la asociación que la organiza, tal como se muestra
+ * en la lista y en el detalle.
+ *
+ * Vive en el dominio y no en ui/: si viviera en ui/, la capa de datos tendría
+ * que importar de la capa de arriba para poder devolverlo.
+ */
+data class ActividadConAsociacion(
+    val actividad: Actividad,
+    val asociacion: Asociacion
+)
+
+/** El pendiente que le queda a la familia después de participar. */
+enum class EstadoParticipacion {
+    SIN_PENDIENTES,
+    ENCUESTA_PENDIENTE,
+    TESTIMONIO_EN_REVISION,
+    TESTIMONIO_PUBLICADO
+}
+
+/**
+ * Una actividad en la que la familia ya participó (RF-11).
+ * El historial se construye con asistencias registradas por la asociación,
+ * no con lo que la familia declare por su cuenta.
+ */
+data class Participacion(
+    val id: String,
+    val tituloActividad: String,
+    val nombreAsociacion: String,
+    val fecha: String,
+    val mes: String,
+    val estado: EstadoParticipacion
 )

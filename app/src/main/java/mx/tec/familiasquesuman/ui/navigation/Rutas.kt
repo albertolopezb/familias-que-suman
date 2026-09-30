@@ -6,12 +6,13 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.ui.graphics.vector.ImageVector
+import mx.tec.familiasquesuman.ui.screens.actividades.RutasActividades
 import mx.tec.familiasquesuman.ui.screens.inicio.RutasInicio
 
 object Rutas {
     const val INICIO = RutasInicio.INICIO
     const val EXPLORAR = RutasInicio.EXPLORAR
-    const val MIS_ACTIVIDADES = "mis_actividades"
+    const val MIS_ACTIVIDADES = RutasActividades.MIS_ACTIVIDADES
     const val PERFIL = "perfil"
 }
 
