@@ -29,7 +29,7 @@ class ActividadRepository {
      * cuando entre el backend esto será un solo endpoint y nada de arriba cambia.
      */
     suspend fun getActividadesConAsociacion(): List<ActividadConAsociacion> {
-        val porId = DatosDePrueba.asociaciones.associateBy { it.id }
+        val porId = organizadoresPorId()
         return DatosDePrueba.actividades.mapNotNull { actividad ->
             porId[actividad.asociacionId]?.let { ActividadConAsociacion(actividad, it) }
         }
@@ -37,6 +37,10 @@ class ActividadRepository {
 
     suspend fun getActividadConAsociacion(id: String): ActividadConAsociacion {
         val actividad = getActividad(id)
-        return ActividadConAsociacion(actividad, getAsociacion(actividad.asociacionId))
+        return ActividadConAsociacion(actividad, organizadoresPorId().getValue(actividad.asociacionId))
     }
+
+    /** Quien organiza puede ser una asociación del directorio o uno de los organizadores del sitio. */
+    private fun organizadoresPorId(): Map<String, Asociacion> =
+        (DatosDePrueba.asociaciones + DatosDePrueba.organizadores).associateBy { it.id }
 }
