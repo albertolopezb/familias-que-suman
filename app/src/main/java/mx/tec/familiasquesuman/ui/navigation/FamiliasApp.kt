@@ -18,6 +18,8 @@ import androidx.navigation.compose.rememberNavController
 import mx.tec.familiasquesuman.ui.screens.actividades.RutasActividades
 import mx.tec.familiasquesuman.ui.screens.actividades.grafoActividades
 import mx.tec.familiasquesuman.ui.screens.inicio.RutasInicio
+import mx.tec.familiasquesuman.ui.screens.inscripcion.RutasInscripcion
+import mx.tec.familiasquesuman.ui.screens.inscripcion.grafoInscripcion
 import mx.tec.familiasquesuman.ui.screens.inicio.grafoInicio
 import mx.tec.familiasquesuman.ui.screens.perfil.RutasPerfil
 import mx.tec.familiasquesuman.ui.screens.perfil.grafoPerfil
@@ -102,10 +104,12 @@ fun FamiliasApp() {
                     }
                 },
                 onVerAsociaciones = { nav.navigate(RutasInicio.EXPLORAR) },
+                // Parte 3: inscribirse (puerta de cuenta o acompañantes) y cancelar.
+                onInscribirme = { id -> nav.navigate(RutasInscripcion.inscribirse(id)) },
+                onCancelarInscripcion = { id -> nav.navigate(RutasInscripcion.cancelar(id)) },
                 // Mis Actividades → encuesta final (parte 5, RF-13).
                 onResponderEncuesta = { nav.navigate(RutasPerfil.ENCUESTA_FINAL) }
                 // Pendientes:
-                // onInscribirme y onCancelarInscripcion → parte 3, cuando exista su rama.
                 // onCompartirTestimonio → parte 5 busca la actividad solo en las próximas;
                 //   hace falta que también la busque en el historial.
                 // ciudad y onCambiarCiudad → cuando la ciudad de la parte 1 sea compartida.
@@ -113,6 +117,7 @@ fun FamiliasApp() {
 
 
             grafoCampanas(nav)
+            grafoInscripcion(nav)
         }
     }
 }

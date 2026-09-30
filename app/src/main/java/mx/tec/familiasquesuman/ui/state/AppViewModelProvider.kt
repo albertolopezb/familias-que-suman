@@ -20,6 +20,8 @@ import mx.tec.familiasquesuman.ui.screens.perfil.TestimonioViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.EncuestaViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.AvisoPrivacidadViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.AjustesViewModel
+import mx.tec.familiasquesuman.ui.screens.inscripcion.AcompanantesViewModel
+import mx.tec.familiasquesuman.ui.screens.inscripcion.CuentaViewModel
 
 /**
  * Cómo se construye cada ViewModel de la app.
@@ -84,6 +86,11 @@ object AppViewModelProvider {
                 familiasApplication().container.actividadRepository
             )
         }
+        initializer {
+            val c = familiasApplication().container
+            CuentaViewModel(c.actividadRepository, c.perfilRepository)
+        }
+        initializer { AcompanantesViewModel(familiasApplication().container.actividadRepository) }
     }
 }
 
