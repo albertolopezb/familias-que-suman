@@ -4,11 +4,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.domain.Actividad
@@ -31,9 +41,13 @@ import mx.tec.familiasquesuman.ui.theme.TintaSuave
 /**
  * La tarjeta de la lista de actividades (RF-04, RF-05).
  *
- * `cupoEnVivo = false` es para la pantalla sin conexión: los lugares no se
- * pueden garantizar sin internet, así que no se muestra un número que podría
- * estar viejo.
+ * La imagen va arriba y el contenido abajo, como en el resto de la app. Mientras
+ * no haya fotos reales, la banda lleva el degradado de la categoría: para ponerle
+ * foto basta cambiar el Box de BandaDeCategoria por un Image con
+ * contentScale = ContentScale.Crop y el mismo alto.
+ *
+ * `cupoEnVivo = false` es para la pantalla sin conexión: los lugares no se pueden
+ * garantizar sin internet, así que no se muestra un número que podría estar viejo.
  */
 @Composable
 fun TarjetaActividad(
@@ -48,34 +62,41 @@ fun TarjetaActividad(
         modifier = modifier
             .fillMaxWidth()
             .alpha(if (cupoEnVivo) 1f else 0.75f)
-            .shadow(2.dp, RoundedCornerShape(16.dp))
-            .clip(RoundedCornerShape(16.dp))
+            .shadow(3.dp, RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(18.dp))
             .background(Superficie)
-            .border(1.dp, Borde, RoundedCornerShape(16.dp))
+            .border(1.dp, Borde, RoundedCornerShape(18.dp))
             .clickable(onClick = onClick)
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            Miniatura(tinte = tinteDeCategoria(item.asociacion.categoria))
+        BandaDeCategoria(
+            categoria = item.asociacion.categoria,
+            edadMinima = actividad.edadMinima
+        )
 
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = actividad.titulo,
+                style = MaterialTheme.typography.titleMedium,
+                color = Tinta
+            )
+            Text(
+                text = item.asociacion.nombre,
+                style = MaterialTheme.typography.bodyMedium,
+                color = TintaSuave
+            )
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = actividad.titulo,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Tinta
-                )
-                Text(
-                    text = item.asociacion.nombre,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TintaSuave
+                Icon(
+                    imageVector = Icons.Outlined.DateRange,
+                    contentDescription = null,
+                    tint = TintaSuave,
+                    modifier = Modifier.size(16.dp)
                 )
                 Text(
                     text = "${actividad.fecha} · ${actividad.horario}",
@@ -83,12 +104,15 @@ fun TarjetaActividad(
                     color = Tinta
                 )
             }
-        }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            EtiquetaEdad(actividad.edadMinima)
             if (cupoEnVivo) {
-                ChipCupo(actividad)
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    ChipCupo(actividad)
+                    BarraCupo(
+                        progreso = progresoDeCupo(actividad),
+                        color = colorDeCupo(actividad)
+                    )
+                }
             } else {
                 Etiqueta(
                     texto = "Lugares no disponibles sin conexión",
@@ -97,12 +121,64 @@ fun TarjetaActividad(
                 )
             }
         }
+    }
+}
 
-        if (cupoEnVivo) {
-            BarraCupo(
-                progreso = progresoDeCupo(actividad),
-                color = colorDeCupo(actividad)
+/**
+ * La banda de color de la tarjeta, con la categoría de la asociación y para
+ * quién es la actividad. Aquí es donde entra la foto cuando la haya.
+ */
+@Composable
+private fun BandaDeCategoria(
+    categoria: String,
+    edadMinima: Int?,
+    modifier: Modifier = Modifier
+) {
+    val tinte = tinteDeCategoria(categoria)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(96.dp)
+            .background(Brush.linearGradient(listOf(tinte.first, tinte.second)))
+    ) {
+        // Dos círculos claros que le dan textura mientras no hay fotografía.
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(x = 26.dp, y = (-34).dp)
+                .size(110.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.30f))
+        )
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .offset(x = (-16).dp, y = 24.dp)
+                .size(66.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.22f))
+        )
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Etiqueta(
+                texto = categoria,
+                fondo = Color.White.copy(alpha = 0.85f),
+                color = Tinta
             )
+        }
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(12.dp)
+        ) {
+            EtiquetaEdad(edadMinima)
         }
     }
 }
@@ -117,7 +193,6 @@ private fun TarjetaActividadPreview() {
         ) {
             TarjetaActividad(item = actividadDeMuestra(8), onClick = {})
             TarjetaActividad(item = actividadDeMuestra(2), onClick = {})
-            TarjetaActividad(item = actividadDeMuestra(0), onClick = {})
         }
     }
 }

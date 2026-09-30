@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.outlined.DateRange
@@ -43,6 +44,7 @@ import mx.tec.familiasquesuman.ui.screens.actividades.componentes.BotonCircular
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.actividadDeMuestra
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.tinteDeCategoria
 import mx.tec.familiasquesuman.ui.theme.Borde
+import mx.tec.familiasquesuman.ui.theme.ConfirmadoTexto
 import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
 import mx.tec.familiasquesuman.ui.theme.Fondo
 import mx.tec.familiasquesuman.ui.theme.MarcaAzul
@@ -132,7 +134,7 @@ fun DetalleActividadScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         text = actividad.titulo,
                         style = MaterialTheme.typography.headlineMedium,
@@ -143,6 +145,24 @@ fun DetalleActividadScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = TintaSuave
                     )
+                    // Familias que Suman verifica cada asociación antes de
+                    // publicarla. Decirlo aquí es la mitad de la confianza.
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = ConfirmadoTexto,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Text(
+                            text = "Asociación verificada",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = ConfirmadoTexto
+                        )
+                    }
                 }
 
                 Column(
@@ -174,11 +194,18 @@ fun DetalleActividadScreen(
 
                 BloqueCupo(actividad = actividad)
 
-                Text(
-                    text = actividad.descripcion,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TintaSuave
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = "¿QUÉ VAN A HACER?",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TintaSuave
+                    )
+                    Text(
+                        text = actividad.descripcion,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Tinta
+                    )
+                }
             }
         }
 

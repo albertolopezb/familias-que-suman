@@ -1,12 +1,9 @@
 package mx.tec.familiasquesuman.ui.screens.actividades
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,13 +33,10 @@ import mx.tec.familiasquesuman.ui.screens.actividades.componentes.actividadDeMue
 import mx.tec.familiasquesuman.ui.state.UiState
 import mx.tec.familiasquesuman.ui.theme.AcentoSuave
 import mx.tec.familiasquesuman.ui.theme.AcentoTexto
-import mx.tec.familiasquesuman.ui.theme.Borde
 import mx.tec.familiasquesuman.ui.theme.ErrorFondo
 import mx.tec.familiasquesuman.ui.theme.ErrorTexto
 import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
 import mx.tec.familiasquesuman.ui.theme.Fondo
-import mx.tec.familiasquesuman.ui.theme.MarcaAzul
-import mx.tec.familiasquesuman.ui.theme.Superficie
 import mx.tec.familiasquesuman.ui.theme.Tinta
 import mx.tec.familiasquesuman.ui.theme.TintaSuave
 
@@ -50,7 +44,8 @@ import mx.tec.familiasquesuman.ui.theme.TintaSuave
  * Las actividades de voluntariado (RF-04, RF-05), con sus cuatro estados.
  *
  * La pantalla no conoce el ViewModel ni la navegación: recibe el estado y
- * funciones, y por eso sus previews corren sin app.
+ * funciones, y por eso sus previews corren sin app. Los cuatro estados se
+ * revisan desde las previews de abajo, en el panel de Android Studio.
  */
 @Composable
 fun ActividadesScreen(
@@ -60,9 +55,7 @@ fun ActividadesScreen(
     onRegresar: () -> Unit,
     onReintentar: () -> Unit,
     onVerAsociaciones: () -> Unit,
-    modifier: Modifier = Modifier,
-    modo: ModoDePrueba = ModoDePrueba.NORMAL,
-    onCambiarModo: (ModoDePrueba) -> Unit = {}
+    modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
@@ -76,8 +69,6 @@ fun ActividadesScreen(
                 Etiqueta(texto = ciudad, fondo = AcentoSuave, color = AcentoTexto)
             }
         )
-
-        SelectorDeEstado(modo = modo, onCambiarModo = onCambiarModo)
 
         when (estado) {
             is UiState.Cargando -> ListaCargando()
@@ -110,15 +101,38 @@ private fun ListaConDatos(
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            Text(
-                text = "${actividades.size} actividades en $ciudad",
-                style = MaterialTheme.typography.bodyMedium,
-                color = TintaSuave
-            )
+            // Sin esta explicación la pantalla es una lista de tarjetas sin
+            // contexto: la primera vez nadie sabe qué se espera que haga.
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "PEQUEÑAS ACCIONES, GRAN IMPACTO",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TintaSuave
+                )
+                Text(
+                    text = "Voluntariados para ir en familia",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Tinta
+                )
+                Text(
+                    text = "Cada actividad dice para qué edades es y cuántos lugares " +
+                        "quedan. Abre la que les acomode para ver los detalles y apartar " +
+                        "los lugares de tu familia.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TintaSuave
+                )
+                Text(
+                    text = "${actividades.size} actividades en $ciudad",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Tinta,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
         }
+
         items(actividades, key = { it.actividad.id }) { item ->
             TarjetaActividad(
                 item = item,
@@ -135,11 +149,10 @@ private fun ListaCargando() {
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         TarjetaSilueta(fraccionTitulo = 0.88f, fraccionSubtitulo = 0.62f)
         TarjetaSilueta(fraccionTitulo = 0.74f, fraccionSubtitulo = 0.55f)
-        TarjetaSilueta(fraccionTitulo = 0.81f, fraccionSubtitulo = 0.48f)
     }
 }
 
@@ -166,7 +179,8 @@ private fun SinActividades(ciudad: String, onVerAsociaciones: () -> Unit) {
             textAlign = TextAlign.Center
         )
         Text(
-            text = "Las asociaciones publican actividades nuevas cada lunes.",
+            text = "Las asociaciones publican actividades nuevas cada lunes. " +
+                "Mientras tanto puedes conocer los centros verificados.",
             style = MaterialTheme.typography.bodyMedium,
             color = TintaSuave,
             textAlign = TextAlign.Center
@@ -210,57 +224,12 @@ private fun ErrorDeCarga(mensaje: String, onReintentar: () -> Unit) {
     }
 }
 
-/**
- * Fila temporal para poder ver los cuatro estados sin red.
- * Se borra en la etapa 2, cuando el servidor los produzca de verdad.
- */
-@Composable
-private fun SelectorDeEstado(modo: ModoDePrueba, onCambiarModo: (ModoDePrueba) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Superficie)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "Ver estado:",
-            style = MaterialTheme.typography.labelMedium,
-            color = TintaSuave
-        )
-        ModoDePrueba.entries.forEach { opcion ->
-            val activo = opcion == modo
-            Text(
-                text = when (opcion) {
-                    ModoDePrueba.NORMAL -> "con datos"
-                    ModoDePrueba.VACIA -> "vacía"
-                    ModoDePrueba.ERROR -> "error"
-                },
-                style = MaterialTheme.typography.labelMedium,
-                color = if (activo) MarcaAzul else TintaSuave,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .border(
-                        width = 1.dp,
-                        color = if (activo) MarcaAzul else Borde,
-                        shape = RoundedCornerShape(20.dp)
-                    )
-                    .clickable { onCambiarModo(opcion) }
-                    .padding(horizontal = 10.dp, vertical = 5.dp)
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true)
+@Preview(name = "Con datos", showBackground = true)
 @Composable
 private fun ActividadesConDatosPreview() {
     FamiliasQueSumanTheme {
         ActividadesScreen(
-            estado = UiState.Exito(
-                listOf(actividadDeMuestra(8), actividadDeMuestra(2), actividadDeMuestra(15))
-            ),
+            estado = UiState.Exito(listOf(actividadDeMuestra(8), actividadDeMuestra(2))),
             ciudad = "Monterrey",
             onActividadClick = {},
             onRegresar = {},
@@ -270,7 +239,22 @@ private fun ActividadesConDatosPreview() {
     }
 }
 
-@Preview(showBackground = true)
+@Preview(name = "Cargando", showBackground = true)
+@Composable
+private fun ActividadesCargandoPreview() {
+    FamiliasQueSumanTheme {
+        ActividadesScreen(
+            estado = UiState.Cargando,
+            ciudad = "Monterrey",
+            onActividadClick = {},
+            onRegresar = {},
+            onReintentar = {},
+            onVerAsociaciones = {}
+        )
+    }
+}
+
+@Preview(name = "Vacía", showBackground = true)
 @Composable
 private fun ActividadesVaciaPreview() {
     FamiliasQueSumanTheme {
@@ -285,7 +269,7 @@ private fun ActividadesVaciaPreview() {
     }
 }
 
-@Preview(showBackground = true)
+@Preview(name = "Error", showBackground = true)
 @Composable
 private fun ActividadesErrorPreview() {
     FamiliasQueSumanTheme {

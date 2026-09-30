@@ -12,12 +12,15 @@ import mx.tec.familiasquesuman.domain.ActividadConAsociacion
 import mx.tec.familiasquesuman.ui.state.UiState
 
 /**
- * Mientras no hay servidor, la lista nunca falla sola. Estos tres modos
- * permiten llegar a los estados vacío y de error para poder verlos y revisarlos.
+ * Mientras no hay servidor, la lista nunca falla sola.
  *
- * Se borran cuando entre el backend: ahí la red los produce de verdad.
+ * Los estados vacío y de error se revisan en las previews de ActividadesScreen,
+ * que es donde deben revisarse. Para verlos además en el emulador, cambia el
+ * valor de MODO_ACTUAL aquí abajo. Esta constante desaparece con el backend.
  */
 enum class ModoDePrueba { NORMAL, VACIA, ERROR }
+
+private val MODO_ACTUAL = ModoDePrueba.NORMAL
 
 class ActividadesViewModel(
     private val actividadRepository: ActividadRepository
@@ -27,9 +30,6 @@ class ActividadesViewModel(
         MutableStateFlow<UiState<List<ActividadConAsociacion>>>(UiState.Cargando)
     val estado: StateFlow<UiState<List<ActividadConAsociacion>>> = _estado.asStateFlow()
 
-    private val _modo = MutableStateFlow(ModoDePrueba.NORMAL)
-    val modo: StateFlow<ModoDePrueba> = _modo.asStateFlow()
-
     init {
         cargar()
     }
@@ -38,22 +38,17 @@ class ActividadesViewModel(
         viewModelScope.launch {
             _estado.value = UiState.Cargando
             // La red tarda. Sin esta pausa el estado Cargando no se alcanza a ver,
-            // y es justo el que hay que revisar en esta etapa.
+            // y es justo uno de los que hay que revisar en esta etapa.
             delay(700)
-            _estado.value = when (_modo.value) {
+            _estado.value = when (MODO_ACTUAL) {
                 ModoDePrueba.VACIA -> UiState.Exito(emptyList())
                 ModoDePrueba.ERROR -> UiState.Error(
-                    "No se pudieron cargar las actividades. Revisa tu conexión: " +
-                        "la app necesita internet para mostrar los lugares disponibles al momento."
+                    "Revisa tu conexión: la app necesita internet para mostrar " +
+                        "los lugares disponibles al momento."
                 )
                 ModoDePrueba.NORMAL ->
                     UiState.Exito(actividadRepository.getActividadesConAsociacion())
             }
         }
-    }
-
-    fun cambiarModo(nuevo: ModoDePrueba) {
-        _modo.value = nuevo
-        cargar()
     }
 }
