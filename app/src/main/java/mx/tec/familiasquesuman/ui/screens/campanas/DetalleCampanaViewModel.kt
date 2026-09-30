@@ -74,7 +74,8 @@ class DetalleCampanaViewModel(private val repo: CampanaRepository) : ViewModel()
     }
 
     fun campanaCompleta(c: Campana): Boolean =
-        c.completados >= c.metaTotal || c.articulos.all { it.completo }
+        (c.metaTotal > 0 && c.completados >= c.metaTotal) ||
+                (c.articulos.isNotEmpty() && c.articulos.all { it.completo })
 
     // ---- Hoja de apartar ----
 
