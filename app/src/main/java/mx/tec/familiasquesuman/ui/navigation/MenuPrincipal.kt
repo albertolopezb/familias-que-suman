@@ -37,15 +37,18 @@ import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Web
 val LocalAbrirMenu = compositionLocalOf<(() -> Unit)?> { null }
 
 /** Lo que se puede tocar en el menú. */
-enum class OpcionMenu { MIS_ACTIVIDADES, PERFIL, DONAR, EXPLORAR, AJUSTES, PANEL_ADMIN, ACCESO_ADMIN, SALIR_ADMIN }
+enum class OpcionMenu { MIS_ACTIVIDADES, PERFIL, DONAR, EXPLORAR, AJUSTES, PANEL_ADMIN, INICIAR_SESION, CAMBIAR_A_ADMIN, SALIR_ADMIN, CERRAR_SESION }
 
 /**
  * El menú de la hamburguesa, como el del sitio: "Tengo algo para donar...",
- * "Mi perfil" y, si la cuenta es de administrador, "Panel Admin".
+ * "Mi perfil" y, solo si la sesión iniciada es de una cuenta de administrador,
+ * la opción de cambiar a la vista de admin.
  */
 @Composable
 fun MenuPrincipal(
-    esAdmin: Boolean,
+    sesionIniciada: Boolean,
+    esCuentaAdmin: Boolean,
+    vistaAdmin: Boolean,
     onOpcion: (OpcionMenu) -> Unit
 ) {
     Column(
@@ -81,15 +84,24 @@ fun MenuPrincipal(
         HorizontalDivider(color = Web.Borde, thickness = 1.dp)
 
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
-            if (esAdmin) {
-                Opcion("Panel Admin", IconosWeb.Escudo, Web.VerdeTema, negritas = true) {
-                    onOpcion(OpcionMenu.PANEL_ADMIN)
-                }
-                Opcion("Salir del modo admin", IconosWeb.Salir, Web.RojoTexto) { onOpcion(OpcionMenu.SALIR_ADMIN) }
+            if (!sesionIniciada) {
+                Opcion("Iniciar sesión", IconosWeb.Candado, Web.Primario) { onOpcion(OpcionMenu.INICIAR_SESION) }
             } else {
-                Opcion("Acceso administradores", IconosWeb.Candado, Web.Primario) {
-                    onOpcion(OpcionMenu.ACCESO_ADMIN)
+                if (esCuentaAdmin) {
+                    if (vistaAdmin) {
+                        Opcion("Panel Admin", IconosWeb.Escudo, Web.VerdeTema, negritas = true) {
+                            onOpcion(OpcionMenu.PANEL_ADMIN)
+                        }
+                        Opcion("Volver a vista de familia", IconosWeb.Salir, Web.Primario) {
+                            onOpcion(OpcionMenu.SALIR_ADMIN)
+                        }
+                    } else {
+                        Opcion("Cambiar a vista de admin", IconosWeb.Escudo, Web.VerdeTema, negritas = true) {
+                            onOpcion(OpcionMenu.CAMBIAR_A_ADMIN)
+                        }
+                    }
                 }
+                Opcion("Cerrar sesión", IconosWeb.Salir, Web.RojoTexto) { onOpcion(OpcionMenu.CERRAR_SESION) }
             }
         }
     }

@@ -42,11 +42,8 @@ fun NavGraphBuilder.grafoAdmin(nav: NavController) {
             onCorreoChange = vm::cambiarCorreo,
             onContrasenaChange = vm::cambiarContrasena,
             onEntrar = {
-                vm.entrar {
-                    nav.navigate(RutasAdmin.PANEL) {
-                        popUpTo(RutasAdmin.ACCESO) { inclusive = true }
-                    }
-                }
+                // Con cuenta de admin el menú ofrece cambiar a la vista de admin.
+                vm.entrar { nav.popBackStack() }
             },
             onRegresar = { nav.popBackStack() }
         )
@@ -67,7 +64,7 @@ fun NavGraphBuilder.grafoAdmin(nav: NavController) {
                     }
                 },
                 onSalir = {
-                    SesionAdmin.salir()
+                    SesionAdmin.cerrarSesion()
                     nav.popBackStack()
                 },
                 onRegresar = { nav.popBackStack() }

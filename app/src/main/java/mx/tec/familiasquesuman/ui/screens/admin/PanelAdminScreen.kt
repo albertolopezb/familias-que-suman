@@ -216,14 +216,14 @@ fun AccesoAdminScreen(
                 Icon(IconosWeb.Escudo, contentDescription = null, tint = Web.Primario, modifier = Modifier.size(28.dp))
             }
             Text(
-                text = "Acceso de administradores",
+                text = "Iniciar sesión",
                 style = TextoWeb.Titulo,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
             Text(
-                text = "Solo para el equipo de Familias que Suman: publicar actividades, " +
-                    "revisar inscritos y aprobar lo que mandan las familias.",
+                text = "Entra con tu cuenta. Si eres parte del equipo de Familias que Suman, " +
+                    "después podrás cambiar a la vista de admin desde el menú.",
                 style = TextoWeb.Cuerpo,
                 color = Web.TextoApagado,
                 textAlign = TextAlign.Center,
@@ -246,7 +246,7 @@ fun AccesoAdminScreen(
                 error = formulario.error
             )
             BotonAmarillo(
-                texto = "Entrar al panel",
+                texto = "Iniciar sesión",
                 onClick = onEntrar,
                 conFlechas = false,
                 modifier = Modifier.fillMaxWidth()
@@ -264,7 +264,8 @@ fun AccesoAdminScreen(
             ) {
                 Text("Cuenta de prueba", style = TextoWeb.Chip, color = Web.AmbarTexto)
                 Text(
-                    "${SesionAdmin.CORREO_DEMO} · ${SesionAdmin.CONTRASENA_DEMO}",
+                    "Admin: ${SesionAdmin.CORREO_DEMO} · ${SesionAdmin.CONTRASENA_DEMO}\n" +
+                        "Familia: ${SesionAdmin.CORREO_FAMILIA_DEMO} · ${SesionAdmin.CONTRASENA_FAMILIA_DEMO}",
                     style = TextoWeb.Chico,
                     color = Web.AmbarTexto
                 )

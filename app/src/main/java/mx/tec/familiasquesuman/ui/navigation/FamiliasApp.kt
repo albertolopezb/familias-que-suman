@@ -68,7 +68,9 @@ fun FamiliasApp() {
         gesturesEnabled = menu.isOpen,
         drawerContent = {
             MenuPrincipal(
-                esAdmin = SesionAdmin.activa,
+                sesionIniciada = SesionAdmin.sesionIniciada,
+                esCuentaAdmin = SesionAdmin.esCuentaAdmin,
+                vistaAdmin = SesionAdmin.activa,
                 onOpcion = { opcion ->
                     alcance.launch { menu.close() }
                     when (opcion) {
@@ -78,9 +80,17 @@ fun FamiliasApp() {
                         OpcionMenu.EXPLORAR -> nav.irA(RutasInicio.EXPLORAR)
                         OpcionMenu.AJUSTES -> nav.navigate(RutasPerfil.AJUSTES)
                         OpcionMenu.PANEL_ADMIN -> nav.navigate(RutasAdmin.PANEL)
-                        OpcionMenu.ACCESO_ADMIN -> nav.navigate(RutasAdmin.ACCESO)
+                        OpcionMenu.INICIAR_SESION -> nav.navigate(RutasAdmin.ACCESO)
+                        OpcionMenu.CAMBIAR_A_ADMIN -> {
+                            SesionAdmin.cambiarAVistaAdmin()
+                            nav.navigate(RutasAdmin.PANEL)
+                        }
                         OpcionMenu.SALIR_ADMIN -> {
-                            SesionAdmin.salir()
+                            SesionAdmin.salirDeVistaAdmin()
+                            nav.irA(Rutas.INICIO)
+                        }
+                        OpcionMenu.CERRAR_SESION -> {
+                            SesionAdmin.cerrarSesion()
                             nav.irA(Rutas.INICIO)
                         }
                     }
