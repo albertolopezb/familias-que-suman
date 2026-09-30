@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +38,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.domain.ArticuloMeta
 import mx.tec.familiasquesuman.domain.Campana
+import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoCaja
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoFiltro
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.PildoraFiltro
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.TarjetaCampana
@@ -243,7 +243,7 @@ private fun EstadoVacio(filtros: FiltrosCampanas, totalAbiertas: Int, onQuitarFi
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(Icons.Default.ShoppingCart, contentDescription = null, tint = TintaSuave, modifier = Modifier.size(48.dp))
+        Icon(IconoCaja, contentDescription = null, tint = Color(0xFF94A3B8), modifier = Modifier.size(52.dp))
         Spacer(Modifier.height(16.dp))
         Text(
             text = tituloVacio(filtros),
