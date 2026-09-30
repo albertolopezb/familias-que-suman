@@ -23,6 +23,7 @@ import mx.tec.familiasquesuman.ui.theme.AcentoTexto
 import mx.tec.familiasquesuman.ui.theme.MarcaOro
 import mx.tec.familiasquesuman.ui.theme.Superficie
 import mx.tec.familiasquesuman.ui.theme.TintaSuave
+import mx.tec.familiasquesuman.ui.screens.campanas.grafoCampanas
 
 @Composable
 fun FamiliasApp() {
@@ -79,6 +80,8 @@ fun FamiliasApp() {
                 onNavegarAActividades = { nav.navigate(Rutas.MIS_ACTIVIDADES) },
                 onNavegarACampanas = { nav.navigate(Rutas.EXPLORAR) }
             )
+
+            grafoCampanas(nav)
         }
     }
 }
