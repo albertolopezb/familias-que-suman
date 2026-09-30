@@ -16,7 +16,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoCaja
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoReloj
 import mx.tec.familiasquesuman.ui.theme.AcentoSuave
 import mx.tec.familiasquesuman.ui.theme.AcentoTexto
@@ -88,7 +88,7 @@ fun ComoDonarScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             Tarjeta {
                 NecesidadesActuales.forEach { n ->
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-                        Icon(Icons.Default.ShoppingCart, contentDescription = null, tint = TintaSuave, modifier = Modifier.size(20.dp))
+                        Icon(IconoCaja, contentDescription = null, tint = TintaSuave, modifier = Modifier.size(20.dp))
                         Column {
                             Text(n.titulo, style = MaterialTheme.typography.labelLarge, color = Tinta)
                             Text(n.detalle, style = MaterialTheme.typography.bodyMedium, color = TintaSuave)

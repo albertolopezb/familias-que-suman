@@ -2,6 +2,8 @@ package mx.tec.familiasquesuman.ui.screens.campanas.componentes
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.unit.dp
@@ -19,6 +21,29 @@ private fun icono(nombre: String, trazo: String): ImageVector =
         pathData = addPathNodes(trazo),
         fill = SolidColor(Color.Black)
     ).build()
+
+// Íconos de contorno (sin relleno), como la caja del Figma.
+private fun iconoTrazo(nombre: String, trazo: String, grosor: Float = 1.6f): ImageVector =
+    ImageVector.Builder(
+        name = nombre,
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f
+    ).addPath(
+        pathData = addPathNodes(trazo),
+        fill = null,
+        stroke = SolidColor(Color.Black),
+        strokeLineWidth = grosor,
+        strokeLineCap = StrokeCap.Round,
+        strokeLineJoin = StrokeJoin.Round
+    ).build()
+
+/** La caja del Figma: tapa ancha arriba, cuerpo abajo y una división al centro. */
+val IconoCaja: ImageVector = iconoTrazo(
+    "Caja",
+    "M3,4h18v4.5H3z M4,8.5h16V20H4z M12,8.5V20"
+)
 
 val IconoFiltro: ImageVector = icono(
     "Filtro",
