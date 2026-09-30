@@ -8,6 +8,13 @@ import mx.tec.familiasquesuman.FamiliasApplication
 import mx.tec.familiasquesuman.ui.screens.inicio.AsociacionViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.ExplorarViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.InicioViewModel
+import mx.tec.familiasquesuman.ui.screens.perfil.PerfilViewModel
+import mx.tec.familiasquesuman.ui.screens.perfil.FavoritosViewModel
+import mx.tec.familiasquesuman.ui.screens.perfil.InsigniasViewModel
+import mx.tec.familiasquesuman.ui.screens.perfil.TestimonioViewModel
+import mx.tec.familiasquesuman.ui.screens.perfil.EncuestaViewModel
+import mx.tec.familiasquesuman.ui.screens.perfil.AvisoPrivacidadViewModel
+import mx.tec.familiasquesuman.ui.screens.perfil.AjustesViewModel
 
 /**
  * Cómo se construye cada ViewModel de la app.
@@ -21,6 +28,22 @@ import mx.tec.familiasquesuman.ui.screens.inicio.InicioViewModel
 object AppViewModelProvider {
 
     val Factory = viewModelFactory {
+        initializer { AjustesViewModel(familiasApplication().container.perfilRepository) }
+        initializer { AvisoPrivacidadViewModel() }
+        initializer { EncuestaViewModel() }
+        initializer {
+            TestimonioViewModel(familiasApplication().container.perfilRepository,
+                familiasApplication().contentResolver)
+        }
+        initializer {
+            InsigniasViewModel(familiasApplication().container.perfilRepository)
+        }
+        initializer {
+            FavoritosViewModel(familiasApplication().container.perfilRepository)
+        }
+        initializer {
+            PerfilViewModel(familiasApplication().container.perfilRepository)
+        }
         // Agregar dentro del Factory initializer
         initializer {
             InicioViewModel(familiasApplication().container.actividadRepository)
