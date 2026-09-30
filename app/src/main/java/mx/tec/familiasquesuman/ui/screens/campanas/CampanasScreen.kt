@@ -69,7 +69,8 @@ fun CampanasScreen(
     onQuitarFiltros: () -> Unit,
     onCampanaClick: (String) -> Unit,
     onReintentar: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    nombresAsociacion: Map<String, String> = emptyMap()
 ) {
     Column(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         BarraSuperior(onBack = onBack, onAbrirFiltros = onAbrirFiltros)
@@ -88,6 +89,7 @@ fun CampanasScreen(
                 } else {
                     ListaConDatos(
                         campanas = estado.datos,
+                        nombresAsociacion = nombresAsociacion,
                         filtros = filtros,
                         onChipRapido = onChipRapido,
                         onQuitarCategoria = onQuitarCategoria,
@@ -124,6 +126,7 @@ private fun BarraSuperior(onBack: () -> Unit, onAbrirFiltros: () -> Unit) {
 @Composable
 private fun ListaConDatos(
     campanas: List<Campana>,
+    nombresAsociacion: Map<String, String>,
     filtros: FiltrosCampanas,
     onChipRapido: (String?) -> Unit,
     onQuitarCategoria: (String) -> Unit,
@@ -160,7 +163,11 @@ private fun ListaConDatos(
             )
         }
         items(campanas, key = { it.id }) { campana ->
-            TarjetaCampana(campana = campana, onClick = { onCampanaClick(campana.id) })
+            TarjetaCampana(
+                campana = campana,
+                onClick = { onCampanaClick(campana.id) },
+                nombreAsociacion = nombresAsociacion[campana.asociacionId]
+            )
         }
     }
 }
@@ -332,6 +339,11 @@ private fun PruebaLista(estado: UiState<List<Campana>>, filtros: FiltrosCampanas
     FamiliasQueSumanTheme {
         CampanasScreen(
             estado = estado, filtros = filtros, totalAbiertas = 3,
+            nombresAsociacion = mapOf(
+                "a4" to "Parroquia San Bernabé",
+                "a1" to "Comedor Comunitario San Bernabé",
+                "a3" to "Albergue Nuevo Amanecer"
+            ),
             onBack = {}, onAbrirFiltros = {}, onChipRapido = {}, onQuitarCategoria = {},
             onQuitarUrgentes = {}, onQuitarFiltros = {}, onCampanaClick = {}, onReintentar = {}
         )

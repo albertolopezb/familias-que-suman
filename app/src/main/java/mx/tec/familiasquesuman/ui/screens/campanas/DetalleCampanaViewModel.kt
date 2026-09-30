@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import mx.tec.familiasquesuman.data.ActividadRepository
 import mx.tec.familiasquesuman.data.CampanaRepository
 import mx.tec.familiasquesuman.domain.ArticuloMeta
 import mx.tec.familiasquesuman.domain.Campana
@@ -31,12 +32,20 @@ data class ApartadoHecho(
     val progresoAntes: Float
 )
 
-class DetalleCampanaViewModel(private val repo: CampanaRepository) : ViewModel() {
+class DetalleCampanaViewModel(
+    private val repo: CampanaRepository,
+    private val actividadRepo: ActividadRepository
+) : ViewModel() {
 
     private var idCargado: String? = null
 
     private val _estado = MutableStateFlow<UiState<Campana>>(UiState.Cargando)
     val estado: StateFlow<UiState<Campana>> = _estado.asStateFlow()
+
+    private val _nombreAsociacion = MutableStateFlow<String?>(null)
+
+    /** Nombre de la asociación dueña de la campaña; null mientras carga o si no se encuentra. */
+    val nombreAsociacion: StateFlow<String?> = _nombreAsociacion.asStateFlow()
 
     private val _hoja = MutableStateFlow<HojaApartar?>(null)
     val hoja: StateFlow<HojaApartar?> = _hoja.asStateFlow()
@@ -70,12 +79,24 @@ class DetalleCampanaViewModel(private val repo: CampanaRepository) : ViewModel()
             } catch (e: Exception) {
                 UiState.Error("No se encontró la campaña")
             }
+            val campana = (_estado.value as? UiState.Exito)?.datos
+            if (campana != null) {
+                _nombreAsociacion.value = try {
+                    actividadRepo.getAsociacion(campana.asociacionId).nombre
+                } catch (e: Exception) {
+                    null
+                }
+            }
         }
     }
 
+    /**
+     * Una campaña sin meta o sin artículos no cuenta como completa: sin esto, una campaña
+     * recién creada (metaTotal 0 o lista vacía) se pintaría como "ya está completa".
+     */
     fun campanaCompleta(c: Campana): Boolean =
         (c.metaTotal > 0 && c.completados >= c.metaTotal) ||
-                (c.articulos.isNotEmpty() && c.articulos.all { it.completo })
+            (c.articulos.isNotEmpty() && c.articulos.all { it.completo })
 
     // ---- Hoja de apartar ----
 
