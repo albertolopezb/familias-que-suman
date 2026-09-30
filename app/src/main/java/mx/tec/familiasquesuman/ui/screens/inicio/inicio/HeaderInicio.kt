@@ -27,7 +27,8 @@ fun HeaderInicio(
     nombreFamilia: String,
     ciudadActual: String,
     onCiudadSeleccionada: (String) -> Unit,
-    onNotificacionesClick: () -> Unit
+    onNotificacionesClick: () -> Unit,
+    mostrarPerfil: Boolean = true
 ) {
     var desplegado by remember { mutableStateOf(false) }
     val ciudades = listOf("Monterrey", "Hermosillo")
