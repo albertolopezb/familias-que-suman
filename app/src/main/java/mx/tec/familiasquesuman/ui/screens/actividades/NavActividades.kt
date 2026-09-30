@@ -9,6 +9,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import androidx.navigation.navDeepLink
+import mx.tec.familiasquesuman.notificaciones.Notificaciones
 import mx.tec.familiasquesuman.ui.components.CargandoView
 import mx.tec.familiasquesuman.ui.components.ErrorView
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.compartirActividad
@@ -71,7 +73,11 @@ fun NavGraphBuilder.grafoActividades(
         )
     }
 
-    composable(RutasActividades.DETALLE) { entrada ->
+    composable(
+        RutasActividades.DETALLE,
+        // La notificación de recordatorio abre el detalle de la actividad.
+        deepLinks = listOf(navDeepLink { uriPattern = Notificaciones.URI_ACTIVIDAD + "{actividadId}" })
+    ) { entrada ->
         val id = entrada.arguments?.getString(RutasActividades.ARG_ACTIVIDAD_ID).orEmpty()
         val vm: DetalleActividadViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val contexto = LocalContext.current
