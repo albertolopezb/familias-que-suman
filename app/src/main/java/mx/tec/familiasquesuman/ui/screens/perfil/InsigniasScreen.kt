@@ -86,14 +86,9 @@ private fun ContenidoInsignias(datos: DatosInsignias) {
                 Text("Nivel no disponible", style = MaterialTheme.typography.headlineMedium, color = Color.White)
                 Text("${datos.impacto.actividadesRealizadas} actividades completadas",
                     style = MaterialTheme.typography.bodyLarge, color = Color(0xFFBED0EA))
-                // Sin umbrales ni nivel del repositorio, no se presenta una barra de progreso ficticia.
-                Text("Progreso pendiente de datos", style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFFBED0EA))
             }
         }
         Text("TUS INSIGNIAS", style = MaterialTheme.typography.labelSmall, color = TintaSuave)
-        Text("Criterios del diseño; obtención pendiente de datos.",
-            style = MaterialTheme.typography.bodyMedium, color = TintaSuave)
         datos.referencias.chunked(2).forEach { fila ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 fila.forEach { referencia ->

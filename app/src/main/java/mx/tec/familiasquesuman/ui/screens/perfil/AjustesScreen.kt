@@ -83,11 +83,11 @@ fun AjustesScreen(
                 }
                 Text("NOTIFICACIONES", style = MaterialTheme.typography.labelSmall, color = TintaSuave)
                 TarjetaAjustes {
-                    FilaAjuste("Recordatorio de actividades", "24 horas antes de cada inscripción (RF-16)",
+                    FilaAjuste("Recordatorio de actividades", "24 horas antes de cada inscripción",
                         preferencias.recordatorioActividades, onRecordatorioChange)
-                    FilaAjuste("Avisos de tus favoritos", "Cuando publican algo nuevo (RF-17, RF-22)",
+                    FilaAjuste("Avisos de tus favoritos", "Cuando publican algo nuevo",
                         preferencias.avisosFavoritos, onAvisosFavoritosChange)
-                    FilaAjuste("Urgencias de tu ciudad", "Cuando faltan voluntarios (RF-22)",
+                    FilaAjuste("Urgencias de tu ciudad", "Cuando faltan voluntarios",
                         preferencias.urgenciasCiudad, onUrgenciasCiudadChange)
                 }
                 Text("CUENTA", style = MaterialTheme.typography.labelSmall, color = TintaSuave)
