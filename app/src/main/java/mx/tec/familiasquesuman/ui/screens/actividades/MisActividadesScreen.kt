@@ -9,17 +9,23 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.domain.ActividadConAsociacion
@@ -51,6 +57,7 @@ fun MisActividadesScreen(
     datos: MisActividades,
     onProximaClick: (String) -> Unit,
     onParticipacionClick: (String) -> Unit,
+    onVerActividades: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -78,30 +85,72 @@ fun MisActividadesScreen(
             )
         }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            if (datos.proximas.isNotEmpty()) {
-                item { RotuloDeSeccion("PRÓXIMAS") }
-                items(datos.proximas, key = { "prox-${it.actividad.id}" }) { item ->
-                    TarjetaProxima(
-                        item = item,
-                        onClick = { onProximaClick(item.actividad.id) }
-                    )
+        if (datos.proximas.isEmpty() && datos.historial.isEmpty()) {
+            TodaviaSinActividades(onVerActividades = onVerActividades)
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                if (datos.proximas.isNotEmpty()) {
+                    item { RotuloDeSeccion("PRÓXIMAS") }
+                    items(datos.proximas, key = { "prox-${it.actividad.id}" }) { item ->
+                        TarjetaProxima(
+                            item = item,
+                            onClick = { onProximaClick(item.actividad.id) }
+                        )
+                    }
                 }
-            }
 
-            datos.historial.groupBy { it.mes }.forEach { (mes, participaciones) ->
-                item(key = "mes-$mes") { RotuloDeSeccion(mes) }
-                items(participaciones, key = { it.id }) { participacion ->
-                    TarjetaParticipacion(
-                        participacion = participacion,
-                        onClick = { onParticipacionClick(participacion.id) }
-                    )
+                datos.historial.groupBy { it.mes }.forEach { (mes, participaciones) ->
+                    item(key = "mes-$mes") { RotuloDeSeccion(mes) }
+                    items(participaciones, key = { it.id }) { participacion ->
+                        TarjetaParticipacion(
+                            participacion = participacion,
+                            onClick = { onParticipacionClick(participacion.id) }
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Todavía no hay nada que mostrar. El historial no se llena solo: se construye
+ * con las asistencias que registra la asociación, no con lo que la familia diga.
+ */
+@Composable
+private fun TodaviaSinActividades(onVerActividades: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.DateRange,
+            contentDescription = null,
+            tint = TintaSuave,
+            modifier = Modifier.size(44.dp)
+        )
+        Text(
+            text = "Todavía no se han inscrito a nada",
+            style = MaterialTheme.typography.titleLarge,
+            color = Tinta,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = "Aquí van a aparecer las actividades en las que se inscriban y " +
+                "las que ya hayan hecho, conforme la asociación registre su asistencia.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = TintaSuave,
+            textAlign = TextAlign.Center
+        )
+        OutlinedButton(onClick = onVerActividades) {
+            Text("Ver actividades")
         }
     }
 }
@@ -230,7 +279,8 @@ private fun MisActividadesPreview() {
                 )
             ),
             onProximaClick = {},
-            onParticipacionClick = {}
+            onParticipacionClick = {},
+            onVerActividades = {}
         )
     }
 }

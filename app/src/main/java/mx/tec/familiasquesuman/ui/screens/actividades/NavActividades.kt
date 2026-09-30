@@ -42,7 +42,6 @@ fun NavGraphBuilder.grafoActividades(
     composable(RutasActividades.LISTA) {
         val vm: ActividadesViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val estado by vm.estado.collectAsStateWithLifecycle()
-        val modo by vm.modo.collectAsStateWithLifecycle()
 
         ActividadesScreen(
             estado = estado,
@@ -50,9 +49,7 @@ fun NavGraphBuilder.grafoActividades(
             onActividadClick = { id -> nav.navigate(RutasActividades.detalle(id)) },
             onRegresar = { nav.popBackStack() },
             onReintentar = vm::cargar,
-            onVerAsociaciones = onVerAsociaciones,
-            modo = modo,
-            onCambiarModo = vm::cambiarModo
+            onVerAsociaciones = onVerAsociaciones
         )
     }
 
@@ -103,7 +100,8 @@ fun NavGraphBuilder.grafoActividades(
                 datos = actual.datos,
                 onProximaClick = { id -> nav.navigate(RutasActividades.detalle(id)) },
                 // Parte 5 conecta esto con testimonio (RF-12) y encuestas (RF-13).
-                onParticipacionClick = onAbrirParticipacion
+                onParticipacionClick = onAbrirParticipacion,
+                onVerActividades = { nav.navigate(RutasActividades.LISTA) }
             )
         }
     }
