@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import mx.tec.familiasquesuman.data.ActividadRepository
 import mx.tec.familiasquesuman.data.CampanaRepository
 import mx.tec.familiasquesuman.domain.Campana
 import mx.tec.familiasquesuman.ui.state.UiState
@@ -36,7 +37,10 @@ data class FiltrosCampanas(
  * Hay dos juegos de filtros: los [aplicados] (los que ve la lista) y el [borrador]
  * (lo que se está moviendo dentro de la hoja, sin aplicar todavía).
  */
-class CampanasViewModel(private val repo: CampanaRepository) : ViewModel() {
+class CampanasViewModel(
+    private val repo: CampanaRepository,
+    private val actividadRepo: ActividadRepository
+) : ViewModel() {
 
     private val carga = MutableStateFlow<UiState<List<Campana>>>(UiState.Cargando)
     private val _aplicados = MutableStateFlow(FiltrosCampanas())
@@ -66,8 +70,24 @@ class CampanasViewModel(private val repo: CampanaRepository) : ViewModel() {
             (estado as? UiState.Exito)?.datos?.count { filtros.acepta(it) } ?: 0
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
+    private val _nombresAsociacion = MutableStateFlow<Map<String, String>>(emptyMap())
+
+    /** id de asociación → nombre, para el "Parroquia San Bernabé · Cierra el…" de cada tarjeta. */
+    val nombresAsociacion: StateFlow<Map<String, String>> = _nombresAsociacion.asStateFlow()
+
     init {
         cargar()
+        cargarNombres()
+    }
+
+    private fun cargarNombres() {
+        viewModelScope.launch {
+            _nombresAsociacion.value = try {
+                actividadRepo.getAsociaciones().associate { it.id to it.nombre }
+            } catch (e: Exception) {
+                emptyMap() // Sin nombre, la tarjeta solo dice "Cierra el…".
+            }
+        }
     }
 
     fun cargar() {

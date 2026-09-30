@@ -34,10 +34,16 @@ object AppViewModelProvider {
             AsociacionViewModel(familiasApplication().container.actividadRepository)
         }
         initializer {
-            CampanasViewModel(familiasApplication().container.campanaRepository)
+            CampanasViewModel(
+                familiasApplication().container.campanaRepository,
+                familiasApplication().container.actividadRepository
+            )
         }
         initializer {
-            DetalleCampanaViewModel(familiasApplication().container.campanaRepository)
+            DetalleCampanaViewModel(
+                familiasApplication().container.campanaRepository,
+                familiasApplication().container.actividadRepository
+            )
         }
     }
 }

@@ -53,12 +53,14 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController) {
         val borrador by vm.borrador.collectAsStateWithLifecycle()
         val conteo by vm.conteoBorrador.collectAsStateWithLifecycle()
         val total by vm.totalAbiertas.collectAsStateWithLifecycle()
+        val nombres by vm.nombresAsociacion.collectAsStateWithLifecycle()
         var verFiltros by rememberSaveable { mutableStateOf(false) }
 
         CampanasScreen(
             estado = estado,
             filtros = aplicados,
             totalAbiertas = total,
+            nombresAsociacion = nombres,
             onBack = { nav.popBackStack() },
             onAbrirFiltros = { vm.abrirFiltros(); verFiltros = true },
             onChipRapido = vm::elegirChipRapido,
@@ -92,6 +94,7 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController) {
         val estado by vm.estado.collectAsStateWithLifecycle()
         val hoja by vm.hoja.collectAsStateWithLifecycle()
         val irAConfirmado by vm.irAConfirmado.collectAsStateWithLifecycle()
+        val nombreAsociacion by vm.nombreAsociacion.collectAsStateWithLifecycle()
 
         LaunchedEffect(id) { vm.cargar(id) }
         LaunchedEffect(irAConfirmado) {
@@ -122,7 +125,8 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController) {
                     onVerComoDonar = { nav.navigate(RutasCampanas.COMO_DONAR) },
                     onVerOtrasCampanas = {
                         if (!nav.popBackStack(RutasCampanas.LISTA, inclusive = false)) nav.popBackStack()
-                    }
+                    },
+                    nombreAsociacion = nombreAsociacion
                 )
             }
         }
