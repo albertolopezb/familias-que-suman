@@ -1,11 +1,27 @@
 package mx.tec.familiasquesuman.ui.navigation
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TextoWeb
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Web
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,11 +39,6 @@ import mx.tec.familiasquesuman.ui.screens.inscripcion.grafoInscripcion
 import mx.tec.familiasquesuman.ui.screens.inicio.grafoInicio
 import mx.tec.familiasquesuman.ui.screens.perfil.RutasPerfil
 import mx.tec.familiasquesuman.ui.screens.perfil.grafoPerfil
-import mx.tec.familiasquesuman.ui.theme.AcentoSuave
-import mx.tec.familiasquesuman.ui.theme.AcentoTexto
-import mx.tec.familiasquesuman.ui.theme.MarcaOro
-import mx.tec.familiasquesuman.ui.theme.Superficie
-import mx.tec.familiasquesuman.ui.theme.TintaSuave
 import mx.tec.familiasquesuman.ui.screens.campanas.RutasCampanas
 import mx.tec.familiasquesuman.ui.screens.campanas.grafoCampanas
 
@@ -45,38 +56,7 @@ fun FamiliasApp() {
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (mostrarBarraInferior) {
-                NavigationBar(containerColor = Superficie) {
-                    pestanas.forEach { pestana ->
-                        val seleccionada = rutaActual == pestana.ruta ||
-                            (pestana.ruta == Rutas.PERFIL &&
-                                (rutaActual == RutasPerfil.FAVORITOS || rutaActual == RutasPerfil.INSIGNIAS ||
-                                    rutaActual == RutasPerfil.AJUSTES))
-
-                        NavigationBarItem(
-                            selected = seleccionada,
-                            onClick = {
-                                if (rutaActual != pestana.ruta) {
-                                    nav.navigate(pestana.ruta) {
-                                        popUpTo(nav.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                            },
-                            icon = { Icon(pestana.icono, contentDescription = pestana.etiqueta) },
-                            label = { Text(pestana.etiqueta, style = MaterialTheme.typography.labelMedium) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MarcaOro,
-                                selectedTextColor = AcentoTexto,
-                                indicatorColor = AcentoSuave,
-                                unselectedIconColor = TintaSuave,
-                                unselectedTextColor = TintaSuave
-                            )
-                        )
-                    }
-                }
+                BarraInferior(rutaActual = rutaActual, onPestana = { nav.irA(it.ruta) })
             }
         }
     ) { padding ->
@@ -117,6 +97,67 @@ fun FamiliasApp() {
 
             grafoCampanas(nav)
             grafoInscripcion(nav)
+        }
+    }
+}
+
+/** Cambio de pestaña: una sola copia de cada pantalla y la pila limpia. */
+private fun NavController.irA(ruta: String) {
+    navigate(ruta) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
+
+/**
+ * La barra inferior del sitio: cinco pestañas, la activa con su ícono sobre un
+ * cuadro gris y el texto en azul.
+ */
+@Composable
+private fun BarraInferior(rutaActual: String?, onPestana: (Pestana) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().background(Web.Tarjeta).navigationBarsPadding()) {
+        HorizontalDivider(color = Web.Borde, thickness = 1.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceAround
+        ) {
+            pestanas.forEach { pestana ->
+                val activa = rutaActual != null &&
+                    pestana.prefijos.any { rutaActual == it || rutaActual.startsWith("$it/") } &&
+                    rutaActual != RutasActividades.MIS_ACTIVIDADES
+                Column(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { if (!activa || rutaActual != pestana.ruta) onPestana(pestana) }
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (activa) Web.Secundario else Web.Tarjeta)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            pestana.icono,
+                            contentDescription = pestana.etiqueta,
+                            tint = if (activa) Web.Primario else Web.TextoApagado,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Text(
+                        pestana.etiqueta,
+                        style = TextoWeb.Chico.copy(
+                            fontSize = 10.sp,
+                            fontWeight = if (activa) FontWeight.SemiBold else FontWeight.Medium
+                        ),
+                        color = if (activa) Web.Primario else Web.TextoApagado
+                    )
+                }
+            }
         }
     }
 }

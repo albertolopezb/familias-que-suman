@@ -3,6 +3,8 @@ package mx.tec.familiasquesuman.data
 import mx.tec.familiasquesuman.domain.Actividad
 import mx.tec.familiasquesuman.domain.ActividadConAsociacion
 import mx.tec.familiasquesuman.domain.Asociacion
+import mx.tec.familiasquesuman.domain.CentroVisiteo
+import mx.tec.familiasquesuman.domain.Proyecto
 
 /**
  * La única puerta a actividades y asociaciones.
@@ -43,4 +45,10 @@ class ActividadRepository {
     /** Quien organiza puede ser una asociación del directorio o uno de los organizadores del sitio. */
     private fun organizadoresPorId(): Map<String, Asociacion> =
         (DatosDePrueba.asociaciones + DatosDePrueba.organizadores).associateBy { it.id }
+
+    // Proyectos y directorio de visiteo, como en el sitio
+
+    suspend fun getProyectos(): List<Proyecto> = DatosDePrueba.proyectos
+
+    suspend fun getCentros(): List<CentroVisiteo> = DatosDePrueba.centros
 }
