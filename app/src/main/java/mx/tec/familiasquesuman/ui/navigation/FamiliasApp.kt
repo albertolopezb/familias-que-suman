@@ -26,6 +26,7 @@ import mx.tec.familiasquesuman.ui.theme.AcentoTexto
 import mx.tec.familiasquesuman.ui.theme.MarcaOro
 import mx.tec.familiasquesuman.ui.theme.Superficie
 import mx.tec.familiasquesuman.ui.theme.TintaSuave
+import mx.tec.familiasquesuman.ui.screens.campanas.RutasCampanas
 import mx.tec.familiasquesuman.ui.screens.campanas.grafoCampanas
 
 @Composable
@@ -89,7 +90,8 @@ fun FamiliasApp() {
                 // La tarjeta "Actividades en Familia" lleva a la lista de
                 // actividades, no a las que la familia ya tiene inscritas.
                 onNavegarAActividades = { nav.navigate(RutasActividades.LISTA) },
-                onNavegarACampanas = { nav.navigate(Rutas.EXPLORAR) }
+                // "Quiero Donar" lleva a la lista de campañas (parte 4).
+                onNavegarACampanas = { nav.navigate(RutasCampanas.LISTA) }
             )
 
             grafoActividades(
@@ -99,10 +101,13 @@ fun FamiliasApp() {
                         nav.navigate(RutasInicio.INICIO)
                     }
                 },
-                onVerAsociaciones = { nav.navigate(RutasInicio.EXPLORAR) }
-                // Pendientes hasta que existan las otras partes:
-                // onInscribirme y onCancelarInscripcion → parte 3,
-                // onResponderEncuesta y onCompartirTestimonio → parte 5,
+                onVerAsociaciones = { nav.navigate(RutasInicio.EXPLORAR) },
+                // Mis Actividades → encuesta final (parte 5, RF-13).
+                onResponderEncuesta = { nav.navigate(RutasPerfil.ENCUESTA_FINAL) }
+                // Pendientes:
+                // onInscribirme y onCancelarInscripcion → parte 3, cuando exista su rama.
+                // onCompartirTestimonio → parte 5 busca la actividad solo en las próximas;
+                //   hace falta que también la busque en el historial.
                 // ciudad y onCambiarCiudad → cuando la ciudad de la parte 1 sea compartida.
             )
 
