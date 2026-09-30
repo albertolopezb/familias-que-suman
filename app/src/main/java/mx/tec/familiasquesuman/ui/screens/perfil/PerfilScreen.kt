@@ -94,7 +94,7 @@ private fun ContenidoPerfil(
                 Text(datos.familia.ciudad, style = MaterialTheme.typography.bodyLarge, color = TintaSuave)
             }
         }
-        EtiquetaSeccion("TU IMPACTO (RF-23)")
+        EtiquetaSeccion("TU IMPACTO")
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             TarjetaMetrica(datos.impacto.actividadesRealizadas, "Actividades\nrealizadas", Modifier.weight(1f))
             TarjetaMetrica(datos.impacto.horasDeServicio, "Horas\nde servicio", Modifier.weight(1f))
