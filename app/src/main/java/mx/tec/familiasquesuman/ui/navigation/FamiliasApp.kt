@@ -97,7 +97,8 @@ fun FamiliasApp() {
                 },
                 onVerAsociaciones = { nav.navigate(RutasInicio.EXPLORAR) },
                 // Parte 3: inscribirse (puerta de cuenta o acompañantes) y cancelar.
-                onInscribirme = { id -> nav.navigate(RutasInscripcion.inscribirse(id)) },
+                // Mientras no hay backend, "Tarde de lectura" (act10) es la que pierde los lugares al confirmar.
+                onInscribirme = { id -> nav.navigate(RutasInscripcion.inscribirse(id, simularSinCupo = id == "act10")) },
                 onCancelarInscripcion = { id -> nav.navigate(RutasInscripcion.cancelar(id)) },
                 // Mis Actividades → encuesta final (parte 5, RF-13).
                 onResponderEncuesta = { nav.navigate(RutasPerfil.ENCUESTA_FINAL) }
