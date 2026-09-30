@@ -28,17 +28,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mx.tec.familiasquesuman.R
+import mx.tec.familiasquesuman.ui.components.BotonPerfil
 
 /**
- * La barra de arriba del sitio: logo a la izquierda y la píldora de la ciudad
- * a la derecha, sobre blanco y con una línea abajo.
+ * La barra de arriba: logo a la izquierda y el perfil a la derecha, sobre blanco
+ * y con una línea abajo. La ciudad solo se cambia desde el Inicio.
  */
 @Composable
-fun EncabezadoApp(
-    ciudad: String,
-    onCiudadClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun EncabezadoApp(modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxWidth().background(Web.Tarjeta)) {
         Row(
             modifier = Modifier
@@ -56,36 +53,14 @@ fun EncabezadoApp(
                     .width(120.dp)
                     .height(40.dp)
             )
-            Row(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(Web.Secundario)
-                    .clickable(onClick = onCiudadClick)
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    IconosWeb.Ubicacion,
-                    contentDescription = null,
-                    tint = Web.Texto,
-                    modifier = Modifier.size(14.dp)
-                )
-                Text(text = ciudad, style = TextoWeb.Chip, color = Web.Texto)
-                Icon(
-                    IconosWeb.FlechaAbajo,
-                    contentDescription = "Cambiar ciudad",
-                    tint = Web.TextoApagado,
-                    modifier = Modifier.size(14.dp)
-                )
-            }
+            BotonPerfil()
         }
         HorizontalDivider(color = Web.Borde, thickness = 1.dp)
     }
 }
 
 /**
- * Migas de pan, título en Lora y subtítulo: el arranque de cada página del sitio.
+ * Migas de pan, título y subtítulo: el arranque de cada página del sitio.
  * El título acepta un toque largo para que la lista pueda esconder ahí su botón
  * de pruebas.
  */
