@@ -1,12 +1,9 @@
 package mx.tec.familiasquesuman.ui.navigation
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.DateRange
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.ui.graphics.vector.ImageVector
 import mx.tec.familiasquesuman.ui.screens.actividades.RutasActividades
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
+import mx.tec.familiasquesuman.ui.screens.campanas.RutasCampanas
 import mx.tec.familiasquesuman.ui.screens.inicio.RutasInicio
 
 object Rutas {
@@ -16,12 +13,23 @@ object Rutas {
     const val PERFIL = "perfil"
 }
 
-/** Las cuatro pestañas de la barra inferior, igual que en el Figma. */
-data class Pestana(val ruta: String, val etiqueta: String, val icono: ImageVector)
+/**
+ * Una pestaña de la barra inferior. `prefijos` marca la pestaña como activa
+ * también en las pantallas que cuelgan de ella (el detalle de una actividad
+ * deja encendida "Actividades", como en el sitio).
+ */
+data class Pestana(
+    val ruta: String,
+    val etiqueta: String,
+    val icono: ImageVector,
+    val prefijos: List<String> = listOf(ruta)
+)
 
+/** Las cinco pestañas de familiasquesuman.com. Mis Actividades y Perfil van en el menú. */
 val pestanas = listOf(
-    Pestana(Rutas.INICIO, "Inicio", Icons.Outlined.Home),
-    Pestana(Rutas.EXPLORAR, "Explorar", Icons.Outlined.Search),
-    Pestana(Rutas.MIS_ACTIVIDADES, "Mis Actividades", Icons.Outlined.DateRange),
-    Pestana(Rutas.PERFIL, "Perfil", Icons.Outlined.Person)
+    Pestana(Rutas.INICIO, "Inicio", IconosWeb.Casa),
+    Pestana(RutasActividades.LISTA, "Actividades", IconosWeb.Personas, listOf("actividades")),
+    Pestana(RutasInicio.PROYECTOS, "Proyectos", IconosWeb.Foco),
+    Pestana(RutasCampanas.LISTA, "Donar", IconosWeb.ManoCorazon, listOf("campanas")),
+    Pestana(RutasInicio.VISITEO, "Directorio", IconosWeb.Ubicacion)
 )

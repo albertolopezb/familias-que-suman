@@ -107,11 +107,24 @@ fun NavGraphBuilder.grafoInicio(
     }
 
     composable(RutasInicio.VISITEO) {
-        VisiteoScreen(onCentroClick = { id -> nav.navigate(RutasInicio.asociacion(id)) })
+        val vm: DirectorioViewModel = viewModel(factory = AppViewModelProvider.Factory)
+        val centros by vm.centros.collectAsStateWithLifecycle()
+        VisiteoScreen(
+            // "Ver detalles" del centro llega con la ficha de asociación (RF-03).
+            onCentroClick = { },
+            centros = centros,
+            onIrAInicio = { nav.navigate(RutasInicio.INICIO) },
+            onComoAyudar = onNavegarACampanas
+        )
     }
 
     composable(RutasInicio.PROYECTOS) {
-        ProyectosScreen()
+        val vm: DirectorioViewModel = viewModel(factory = AppViewModelProvider.Factory)
+        val proyectos by vm.proyectos.collectAsStateWithLifecycle()
+        ProyectosScreen(
+            proyectos = proyectos,
+            onIrAInicio = { nav.navigate(RutasInicio.INICIO) }
+        )
     }
 
     composable(RutasInicio.TESTIMONIOS) {

@@ -139,3 +139,32 @@ data class Participacion(
     val mes: String,
     val estado: EstadoParticipacion
 )
+
+// ---------------------------------------------------------------------------
+// Proyectos y Directorio de Visiteo, como en familiasquesuman.com
+// ---------------------------------------------------------------------------
+
+/** Un proyecto con causa y objetivo específicos (RF-09). */
+data class Proyecto(
+    val id: String,
+    val nombre: String,
+    val descripcion: String,
+    val beneficiarios: String?,     // "25 Mujeres", "200 adultos mayores"
+    val ciudad: String,
+    val vigencia: String?,          // "Hasta 29 jun 2026"
+    val logo: String?,              // nombre del drawable, sin extensión
+    val activo: Boolean = true
+)
+
+/** Un centro verificado que se puede visitar en familia (RF-03). */
+data class CentroVisiteo(
+    val id: String,
+    val nombre: String,
+    val tipo: String,               // "Asilos", "Casas hogar", "Comedores"
+    val resumen: String,
+    val informacion: String,
+    val necesidades: List<String>,
+    val direccion: String,
+    val logo: String?,
+    val verificado: Boolean = true
+)
