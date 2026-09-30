@@ -5,6 +5,9 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import mx.tec.familiasquesuman.FamiliasApplication
+import mx.tec.familiasquesuman.ui.screens.actividades.ActividadesViewModel
+import mx.tec.familiasquesuman.ui.screens.actividades.DetalleActividadViewModel
+import mx.tec.familiasquesuman.ui.screens.actividades.MisActividadesViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.AsociacionViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.ExplorarViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.InicioViewModel
@@ -30,6 +33,17 @@ object AppViewModelProvider {
         }
         initializer {
             AsociacionViewModel(familiasApplication().container.actividadRepository)
+        }
+
+        // Parte 2 · Actividades
+        initializer {
+            ActividadesViewModel(familiasApplication().container.actividadRepository)
+        }
+        initializer {
+            DetalleActividadViewModel(familiasApplication().container.actividadRepository)
+        }
+        initializer {
+            MisActividadesViewModel(familiasApplication().container.perfilRepository)
         }
     }
 }

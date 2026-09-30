@@ -1,6 +1,7 @@
 package mx.tec.familiasquesuman.data
 
 import mx.tec.familiasquesuman.domain.Actividad
+import mx.tec.familiasquesuman.domain.ActividadConAsociacion
 import mx.tec.familiasquesuman.domain.Asociacion
 
 /**
@@ -21,4 +22,21 @@ class ActividadRepository {
 
     suspend fun getAsociacion(id: String): Asociacion =
         DatosDePrueba.asociaciones.first { it.id == id }
+
+    /**
+     * Las actividades con el nombre de quién las organiza, que es lo que la
+     * tarjeta de la lista necesita. El cruce se hace aquí y no en la pantalla:
+     * cuando entre el backend esto será un solo endpoint y nada de arriba cambia.
+     */
+    suspend fun getActividadesConAsociacion(): List<ActividadConAsociacion> {
+        val porId = DatosDePrueba.asociaciones.associateBy { it.id }
+        return DatosDePrueba.actividades.mapNotNull { actividad ->
+            porId[actividad.asociacionId]?.let { ActividadConAsociacion(actividad, it) }
+        }
+    }
+
+    suspend fun getActividadConAsociacion(id: String): ActividadConAsociacion {
+        val actividad = getActividad(id)
+        return ActividadConAsociacion(actividad, getAsociacion(actividad.asociacionId))
+    }
 }

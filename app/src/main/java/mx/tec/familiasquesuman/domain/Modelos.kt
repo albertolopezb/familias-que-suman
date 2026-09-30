@@ -76,3 +76,41 @@ data class Impacto(
     val horasDeServicio: Int,
     val campanasApoyadas: Int
 )
+
+// ---------------------------------------------------------------------------
+// Parte 2 · Actividades
+// ---------------------------------------------------------------------------
+
+/**
+ * Una actividad junto con la asociación que la organiza, tal como se muestra
+ * en la lista y en el detalle.
+ *
+ * Vive en el dominio y no en ui/: si viviera en ui/, la capa de datos tendría
+ * que importar de la capa de arriba para poder devolverlo.
+ */
+data class ActividadConAsociacion(
+    val actividad: Actividad,
+    val asociacion: Asociacion
+)
+
+/** El pendiente que le queda a la familia después de participar. */
+enum class EstadoParticipacion {
+    SIN_PENDIENTES,
+    ENCUESTA_PENDIENTE,
+    TESTIMONIO_EN_REVISION,
+    TESTIMONIO_PUBLICADO
+}
+
+/**
+ * Una actividad en la que la familia ya participó (RF-11).
+ * El historial se construye con asistencias registradas por la asociación,
+ * no con lo que la familia declare por su cuenta.
+ */
+data class Participacion(
+    val id: String,
+    val tituloActividad: String,
+    val nombreAsociacion: String,
+    val fecha: String,
+    val mes: String,
+    val estado: EstadoParticipacion
+)

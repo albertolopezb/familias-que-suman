@@ -4,8 +4,10 @@ import mx.tec.familiasquesuman.domain.Actividad
 import mx.tec.familiasquesuman.domain.ArticuloMeta
 import mx.tec.familiasquesuman.domain.Asociacion
 import mx.tec.familiasquesuman.domain.Campana
+import mx.tec.familiasquesuman.domain.EstadoParticipacion
 import mx.tec.familiasquesuman.domain.Familia
 import mx.tec.familiasquesuman.domain.Impacto
+import mx.tec.familiasquesuman.domain.Participacion
 
 // Datos falsos, idénticos a los del Figma. `internal`: solo los repositorios de
 // data/ los tocan. Ninguna pantalla ni ViewModel los importa directo; así, cuando
@@ -87,4 +89,40 @@ internal object DatosDePrueba {
 
     val proximasDeLaFamilia = listOf("act1")
     val favoritas = listOf("a1", "a2", "a3")
+
+    /** Historial de participación de la familia (RF-11), de lo más reciente a lo más viejo. */
+    val historial = listOf(
+        Participacion(
+            id = "p1",
+            tituloActividad = "Tarde de lectura con abuelitos",
+            nombreAsociacion = "Casa de Día Los Robles",
+            fecha = "Domingo 6 de septiembre",
+            mes = "SEPTIEMBRE",
+            estado = EstadoParticipacion.TESTIMONIO_PUBLICADO
+        ),
+        Participacion(
+            id = "p2",
+            tituloActividad = "Clasificar ropa de invierno",
+            nombreAsociacion = "Albergue Nuevo Amanecer",
+            fecha = "Sábado 30 de agosto",
+            mes = "AGOSTO",
+            estado = EstadoParticipacion.ENCUESTA_PENDIENTE
+        ),
+        Participacion(
+            id = "p3",
+            tituloActividad = "Armar kits escolares",
+            nombreAsociacion = "Parroquia San Bernabé",
+            fecha = "Sábado 16 de agosto",
+            mes = "AGOSTO",
+            estado = EstadoParticipacion.TESTIMONIO_EN_REVISION
+        ),
+        Participacion(
+            id = "p4",
+            tituloActividad = "Pintar el comedor",
+            nombreAsociacion = "Comedor Comunitario San Bernabé",
+            fecha = "Domingo 3 de agosto",
+            mes = "AGOSTO",
+            estado = EstadoParticipacion.SIN_PENDIENTES
+        )
+    )
 }
