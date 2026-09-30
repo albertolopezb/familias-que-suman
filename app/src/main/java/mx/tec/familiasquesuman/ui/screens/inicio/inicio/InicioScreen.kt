@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -14,7 +15,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import mx.tec.familiasquesuman.R
 import mx.tec.familiasquesuman.domain.Asociacion
 import mx.tec.familiasquesuman.ui.screens.inicio.componentes.*
 import mx.tec.familiasquesuman.ui.theme.*
@@ -45,38 +50,61 @@ fun InicioScreen(
         )
 
         Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-            // Banner Principal (Llamado a la Acción)
+            // Banner Principal con Imagen de fondo + Overlay azul transparente
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(24.dp)),
-                colors = CardDefaults.cardColors(containerColor = AzulMarinoPrimario)
+                shape = RoundedCornerShape(24.dp)
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Text(
-                        text = "LLAMADO A LA ACCIÓN · $ciudad".uppercase(),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = AmbarAcento
+                Box(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.fotobanner),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.matchParentSize()
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "¿Listos para sumar este fin de semana?",
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = Color.White
+
+                    // 2. Overlay azul semitransparente
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(AzulBannerFondo.copy(alpha = 0.67f))
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "3 actividades cerca de ti en $ciudad.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.LightGray
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = onExplorarClick,
-                        colors = ButtonDefaults.buttonColors(containerColor = AmbarAcento),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("Explorar ahora →", color = AzulMarinoPrimario)
+
+                    // 3. Contenido
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text(
+                            text = "LLAMADO A LA ACCIÓN · $ciudad".uppercase(),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = AmbarAcento
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "¿Listos para sumar este fin de semana?",
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "3 actividades cerca de ti en $ciudad.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.9f)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = onExplorarClick,
+                            colors = ButtonDefaults.buttonColors(containerColor = AmbarAcento),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = "Explorar ahora →",
+                                color = AzulBannerFondo,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
@@ -93,17 +121,23 @@ fun InicioScreen(
             Text(
                 text = "¿CÓMO QUIERES AYUDAR HOY?",
                 style = MaterialTheme.typography.titleLarge,
-                color = AzulMarinoPrimario
+                color = AzulBannerFondo
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Grid de 2x2 de Categorías con Colores Fieles
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // FILA 1
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Max),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 TarjetaCategoriaUI(
                     titulo = "Actividades en Familia",
                     descripcion = "Actividades en familia para ayudar durante el año.",
                     icono = Icons.Default.Favorite,
+                    colorTarjeta = MoradoTarjetaFondo,
                     colorFondo = MoradoCategoriaFondo,
                     colorTexto = MoradoCategoriaTexto,
                     onClick = onActividadesClick,
@@ -113,6 +147,7 @@ fun InicioScreen(
                     titulo = "Quiero Donar",
                     descripcion = "Apoyo en especie y tiempo.",
                     icono = Icons.Default.Send,
+                    colorTarjeta = VerdeTarjetaFondo,
                     colorFondo = VerdeCategoriaFondo,
                     colorTexto = VerdeCategoriaTexto,
                     onClick = onDonarClick,
@@ -122,11 +157,18 @@ fun InicioScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // FILA 2
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Max),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
                 TarjetaCategoriaUI(
                     titulo = "Proyectos",
                     descripcion = "Proyectos con causas y objetivos específicos.",
                     icono = Icons.Default.LocationOn,
+                    colorTarjeta = AzulTarjetaFondo,
                     colorFondo = AzulCategoriaFondo,
                     colorTexto = AzulCategoriaTexto,
                     onClick = onProyectosClick,
@@ -136,6 +178,7 @@ fun InicioScreen(
                     titulo = "Directorio de Visiteo",
                     descripcion = "Centros y espacios para visitar y apoyar en familia.",
                     icono = Icons.Default.Place,
+                    colorTarjeta = MentaTarjetaFondo.copy(alpha = 0.75f),
                     colorFondo = MentaCategoriaFondo,
                     colorTexto = MentaCategoriaTexto,
                     onClick = onVisiteoClick,
@@ -145,7 +188,7 @@ fun InicioScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Tarjetas de Métricas Estadísticas (3 Cards Blancas)
+            // Tarjetas de Métricas Estadísticas
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -166,14 +209,14 @@ fun InicioScreen(
                 Text(
                     text = "Causas Destacadas",
                     style = MaterialTheme.typography.titleLarge,
-                    color = AzulMarinoPrimario
+                    color = AzulBannerFondo
                 )
                 TextButton(onClick = onExplorarClick) {
                     Text("Ver todas", color = AmbarAcento)
                 }
             }
 
-            // Tarjeta Causa 1
+            // Tarjetas de Causas
             TarjetaCausa(
                 nombre = "Banco de Alimentos CDMX",
                 etiqueta = "Alimentación",
@@ -183,7 +226,6 @@ fun InicioScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Tarjeta Causa 2
             TarjetaCausa(
                 nombre = "Tejiendo Redes Educativas",
                 etiqueta = "Educación",
@@ -202,19 +244,19 @@ fun InicioScreen(
                 Text(
                     text = "Tu próxima actividad",
                     style = MaterialTheme.typography.titleLarge,
-                    color = AzulMarinoPrimario
+                    color = AzulBannerFondo
                 )
                 TextButton(onClick = onActividadesClick) {
                     Text("Ver agenda", color = AmbarAcento)
                 }
             }
 
-            // Banner Próxima Actividad (Inscrita / Mañana)
+            // Banner Próxima Actividad
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 32.dp),
-                colors = CardDefaults.cardColors(containerColor = AzulMarinoPrimario),
+                colors = CardDefaults.cardColors(containerColor = AzulBannerFondo),
                 shape = RoundedCornerShape(20.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -266,7 +308,7 @@ private fun MetricaItem(numero: String, etiqueta: String, modifier: Modifier = M
             Text(
                 text = numero,
                 style = MaterialTheme.typography.headlineMedium,
-                color = AzulMarinoPrimario
+                color = AzulBannerFondo
             )
             Text(
                 text = etiqueta,
@@ -305,7 +347,7 @@ private fun TarjetaCausa(
                 Text(
                     text = nombre,
                     style = MaterialTheme.typography.titleMedium,
-                    color = AzulMarinoPrimario
+                    color = AzulBannerFondo
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Surface(

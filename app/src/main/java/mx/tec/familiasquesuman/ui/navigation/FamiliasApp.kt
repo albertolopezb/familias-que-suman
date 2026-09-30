@@ -57,7 +57,6 @@ fun FamiliasApp() {
                             onClick = {
                                 if (rutaActual != pestana.ruta) {
                                     nav.navigate(pestana.ruta) {
-                                        // Mantiene la raíz en la pantalla de inicio limpia
                                         popUpTo(nav.graph.findStartDestination().id) {
                                             saveState = true
                                         }
