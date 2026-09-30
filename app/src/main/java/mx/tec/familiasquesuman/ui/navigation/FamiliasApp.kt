@@ -13,11 +13,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import mx.tec.familiasquesuman.ui.screens.inicio.RutasInicio
 import mx.tec.familiasquesuman.ui.screens.inicio.grafoInicio
+import mx.tec.familiasquesuman.ui.screens.perfil.RutasPerfil
+import mx.tec.familiasquesuman.ui.screens.perfil.grafoPerfil
 import mx.tec.familiasquesuman.ui.theme.AcentoSuave
 import mx.tec.familiasquesuman.ui.theme.AcentoTexto
 import mx.tec.familiasquesuman.ui.theme.MarcaOro
@@ -30,7 +31,9 @@ fun FamiliasApp() {
     val entrada by nav.currentBackStackEntryAsState()
     val rutaActual = entrada?.destination?.route
 
-    val mostrarBarraInferior = rutaActual != RutasInicio.SPLASH && rutaActual != RutasInicio.CIUDAD
+    val mostrarBarraInferior = rutaActual != RutasInicio.SPLASH && rutaActual != RutasInicio.CIUDAD &&
+        rutaActual != RutasPerfil.TESTIMONIO && rutaActual != RutasPerfil.ENCUESTA_FINAL &&
+        rutaActual != RutasPerfil.AVISO_PRIVACIDAD && rutaActual != RutasPerfil.ENCUESTA_PREVIA
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -38,7 +41,10 @@ fun FamiliasApp() {
             if (mostrarBarraInferior) {
                 NavigationBar(containerColor = Superficie) {
                     pestanas.forEach { pestana ->
-                        val seleccionada = rutaActual == pestana.ruta
+                        val seleccionada = rutaActual == pestana.ruta ||
+                            (pestana.ruta == Rutas.PERFIL &&
+                                (rutaActual == RutasPerfil.FAVORITOS || rutaActual == RutasPerfil.INSIGNIAS ||
+                                    rutaActual == RutasPerfil.AJUSTES))
 
                         NavigationBarItem(
                             selected = seleccionada,
@@ -74,6 +80,7 @@ fun FamiliasApp() {
             startDestination = RutasInicio.SPLASH,
             modifier = Modifier.padding(padding)
         ) {
+            grafoPerfil(nav)
             grafoInicio(
                 nav = nav,
                 onNavegarAActividades = { nav.navigate(Rutas.MIS_ACTIVIDADES) },
