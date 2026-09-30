@@ -16,6 +16,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import mx.tec.familiasquesuman.ui.components.PantallaPendiente
+import mx.tec.familiasquesuman.ui.screens.actividades.RutasActividades
+import mx.tec.familiasquesuman.ui.screens.actividades.grafoActividades
 import mx.tec.familiasquesuman.ui.screens.inicio.RutasInicio
 import mx.tec.familiasquesuman.ui.screens.inicio.grafoInicio
 import mx.tec.familiasquesuman.ui.theme.AcentoSuave
@@ -76,9 +79,20 @@ fun FamiliasApp() {
         ) {
             grafoInicio(
                 nav = nav,
-                onNavegarAActividades = { nav.navigate(Rutas.MIS_ACTIVIDADES) },
+                // La tarjeta "Actividades en Familia" lleva a la lista de
+                // actividades, no a las que la familia ya tiene inscritas.
+                onNavegarAActividades = { nav.navigate(RutasActividades.LISTA) },
                 onNavegarACampanas = { nav.navigate(Rutas.EXPLORAR) }
             )
+
+            grafoActividades(
+                nav = nav,
+                onVerAsociaciones = { nav.navigate(RutasInicio.EXPLORAR) }
+            )
+
+            // Parte 5 lo reemplaza por el perfil real. Sin este destino, tocar
+            // la pestaña "Perfil" tira la app.
+            composable(Rutas.PERFIL) { PantallaPendiente("Perfil") }
         }
     }
 }
