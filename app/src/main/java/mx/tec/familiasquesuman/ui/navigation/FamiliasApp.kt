@@ -26,6 +26,7 @@ import mx.tec.familiasquesuman.ui.theme.AcentoTexto
 import mx.tec.familiasquesuman.ui.theme.MarcaOro
 import mx.tec.familiasquesuman.ui.theme.Superficie
 import mx.tec.familiasquesuman.ui.theme.TintaSuave
+import mx.tec.familiasquesuman.ui.screens.campanas.grafoCampanas
 
 @Composable
 fun FamiliasApp() {
@@ -102,6 +103,8 @@ fun FamiliasApp() {
             // Parte 5 lo reemplaza por el perfil real. Sin este destino, tocar
             // la pestaña "Perfil" tira la app.
             composable(Rutas.PERFIL) { PantallaPendiente("Perfil") }
+
+            grafoCampanas(nav)
         }
     }
 }

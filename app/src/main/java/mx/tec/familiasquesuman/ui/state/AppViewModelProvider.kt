@@ -11,6 +11,8 @@ import mx.tec.familiasquesuman.ui.screens.actividades.MisActividadesViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.AsociacionViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.ExplorarViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.InicioViewModel
+import mx.tec.familiasquesuman.ui.screens.campanas.CampanasViewModel
+import mx.tec.familiasquesuman.ui.screens.campanas.DetalleCampanaViewModel
 
 /**
  * Cómo se construye cada ViewModel de la app.
@@ -44,6 +46,20 @@ object AppViewModelProvider {
         }
         initializer {
             MisActividadesViewModel(familiasApplication().container.perfilRepository)
+        }
+
+        // Parte 4 · Campañas
+        initializer {
+            CampanasViewModel(
+                familiasApplication().container.campanaRepository,
+                familiasApplication().container.actividadRepository
+            )
+        }
+        initializer {
+            DetalleCampanaViewModel(
+                familiasApplication().container.campanaRepository,
+                familiasApplication().container.actividadRepository
+            )
         }
     }
 }
