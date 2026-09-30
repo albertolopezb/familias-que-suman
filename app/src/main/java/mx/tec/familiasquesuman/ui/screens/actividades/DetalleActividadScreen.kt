@@ -1,32 +1,26 @@
 package mx.tec.familiasquesuman.ui.screens.actividades
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.outlined.DateRange
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -34,36 +28,47 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.domain.ActividadConAsociacion
-import mx.tec.familiasquesuman.ui.screens.actividades.componentes.BloqueCupo
-import mx.tec.familiasquesuman.ui.screens.actividades.componentes.BotonCircular
+import mx.tec.familiasquesuman.domain.Aportacion
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.AvisoSinLugares
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.BarraDeRegreso
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.BotonAmarillo
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.ChipAportacion
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconoTema
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IndicadorCupo
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TextoWeb
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Web
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.actividadDeMuestra
-import mx.tec.familiasquesuman.ui.screens.actividades.componentes.tinteDeCategoria
-import mx.tec.familiasquesuman.ui.theme.Borde
-import mx.tec.familiasquesuman.ui.theme.ConfirmadoTexto
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.fotoDeActividad
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.tituloDeAportacion
 import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
-import mx.tec.familiasquesuman.ui.theme.Fondo
-import mx.tec.familiasquesuman.ui.theme.MarcaAzul
-import mx.tec.familiasquesuman.ui.theme.MarcaOro
-import mx.tec.familiasquesuman.ui.theme.Superficie
-import mx.tec.familiasquesuman.ui.theme.Tinta
-import mx.tec.familiasquesuman.ui.theme.TintaSuave
 
 /**
- * El detalle de una actividad (RF-04, RF-05, RF-17).
+ * El detalle de una actividad (RF-04, RF-05, RF-17), con las mismas secciones
+ * que el sitio: información, descripción, acerca del proyecto, qué haremos,
+ * qué llevar, recomendaciones, aportación y contacto.
  *
- * La variante sin cupo no es otra pantalla: es esta misma con el bloque de
- * lugares en rojo y el botón apagado. Lo decide el dominio con `sinLugares`.
+ * La variante sin cupo (P-03b) no es otra pantalla: es esta misma con el bloque
+ * rojo arriba, el botón apagado y el enlace a otras actividades. Lo decide el
+ * dominio con `sinLugares`.
  */
 @Composable
 fun DetalleActividadScreen(
     item: ActividadConAsociacion,
     esFavorito: Boolean,
     onRegresar: () -> Unit,
+    onCompartir: () -> Unit,
     onAlternarFavorito: () -> Unit,
     onInscribirme: () -> Unit,
     onVerOtrasActividades: () -> Unit,
@@ -74,237 +79,429 @@ fun DetalleActividadScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Fondo)
+            .background(Web.Fondo)
     ) {
-        // Encabezado
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .shadow(1.dp)
-                .background(Superficie)
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BotonCircular(onClick = onRegresar)
-            Text(
-                text = "Detalle de la actividad",
-                style = MaterialTheme.typography.labelLarge,
-                color = Tinta,
-                modifier = Modifier.weight(1f)
-            )
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Fondo)
-                    .clickable(onClick = onAlternarFavorito),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (esFavorito) Icons.Default.Favorite
-                    else Icons.Outlined.FavoriteBorder,
-                    contentDescription = if (esFavorito) {
-                        "Quitar de favoritos"
-                    } else {
-                        "Guardar en favoritos"
-                    },
-                    tint = if (esFavorito) MarcaOro else TintaSuave
-                )
-            }
+        BarraDeRegreso(texto = "Actividades", onRegresar = onRegresar) {
+            PildoraFavorito(esFavorito = esFavorito, onClick = onAlternarFavorito)
+            PildoraCompartir(onClick = onCompartir)
         }
 
-        // Cuerpo
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-        ) {
-            // El lugar de la foto. Para ponerle imagen, cambia este Box por un
-            // Image con contentScale = ContentScale.Crop y el mismo alto.
-            val tinte = tinteDeCategoria(item.asociacion.categoria)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(130.dp)
-                    .background(Brush.linearGradient(listOf(tinte.first, tinte.second)))
-            )
-
+        Box(modifier = Modifier.weight(1f)) {
             Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = actividad.titulo,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = Tinta
-                    )
-                    Text(
-                        text = item.asociacion.nombre,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TintaSuave
-                    )
-                    // Familias que Suman verifica cada asociación antes de
-                    // publicarla. Decirlo aquí es la mitad de la confianza.
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(5.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = null,
-                            tint = ConfirmadoTexto,
-                            modifier = Modifier.size(15.dp)
-                        )
-                        Text(
-                            text = "Asociación verificada",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = ConfirmadoTexto
-                        )
-                    }
-                }
+                FotoDetalle(foto = actividad.foto, descripcion = actividad.titulo)
 
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Superficie)
-                        .border(1.dp, Borde, RoundedCornerShape(14.dp))
-                        .padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(9.dp)
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 120.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    FilaDeDato(
-                        icono = Icons.Outlined.DateRange,
-                        texto = "${actividad.fecha} · ${actividad.horario}"
-                    )
-                    FilaDeDato(
-                        icono = Icons.Default.Place,
-                        texto = actividad.direccion
-                    )
-                    FilaDeDato(
-                        icono = Icons.Outlined.Person,
-                        texto = if (actividad.edadMinima == null) {
-                            "Apta para todas las edades"
-                        } else {
-                            "Apta para niños desde ${actividad.edadMinima} años"
-                        }
-                    )
-                }
+                    Encabezado(item)
 
-                BloqueCupo(actividad = actividad)
+                    if (actividad.sinLugares && actividad.tieneCupo && !actividad.yaPaso) {
+                        AvisoSinLugares(cupoTotal = actividad.cupoTotal)
+                    }
 
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = "¿QUÉ VAN A HACER?",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TintaSuave
-                    )
+                    Informacion(item)
+
+                    // La descripción corta va en gris claro, sin borde, como en el sitio.
                     Text(
                         text = actividad.descripcion,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = Tinta
+                        style = TextoWeb.Cuerpo,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Web.Secundario.copy(alpha = 0.6f))
+                            .padding(16.dp)
                     )
+
+                    SeccionDeTexto("Acerca del proyecto", actividad.acercaDelProyecto)
+                    SeccionDeTexto("¿Qué haremos?", actividad.queHaremos)
+                    SeccionDeTexto("¿Qué incluye?", actividad.queIncluye)
+                    SeccionDeTexto("¿Qué llevar?", actividad.queLlevar, IconosWeb.Mochila)
+                    SeccionDeTexto("Recomendaciones", actividad.recomendaciones, IconosWeb.Estrella)
+                    SeccionAportacion(actividad.aportacion)
+                    Contacto(nombre = item.asociacion.nombre)
+                }
+            }
+
+            PieDeAccion(
+                item = item,
+                onInscribirme = onInscribirme,
+                onVerOtrasActividades = onVerOtrasActividades,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
+    }
+}
+
+@Composable
+private fun FotoDetalle(foto: String?, descripcion: String) {
+    if (foto == null) return
+    val recurso = fotoDeActividad(foto)
+    if (recurso != null) {
+        Image(
+            painter = painterResource(recurso),
+            contentDescription = descripcion,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 260.dp)
+        )
+    } else {
+        // Todavía no está el archivo en res/drawable: se deja el hueco a la vista.
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+                .background(Web.Secundario)
+        )
+    }
+}
+
+@Composable
+private fun Encabezado(item: ActividadConAsociacion) {
+    val actividad = item.actividad
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        IconoTema(tema = actividad.tema, tamano = 40.dp, modifier = Modifier.padding(top = 2.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = actividad.titulo, style = TextoWeb.Titulo)
+            if (actividad.municipio.isNotBlank()) {
+                Text(
+                    text = actividad.municipio,
+                    style = TextoWeb.Cuerpo,
+                    color = Web.TextoApagado,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+        }
+        ChipAportacion(actividad.aportacion)
+    }
+}
+
+@Composable
+private fun Informacion(item: ActividadConAsociacion) {
+    val actividad = item.actividad
+    Tarjeta {
+        TituloDeSeccion("Información", IconosWeb.Informacion)
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            DatoConDetalle(
+                icono = IconosWeb.Calendario,
+                texto = actividad.fecha.replaceFirstChar { it.uppercase() },
+                iconoDetalle = IconosWeb.Reloj,
+                detalle = actividad.horario
+            )
+            DatoConDetalle(
+                icono = IconosWeb.Ubicacion,
+                texto = actividad.direccion.ifBlank { actividad.municipio },
+                iconoDetalle = IconosWeb.PuntoDeEncuentro,
+                detalle = actividad.puntoDeEncuentro
+                    .takeIf { it.isNotBlank() }
+                    ?.let { "Punto de encuentro: $it" }
+            )
+            if (actividad.tieneCupo) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconoPrimario(IconosWeb.Personas)
+                    Text(
+                        text = buildAnnotatedString {
+                            append("Capacidad: ")
+                            withStyle(SpanStyle(fontWeight = FontWeight.Medium)) {
+                                append("${actividad.cupoTotal} personas")
+                            }
+                        },
+                        style = TextoWeb.Cuerpo
+                    )
+                }
+                IndicadorCupo(actividad)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DatoConDetalle(
+    icono: ImageVector,
+    texto: String,
+    iconoDetalle: ImageVector,
+    detalle: String?
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
+        IconoPrimario(icono, modifier = Modifier.padding(top = 3.dp))
+        Column {
+            Text(text = texto, style = TextoWeb.Cuerpo.copy(fontWeight = FontWeight.Medium))
+            if (detalle != null) {
+                Row(
+                    modifier = Modifier.padding(top = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        iconoDetalle,
+                        contentDescription = null,
+                        tint = Web.TextoApagado,
+                        modifier = Modifier.size(12.dp)
+                    )
+                    Text(text = detalle, style = TextoWeb.Chico)
                 }
             }
         }
+    }
+}
 
-        // Pie fijo
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Superficie)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Button(
-                onClick = onInscribirme,
-                enabled = !actividad.sinLugares,
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MarcaOro,
-                    contentColor = MarcaAzul,
-                    disabledContainerColor = Borde,
-                    disabledContentColor = TintaSuave
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp)
-            ) {
-                Text(
-                    text = if (actividad.sinLugares) "Sin lugares" else "Inscribirme",
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
+/** Una sección de texto del detalle. Si la asociación no la llenó, no se ve. */
+@Composable
+private fun SeccionDeTexto(titulo: String, texto: String, icono: ImageVector? = null) {
+    if (texto.isBlank()) return
+    Tarjeta {
+        TituloDeSeccion(titulo, icono)
+        Text(text = texto, style = TextoWeb.Cuerpo, color = Web.TextoApagado)
+    }
+}
 
-            if (actividad.sinLugares) {
-                Text(
-                    text = "Ver otras actividades →",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MarcaAzul,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.clickable(onClick = onVerOtrasActividades)
-                )
-            } else {
-                Text(
-                    text = "Puedes cancelar hasta 12 horas antes.",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = TintaSuave,
-                    textAlign = TextAlign.Center
-                )
-            }
+@Composable
+private fun SeccionAportacion(aportacion: Aportacion) {
+    val texto = when (aportacion) {
+        Aportacion.Ninguna -> return
+        is Aportacion.EnEspecie -> aportacion.detalle
+        is Aportacion.Monetaria -> listOf("Aportación: ${aportacion.monto}", aportacion.detalle)
+            .filter { it.isNotBlank() }
+            .joinToString("\n")
+    }
+    Tarjeta {
+        TituloDeSeccion(tituloDeAportacion(aportacion), IconosWeb.Tarjeta, conEspacio = texto.isNotBlank())
+        if (texto.isNotBlank()) {
+            Text(text = texto, style = TextoWeb.Cuerpo, color = Web.TextoApagado)
         }
     }
 }
 
 @Composable
-private fun FilaDeDato(icono: ImageVector, texto: String) {
+private fun Contacto(nombre: String) {
+    Tarjeta {
+        TituloDeSeccion("Contacto")
+        Text(
+            text = nombre,
+            style = TextoWeb.Cuerpo.copy(fontWeight = FontWeight.Medium),
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // RF-08: intents en la siguiente etapa
+            BotonVerde("WhatsApp", IconosWeb.Mensaje, onClick = {}, modifier = Modifier.weight(1f))
+            // RF-08: intents en la siguiente etapa
+            BotonVerde("Llamar", IconosWeb.Telefono, onClick = {}, modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+/**
+ * El botón de abajo, siempre a la vista. Normal: "Unirme a esta actividad".
+ * Sin cupo: apagado, con el enlace a otras actividades. Pasada: apagado.
+ */
+@Composable
+private fun PieDeAccion(
+    item: ActividadConAsociacion,
+    onInscribirme: () -> Unit,
+    onVerOtrasActividades: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val actividad = item.actividad
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            // Un desvanecido para que el texto no se corte seco detrás del botón.
+            .background(Brush.verticalGradient(listOf(Color.Transparent, Web.Fondo, Web.Fondo)))
+            .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        when {
+            actividad.yaPaso -> BotonAmarillo(
+                texto = "Esta actividad ya pasó",
+                onClick = {},
+                habilitado = false,
+                radio = 16.dp,
+                alto = 52.dp,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            actividad.sinLugares && actividad.tieneCupo -> {
+                BotonAmarillo(
+                    texto = "Sin lugares disponibles",
+                    onClick = {},
+                    habilitado = false,
+                    radio = 16.dp,
+                    alto = 52.dp,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(onClick = onVerOtrasActividades)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Ver otras actividades",
+                        style = TextoWeb.Chip,
+                        color = Web.Primario
+                    )
+                    Icon(
+                        IconosWeb.FlechaDerecha,
+                        contentDescription = null,
+                        tint = Web.Primario,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
+
+            else -> BotonAmarillo(
+                texto = "Unirme a esta actividad",
+                onClick = onInscribirme,
+                radio = 16.dp,
+                alto = 52.dp,
+                negritas = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(8.dp, RoundedCornerShape(16.dp))
+            )
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Piezas del detalle
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun Tarjeta(contenido: @Composable ColumnScope.() -> Unit) {
+    val forma = RoundedCornerShape(16.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(forma)
+            .background(Web.Tarjeta)
+            .border(1.dp, Web.Borde, forma)
+            .padding(16.dp),
+        content = contenido
+    )
+}
+
+@Composable
+private fun TituloDeSeccion(texto: String, icono: ImageVector? = null, conEspacio: Boolean = true) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.Top
+        modifier = Modifier.padding(bottom = if (conEspacio) 12.dp else 0.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (icono != null) IconoPrimario(icono)
+        Text(text = texto, style = TextoWeb.Seccion)
+    }
+}
+
+@Composable
+private fun IconoPrimario(icono: ImageVector, modifier: Modifier = Modifier) {
+    Icon(icono, contentDescription = null, tint = Web.Primario, modifier = modifier.size(16.dp))
+}
+
+@Composable
+private fun BotonVerde(
+    texto: String,
+    icono: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(Web.Verde)
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icono, contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
+        Text(text = texto, style = TextoWeb.Chip, color = Color.White)
+    }
+}
+
+@Composable
+private fun PildoraCompartir(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(Web.Secundario)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = icono,
+            IconosWeb.Compartir,
             contentDescription = null,
-            tint = TintaSuave,
-            modifier = Modifier.size(18.dp)
+            tint = Web.TextoApagado,
+            modifier = Modifier.size(14.dp)
         )
-        Text(
-            text = texto,
-            style = MaterialTheme.typography.bodyLarge,
-            color = Tinta
+        Text(text = "Compartir", style = TextoWeb.Chip, color = Web.TextoApagado)
+    }
+}
+
+/** Favorito en memoria (RF-17). El corazón se llena al tocarlo. */
+@Composable
+private fun PildoraFavorito(esFavorito: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(if (esFavorito) Web.RosaFondo else Web.Secundario)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = if (esFavorito) Icons.Default.Favorite else IconosWeb.Corazon,
+            contentDescription = if (esFavorito) "Quitar de favoritos" else "Guardar en favoritos",
+            tint = if (esFavorito) Web.Rosa else Web.TextoApagado,
+            modifier = Modifier.size(16.dp)
         )
     }
 }
 
-@Preview(showBackground = true)
+// ---------------------------------------------------------------------------
+// Previews
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun DetallePreview(item: ActividadConAsociacion, esFavorito: Boolean = false) {
+    FamiliasQueSumanTheme {
+        DetalleActividadScreen(
+            item = item,
+            esFavorito = esFavorito,
+            onRegresar = {},
+            onCompartir = {},
+            onAlternarFavorito = {},
+            onInscribirme = {},
+            onVerOtrasActividades = {}
+        )
+    }
+}
+
+@Preview(name = "Con cupo", showBackground = true, heightDp = 1500)
 @Composable
 private fun DetalleConCupoPreview() {
-    FamiliasQueSumanTheme {
-        DetalleActividadScreen(
-            item = actividadDeMuestra(8),
-            esFavorito = false,
-            onRegresar = {},
-            onAlternarFavorito = {},
-            onInscribirme = {},
-            onVerOtrasActividades = {}
-        )
-    }
+    DetallePreview(actividadDeMuestra(8))
 }
 
-@Preview(showBackground = true)
+@Preview(name = "Sin cupo", showBackground = true, heightDp = 1500)
 @Composable
 private fun DetalleSinCupoPreview() {
-    FamiliasQueSumanTheme {
-        DetalleActividadScreen(
-            item = actividadDeMuestra(0),
-            esFavorito = true,
-            onRegresar = {},
-            onAlternarFavorito = {},
-            onInscribirme = {},
-            onVerOtrasActividades = {}
-        )
-    }
+    DetallePreview(actividadDeMuestra(0), esFavorito = true)
 }

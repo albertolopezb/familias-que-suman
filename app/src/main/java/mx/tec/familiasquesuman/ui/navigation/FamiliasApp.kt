@@ -87,7 +87,16 @@ fun FamiliasApp() {
 
             grafoActividades(
                 nav = nav,
+                onIrAInicio = {
+                    if (!nav.popBackStack(RutasInicio.INICIO, inclusive = false)) {
+                        nav.navigate(RutasInicio.INICIO)
+                    }
+                },
                 onVerAsociaciones = { nav.navigate(RutasInicio.EXPLORAR) }
+                // Pendientes hasta que existan las otras partes:
+                // onInscribirme y onCancelarInscripcion → parte 3,
+                // onResponderEncuesta y onCompartirTestimonio → parte 5,
+                // ciudad y onCambiarCiudad → cuando la ciudad de la parte 1 sea compartida.
             )
 
             // Parte 5 lo reemplaza por el perfil real. Sin este destino, tocar
