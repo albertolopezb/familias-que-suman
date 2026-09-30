@@ -69,7 +69,6 @@ fun NavGraphBuilder.grafoInicio(
             onDonarClick = onNavegarACampanas,
             onProyectosClick = { nav.navigate(RutasInicio.PROYECTOS) },
             onVisiteoClick = { nav.navigate(RutasInicio.VISITEO) },
-            onCiudadClick = { nav.navigate(RutasInicio.CIUDAD) },
             onConoceHistoria = { nav.navigate(RutasInicio.TESTIMONIOS) }
         )
     }
