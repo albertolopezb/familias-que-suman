@@ -18,7 +18,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -54,8 +63,12 @@ import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
 fun ProyectosScreen(
     proyectos: List<Proyecto> = emptyList(),
     ciudad: String = "Monterrey, N.L.",
+    esAdmin: Boolean = false,
     onIrAInicio: () -> Unit = {},
-    onProyectoClick: (String) -> Unit = {}
+    onProyectoClick: (String) -> Unit = {},
+    onCrearProyecto: () -> Unit = {},
+    onEditarProyecto: (String) -> Unit = {},
+    onBorrarProyecto: (String) -> Unit = {}
 ) {
     var verActivos by remember { mutableStateOf(true) }
     var busqueda by remember { mutableStateOf("") }
@@ -63,89 +76,138 @@ fun ProyectosScreen(
         .filter { it.activo == verActivos }
         .filter { busqueda.isBlank() || it.nombre.contains(busqueda.trim(), ignoreCase = true) }
 
-    Column(modifier = Modifier.fillMaxSize().background(Web.Fondo)) {
-        EncabezadoApp()
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 64.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            item(key = "titulo") {
-                TituloDePagina(
-                    titulo = "Proyectos",
-                    subtitulo = "Proyectos con causas y objetivos específicos.",
-                    migaAnterior = "Inicio",
-                    onMigaAnterior = onIrAInicio
-                )
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    Pestana("Proyectos activos", verActivos, { verActivos = true }, Modifier.weight(1f))
-                    Pestana("Proyectos anteriores", !verActivos, { verActivos = false }, Modifier.weight(1f))
+    Scaffold(
+        floatingActionButton = {
+            if (esAdmin) {
+                FloatingActionButton(
+                    onClick = onCrearProyecto,
+                    containerColor = Web.Primario,
+                    contentColor = Color.White
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Crear Proyecto")
                 }
             }
-            item(key = "buscar") {
-                Buscador(valor = busqueda, onValor = { busqueda = it }, placeholder = "Buscar proyectos...")
-            }
-            if (visibles.isEmpty()) {
-                item(key = "vacio") {
-                    Text(
-                        if (verActivos) "No hay proyectos que coincidan." else "Aún no hay proyectos anteriores.",
-                        style = TextoWeb.Cuerpo,
-                        color = Web.TextoApagado,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp)
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(Web.Fondo)
+        ) {
+            EncabezadoApp()
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 80.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item(key = "titulo") {
+                    TituloDePagina(
+                        titulo = if (esAdmin) "Proyectos (Admin)" else "Proyectos",
+                        subtitulo = "Proyectos con causas y objetivos específicos.",
+                        migaAnterior = "Inicio",
+                        onMigaAnterior = onIrAInicio
+                    )
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Pestana("Proyectos activos", verActivos, { verActivos = true }, Modifier.weight(1f))
+                        Pestana("Proyectos anteriores", !verActivos, { verActivos = false }, Modifier.weight(1f))
+                    }
+                }
+                item(key = "buscar") {
+                    Buscador(valor = busqueda, onValor = { busqueda = it }, placeholder = "Buscar proyectos...")
+                }
+                if (visibles.isEmpty()) {
+                    item(key = "vacio") {
+                        Text(
+                            if (verActivos) "No hay proyectos que coincidan." else "Aún no hay proyectos anteriores.",
+                            style = TextoWeb.Cuerpo,
+                            color = Web.TextoApagado,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp)
+                        )
+                    }
+                }
+                items(visibles, key = { it.id }) { proyecto ->
+                    TarjetaProyecto(
+                        proyecto = proyecto,
+                        onClick = { onProyectoClick(proyecto.id) },
+                        esAdmin = esAdmin,
+                        onEditar = { onEditarProyecto(proyecto.id) },
+                        onBorrar = { onBorrarProyecto(proyecto.id) }
                     )
                 }
-            }
-            items(visibles, key = { it.id }) { proyecto ->
-                TarjetaProyecto(proyecto, onClick = { onProyectoClick(proyecto.id) })
             }
         }
     }
 }
 
 @Composable
-private fun TarjetaProyecto(proyecto: Proyecto, onClick: () -> Unit) {
+private fun TarjetaProyecto(
+    proyecto: Proyecto,
+    onClick: () -> Unit,
+    esAdmin: Boolean = false,
+    onEditar: () -> Unit = {},
+    onBorrar: () -> Unit = {}
+) {
     val forma = RoundedCornerShape(16.dp)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(forma)
-            .background(Web.Tarjeta)
-            .border(1.dp, Web.Borde, forma)
-            .clickable(onClick = onClick)
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Logo(proyecto.logo, proyecto.nombre)
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(verticalAlignment = Alignment.Top) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(forma)
+                .background(Web.Tarjeta)
+                .border(1.dp, Web.Borde, forma)
+                .clickable(onClick = onClick)
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Logo(proyecto.logo, proyecto.nombre)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(verticalAlignment = Alignment.Top) {
+                    Text(
+                        proyecto.nombre,
+                        style = TextoWeb.TituloTarjeta.copy(color = Web.Primario),
+                        modifier = Modifier.weight(1f).padding(end = 8.dp)
+                    )
+                    Etiqueta(
+                        if (proyecto.activo) "Activo" else "Terminado",
+                        if (proyecto.activo) Web.VerdeFondo else Web.Secundario,
+                        if (proyecto.activo) Web.VerdeTexto else Web.TextoApagado
+                    )
+                }
                 Text(
-                    proyecto.nombre,
-                    style = TextoWeb.TituloTarjeta.copy(color = Web.Primario),
-                    modifier = Modifier.weight(1f).padding(end = 8.dp)
+                    proyecto.descripcion,
+                    style = TextoWeb.Chico.copy(color = Web.Texto.copy(alpha = 0.75f)),
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Etiqueta(
-                    if (proyecto.activo) "Activo" else "Terminado",
-                    if (proyecto.activo) Web.VerdeFondo else Web.Secundario,
-                    if (proyecto.activo) Web.VerdeTexto else Web.TextoApagado
-                )
+                proyecto.vigencia?.let { FilaDato(IconosWeb.Calendario, it) }
+                proyecto.beneficiarios?.let { FilaDato(IconosWeb.Personas, it) }
+                FilaDato(IconosWeb.Ubicacion, proyecto.ciudad)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 4.dp)
+                ) {
+                    Text("Ver detalles", style = TextoWeb.Chip, color = Web.Primario)
+                    Icon(IconosWeb.FlechaDerecha, contentDescription = null, tint = Web.Primario, modifier = Modifier.size(14.dp))
+                }
             }
-            Text(
-                proyecto.descripcion,
-                style = TextoWeb.Chico.copy(color = Web.Texto.copy(alpha = 0.75f)),
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
-            )
-            proyecto.vigencia?.let { FilaDato(IconosWeb.Calendario, it) }
-            proyecto.beneficiarios?.let { FilaDato(IconosWeb.Personas, it) }
-            FilaDato(IconosWeb.Ubicacion, proyecto.ciudad)
+        }
+        if (esAdmin) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Ver detalles", style = TextoWeb.Chip, color = Web.Primario)
-                Icon(IconosWeb.FlechaDerecha, contentDescription = null, tint = Web.Primario, modifier = Modifier.size(14.dp))
+                IconButton(onClick = onEditar) {
+                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Web.Primario)
+                }
+                IconButton(onClick = onBorrar) {
+                    Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = Web.RojoTexto)
+                }
             }
         }
     }
