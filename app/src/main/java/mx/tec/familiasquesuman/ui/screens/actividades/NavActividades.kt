@@ -4,6 +4,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -57,6 +58,7 @@ fun NavGraphBuilder.grafoActividades(
     onCambiarCiudad: () -> Unit = {},
     onIrAInicio: () -> Unit = { nav.popBackStack() },
     onInscribirme: (String) -> Unit = {},
+    onInscribirmeConPrueba: (String, Boolean) -> Unit = { id, _ -> onInscribirme(id) },
     onCancelarInscripcion: (String) -> Unit = {},
     onResponderEncuesta: (String) -> Unit = {},
     onCompartirTestimonio: (String) -> Unit = {},
@@ -190,6 +192,7 @@ fun NavGraphBuilder.grafoActividades(
         val estado by vm.estado.collectAsStateWithLifecycle()
         val cuenta = cuentaViewModel()
         val favoritas by cuenta.favoritas.collectAsStateWithLifecycle()
+        var simularSinCupo by rememberSaveable { mutableStateOf(false) }
 
         when (val actual = estado) {
             is UiState.Cargando -> CargandoView()
@@ -206,7 +209,9 @@ fun NavGraphBuilder.grafoActividades(
                 onCompartir = { compartirActividad(contexto, actual.datos) },
                 onAlternarFavorito = { nav.alternarFavorita(cuenta, id) },
                 // Parte 3 conecta esto con la puerta de cuenta (RF-18).
-                onInscribirme = { onInscribirme(id) },
+                onInscribirme = { onInscribirmeConPrueba(id, simularSinCupo) },
+                simularSinCupo = simularSinCupo,
+                onSimularSinCupoChange = { simularSinCupo = it },
                 onVerOtrasActividades = {
                     // Si se llegó desde la lista, se regresa a ella; si no, se abre.
                     if (!nav.popBackStack(RutasActividades.LISTA, inclusive = false)) {

@@ -164,6 +164,7 @@ fun FamiliasApp() {
                     },
                     onVerAsociaciones = { nav.navigate(RutasInicio.EXPLORAR) },
                     onInscribirme = { id -> nav.navigate(RutasInscripcion.inscribirse(id)) },
+                    onInscribirmeConPrueba = { id, sinCupo -> nav.navigate(RutasInscripcion.inscribirse(id, sinCupo)) },
                     onCancelarInscripcion = { id -> nav.navigate(RutasInscripcion.cancelar(id)) },
                     onResponderEncuesta = { nav.navigate(RutasPerfil.ENCUESTA_FINAL) }
                 )

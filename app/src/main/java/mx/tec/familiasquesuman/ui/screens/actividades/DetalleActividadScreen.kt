@@ -40,6 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.domain.ActividadConAsociacion
 import mx.tec.familiasquesuman.domain.Aportacion
+import mx.tec.familiasquesuman.ui.screens.inscripcion.componentes.Casilla
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.AvisoSinLugares
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.BarraDeRegreso
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.BotonAmarillo
@@ -72,7 +73,9 @@ fun DetalleActividadScreen(
     onAlternarFavorito: () -> Unit,
     onInscribirme: () -> Unit,
     onVerOtrasActividades: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    simularSinCupo: Boolean = false,
+    onSimularSinCupoChange: ((Boolean) -> Unit)? = null
 ) {
     val actividad = item.actividad
 
@@ -131,6 +134,8 @@ fun DetalleActividadScreen(
                 item = item,
                 onInscribirme = onInscribirme,
                 onVerOtrasActividades = onVerOtrasActividades,
+                simularSinCupo = simularSinCupo,
+                onSimularSinCupoChange = onSimularSinCupoChange,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
@@ -311,6 +316,8 @@ private fun PieDeAccion(
     item: ActividadConAsociacion,
     onInscribirme: () -> Unit,
     onVerOtrasActividades: () -> Unit,
+    simularSinCupo: Boolean,
+    onSimularSinCupoChange: ((Boolean) -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     val actividad = item.actividad
@@ -364,16 +371,26 @@ private fun PieDeAccion(
                 }
             }
 
-            else -> BotonAmarillo(
-                texto = "Unirme a esta actividad",
-                onClick = onInscribirme,
-                radio = 16.dp,
-                alto = 52.dp,
-                negritas = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(8.dp, RoundedCornerShape(16.dp))
-            )
+            else -> {
+                // Solo para probar P-08: al confirmar, otra familia gana los lugares.
+                if (onSimularSinCupoChange != null) {
+                    Casilla(
+                        marcada = simularSinCupo,
+                        onCambio = onSimularSinCupoChange,
+                        texto = "Prueba: al confirmar, otra familia gana los últimos lugares (P-08)"
+                    )
+                }
+                BotonAmarillo(
+                    texto = "Unirme a esta actividad",
+                    onClick = onInscribirme,
+                    radio = 16.dp,
+                    alto = 52.dp,
+                    negritas = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(8.dp, RoundedCornerShape(16.dp))
+                )
+            }
         }
     }
 }
