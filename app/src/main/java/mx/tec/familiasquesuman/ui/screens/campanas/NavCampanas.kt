@@ -1,5 +1,9 @@
 package mx.tec.familiasquesuman.ui.screens.campanas
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -25,6 +30,8 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import mx.tec.familiasquesuman.domain.Campana
+import mx.tec.familiasquesuman.domain.PuntoEntrega
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
 import mx.tec.familiasquesuman.ui.state.UiState
 
@@ -36,6 +43,49 @@ object RutasCampanas {
 
     fun detalle(id: String) = "campanas/$id"
     fun confirmado(id: String) = "campanas/$id/apartado"
+}
+
+/** El WhatsApp general de Familias que Suman (el de la burbuja verde del sitio). */
+private const val WhatsAppGeneral = "528120322281"
+
+/** Los números del sitio traen 10 dígitos; WhatsApp pide la lada de país (52 = México). */
+private fun conLadaDePais(numero: String) = if (numero.length == 10) "52$numero" else numero
+
+private fun abrir(contexto: Context, intent: Intent) {
+    try {
+        contexto.startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        // Sin app que lo abra (por ejemplo, un emulador sin navegador): no pasa nada.
+    }
+}
+
+private fun abrirWhatsApp(contexto: Context, numero: String, mensaje: String) {
+    val url = "https://wa.me/${conLadaDePais(numero)}?text=${Uri.encode(mensaje)}"
+    abrir(contexto, Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+}
+
+/**
+ * "Quiero ayudar" de una campaña: abre su WhatsApp con el mensaje ya escrito y, si no tiene,
+ * marca su teléfono (ACTION_DIAL solo abre el marcador: no pide permiso ni llama sola).
+ */
+private fun contactarCampana(contexto: Context, campana: Campana) {
+    val whatsapp = campana.whatsapp
+    val telefono = campana.telefono
+    when {
+        whatsapp != null ->
+            abrirWhatsApp(contexto, whatsapp, "Hola, me interesa apoyar la campaña ${campana.titulo}")
+        telefono != null ->
+            abrir(contexto, Intent(Intent.ACTION_DIAL, Uri.parse("tel:$telefono")))
+    }
+}
+
+/** "Cómo llegar": abre el punto en el mapa (Google Maps o, si no hay, el navegador). */
+private fun abrirMapa(contexto: Context, punto: PuntoEntrega) {
+    val consulta = Uri.encode("${punto.direccion}, ${punto.colonia}")
+    abrir(
+        contexto,
+        Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/search/?api=1&query=$consulta"))
+    )
 }
 
 /**
@@ -50,15 +100,18 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController) {
         val vm: CampanasViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val estado by vm.campanas.collectAsStateWithLifecycle()
         val aplicados by vm.aplicados.collectAsStateWithLifecycle()
+        val chip by vm.chipElegido.collectAsStateWithLifecycle()
         val borrador by vm.borrador.collectAsStateWithLifecycle()
         val conteo by vm.conteoBorrador.collectAsStateWithLifecycle()
         val total by vm.totalAbiertas.collectAsStateWithLifecycle()
         val nombres by vm.nombresAsociacion.collectAsStateWithLifecycle()
         var verFiltros by rememberSaveable { mutableStateOf(false) }
+        val contexto = LocalContext.current
 
         CampanasScreen(
             estado = estado,
             filtros = aplicados,
+            chipElegido = chip,
             totalAbiertas = total,
             nombresAsociacion = nombres,
             onBack = { nav.popBackStack() },
@@ -68,7 +121,11 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController) {
             onQuitarUrgentes = vm::quitarUrgentes,
             onQuitarFiltros = vm::quitarFiltros,
             onCampanaClick = { id -> nav.navigate(RutasCampanas.detalle(id)) },
-            onReintentar = vm::cargar
+            onReintentar = vm::cargar,
+            onAyudar = { campana -> contactarCampana(contexto, campana) },
+            onNoEncontre = {
+                abrirWhatsApp(contexto, WhatsAppGeneral, "Hola, no encontré dónde donar lo que tengo. ¿Me ayudan?")
+            }
         )
 
         if (verFiltros) {
@@ -95,6 +152,7 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController) {
         val hoja by vm.hoja.collectAsStateWithLifecycle()
         val irAConfirmado by vm.irAConfirmado.collectAsStateWithLifecycle()
         val nombreAsociacion by vm.nombreAsociacion.collectAsStateWithLifecycle()
+        val contexto = LocalContext.current
 
         LaunchedEffect(id) { vm.cargar(id) }
         LaunchedEffect(irAConfirmado) {
@@ -122,11 +180,27 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController) {
                     campanaCompleta = vm.campanaCompleta(e.datos),
                     onBack = { nav.popBackStack() },
                     onApartar = vm::abrirApartar,
-                    onVerComoDonar = { nav.navigate(RutasCampanas.COMO_DONAR) },
                     onVerOtrasCampanas = {
                         if (!nav.popBackStack(RutasCampanas.LISTA, inclusive = false)) nav.popBackStack()
                     },
-                    nombreAsociacion = nombreAsociacion
+                    nombreAsociacion = nombreAsociacion,
+                    onAyudar = { contactarCampana(contexto, e.datos) },
+                    onLlamar = {
+                        e.datos.telefono?.let { abrir(contexto, Intent(Intent.ACTION_DIAL, Uri.parse("tel:$it"))) }
+                    },
+                    onOpcion = { opcion ->
+                        val numero = e.datos.whatsapp
+                        if (numero != null) {
+                            abrirWhatsApp(
+                                contexto, numero,
+                                "Hola, quiero ayudar con: ${opcion.nombre} (${opcion.precio})"
+                            )
+                        } else {
+                            contactarCampana(contexto, e.datos)
+                        }
+                    },
+                    onComoLlegar = { punto -> abrirMapa(contexto, punto) },
+                    onAbrirEnlace = { enlace -> abrir(contexto, Intent(Intent.ACTION_VIEW, Uri.parse(enlace))) }
                 )
             }
         }
@@ -151,7 +225,7 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController) {
         val vm: DetalleCampanaViewModel = viewModel(viewModelStoreOwner = padre, factory = AppViewModelProvider.Factory)
         val estado by vm.estado.collectAsStateWithLifecycle()
         val hecho by vm.ultimoApartado.collectAsStateWithLifecycle()
-        val nombreAsociacion by vm.nombreAsociacion.collectAsStateWithLifecycle()
+        val contexto = LocalContext.current
 
         val campana = (estado as? UiState.Exito)?.datos
         val apartado = hecho
@@ -159,14 +233,21 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController) {
             ApartadoConfirmadoScreen(
                 campana = campana,
                 hecho = apartado,
-                onVerComoEntregar = { nav.navigate(RutasCampanas.COMO_DONAR) },
-                onApartarAlgoMas = { nav.popBackStack() },
-                nombreAsociacion = nombreAsociacion
+                onAvisar = {
+                    val numero = campana.whatsapp ?: campana.telefono ?: WhatsAppGeneral
+                    abrirWhatsApp(
+                        contexto, numero,
+                        "Hola, aparté ${apartado.cantidad} de «${apartado.articuloNombre}» " +
+                            "para la campaña ${campana.titulo}. ¿Cómo y cuándo te los entrego?"
+                    )
+                },
+                onComoLlegar = { punto -> abrirMapa(contexto, punto) },
+                onRegresar = { nav.popBackStack() }
             )
         }
     }
 
-    // P-24
+    // P-24 (ya no se llega desde ninguna pantalla; se deja sin usar)
     composable(RutasCampanas.COMO_DONAR) {
         ComoDonarScreen(onBack = { nav.popBackStack() })
     }

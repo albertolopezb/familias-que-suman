@@ -23,6 +23,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,9 +35,11 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import mx.tec.familiasquesuman.domain.ArticuloMeta
 import mx.tec.familiasquesuman.domain.Campana
+import mx.tec.familiasquesuman.domain.PuntoEntrega
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.BarraMeta
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoCalendario
-import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoReloj
+import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoMensaje
+import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoTelefono
 import mx.tec.familiasquesuman.ui.theme.Borde
 import mx.tec.familiasquesuman.ui.theme.Confirmado
 import mx.tec.familiasquesuman.ui.theme.ConfirmadoFondo
@@ -50,20 +53,27 @@ import mx.tec.familiasquesuman.ui.theme.TintaSuave
 
 /**
  * P-13: apartado confirmado. La barra arranca en el avance de antes y sube a la vista
- * hasta el de ahora; es el momento más satisfactorio del recorrido.
+ * hasta el de ahora. Aquí mismo se explica cómo entregar (con los datos reales de la campaña)
+ * y se puede avisar por WhatsApp que ya se apartó.
  */
 @Composable
 fun ApartadoConfirmadoScreen(
     campana: Campana,
     hecho: ApartadoHecho,
-    onVerComoEntregar: () -> Unit,
-    onApartarAlgoMas: () -> Unit,
-    modifier: Modifier = Modifier,
-    nombreAsociacion: String? = null
+    onAvisar: () -> Unit,
+    onComoLlegar: (PuntoEntrega) -> Unit,
+    onRegresar: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val centro = centroDeEntrega(nombreAsociacion)
     val antes = (hecho.progresoAntes * 100).roundToInt()
     val ahora = (campana.progreso * 100).roundToInt()
+    val variosArticulos = campana.articulos.size > 1
+    val contacto = listOfNotNull(
+        campana.contactoNombre,
+        campana.telefono ?: campana.whatsapp
+    ).joinToString(" · ")
+    val hayComoEntregar = campana.comoAyudar.isNotBlank() || campana.cierra.isNotBlank() ||
+        campana.puntosEntrega.isNotEmpty() || contacto.isNotBlank()
 
     Column(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(
@@ -78,7 +88,7 @@ fun ApartadoConfirmadoScreen(
                 Icon(Icons.Default.Check, contentDescription = null, tint = ConfirmadoTexto, modifier = Modifier.size(40.dp))
             }
             Text(
-                "Apartaste ${hecho.cantidad} ${aPlural(hecho.articuloNombre, hecho.cantidad)}",
+                "Apartaste ${hecho.cantidad} de «${hecho.articuloNombre}»",
                 style = MaterialTheme.typography.headlineMedium,
                 color = Tinta,
                 textAlign = TextAlign.Center
@@ -100,26 +110,37 @@ fun ApartadoConfirmadoScreen(
                 }
             }
 
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = Superficie,
-                border = BorderStroke(1.dp, Borde),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Cómo entregar", style = MaterialTheme.typography.titleMedium, color = Tinta)
-                    FilaDato(IconoCalendario, "Antes del ${campana.cierra}")
-                    if (centro != null) {
-                        FilaDato(Icons.Default.LocationOn, "${centro.nombre}, ${centro.direccion}")
-                        FilaDato(IconoReloj, centro.horario)
-                    } else {
-                        // Esa asociación no tiene centro propio en la lista: se manda a ver todos.
-                        FilaDato(Icons.Default.LocationOn, "Consulta los centros de acopio en «Ver cómo entregar»")
+            if (hayComoEntregar) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = Superficie,
+                    border = BorderStroke(1.dp, Borde),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("Cómo entregar", style = MaterialTheme.typography.titleMedium, color = Tinta)
+                        if (campana.comoAyudar.isNotBlank()) {
+                            Text(campana.comoAyudar, style = MaterialTheme.typography.bodyLarge, color = Tinta)
+                        }
+                        if (campana.cierra.isNotBlank()) {
+                            FilaDato(IconoCalendario, "Antes del ${campana.cierra}")
+                        }
+                        campana.puntosEntrega.forEach { punto ->
+                            Column {
+                                FilaDato(Icons.Default.LocationOn, "${punto.direccion}, ${punto.colonia}")
+                                TextButton(onClick = { onComoLlegar(punto) }) {
+                                    Text("Cómo llegar", color = MarcaAzul)
+                                }
+                            }
+                        }
+                        if (contacto.isNotBlank()) {
+                            FilaDato(IconoTelefono, contacto)
+                        }
                     }
                 }
             }
             Text(
-                "La app no procesa pagos. La entrega es en especie, en el centro de acopio.",
+                "La app no procesa pagos. La entrega es en especie.",
                 style = MaterialTheme.typography.labelMedium,
                 color = TintaSuave,
                 textAlign = TextAlign.Center
@@ -131,17 +152,26 @@ fun ApartadoConfirmadoScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Button(
-                onClick = onVerComoEntregar,
+                onClick = onAvisar,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MarcaOro, contentColor = MarcaAzul)
-            ) { Text("Ver cómo entregar", style = MaterialTheme.typography.labelLarge) }
+            ) {
+                Icon(IconoMensaje, contentDescription = null, modifier = Modifier.size(20.dp))
+                Text("  Avisar que aparté", style = MaterialTheme.typography.labelLarge)
+            }
             OutlinedButton(
-                onClick = onApartarAlgoMas,
+                onClick = onRegresar,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 border = BorderStroke(1.5.dp, MarcaAzul),
                 shape = RoundedCornerShape(14.dp)
-            ) { Text("Apartar algo más", style = MaterialTheme.typography.labelLarge, color = MarcaAzul) }
+            ) {
+                Text(
+                    if (variosArticulos) "Apartar algo más" else "Regresar",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MarcaAzul
+                )
+            }
         }
     }
 }
@@ -154,48 +184,19 @@ private fun FilaDato(icono: androidx.compose.ui.graphics.vector.ImageVector, tex
     }
 }
 
-/**
- * "Rosario blanco", 2 → "rosarios blancos". Pluraliza las palabras del nombre hasta
- * la primera preposición o coma ("Mochila con útiles" → "mochilas con útiles").
- */
-private fun aPlural(nombre: String, cantidad: Int): String {
-    val texto = nombre.lowercase()
-    if (cantidad == 1) return texto
-    val corte = setOf("con", "de", "en", "para", "y")
-    var pluralizando = true
-    return texto.split(' ').joinToString(" ") { palabra ->
-        val base = palabra.trimEnd(',')
-        val coma = if (palabra.endsWith(",")) "," else ""
-        when {
-            !pluralizando || base in corte || base.any { !it.isLetter() } -> {
-                pluralizando = false
-                palabra
-            }
-            else -> {
-                if (coma.isNotEmpty()) pluralizando = false
-                val plural = when {
-                    base.last() in "aeiouáéíóú" -> base + "s"
-                    base.endsWith("z") -> base.dropLast(1) + "ces"
-                    else -> base + "es"
-                }
-                plural + coma
-            }
-        }
-    }
-}
-
 @Preview(showBackground = true, heightDp = 780)
 @Composable
 private fun ApartadoConfirmadoPreview() {
     FamiliasQueSumanTheme {
         ApartadoConfirmadoScreen(
             campana = Campana(
-                "c1", "Kits de primera comunión", "a4", "Útiles escolares", "20 de septiembre", true, "",
-                "kits", 45, 20, listOf(ArticuloMeta("c1-1", "Rosario blanco", 45, 14))
+                "c4", "Bibliotecas Infantiles", "", "Útiles escolares", "", true, "",
+                "cuentos", 300, 136, listOf(ArticuloMeta("c4-1", "Cuentos infantiles", 300, 136)),
+                comoAyudar = "Junta cuentos desde preescolar hasta secundaria en buen estado.",
+                telefono = "8120322281"
             ),
-            hecho = ApartadoHecho("Rosario blanco", 2, progresoAntes = 18f / 45f),
-            onVerComoEntregar = {}, onApartarAlgoMas = {},
-            nombreAsociacion = "Parroquia San Bernabé"
+            hecho = ApartadoHecho("Cuentos infantiles", 36, progresoAntes = 100f / 300f),
+            onAvisar = {}, onComoLlegar = {}, onRegresar = {}
         )
     }
 }

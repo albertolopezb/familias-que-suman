@@ -65,3 +65,55 @@ val IconoCalendario: ImageVector = icono(
     "Calendario",
     "M20,3h-1L19,1h-2v2L7,3L7,1L5,1v2L4,3c-1.1,0 -2,0.9 -2,2v16c0,1.1 0.9,2 2,2h16c1.1,0 2,-0.9 2,-2L22,5c0,-1.1 -0.9,-2 -2,-2zM20,21L4,21L4,8h16v13z"
 )
+
+// Íconos de contorno con varios trazos (los de lucide, que usa el sitio). Cada trazo va por
+// separado porque sus comandos "m" en minúscula dependen de dónde empieza cada uno.
+private fun iconoTrazos(nombre: String, vararg trazos: String, grosor: Float = 2f): ImageVector {
+    val b = ImageVector.Builder(
+        name = nombre,
+        defaultWidth = 24.dp,
+        defaultHeight = 24.dp,
+        viewportWidth = 24f,
+        viewportHeight = 24f
+    )
+    trazos.forEach { t ->
+        b.addPath(
+            pathData = addPathNodes(t),
+            fill = null,
+            stroke = SolidColor(Color.Black),
+            strokeLineWidth = grosor,
+            strokeLineCap = StrokeCap.Round,
+            strokeLineJoin = StrokeJoin.Round
+        )
+    }
+    return b.build()
+}
+
+/** Mano con corazón: "3 opciones de donación disponibles". */
+val IconoManoCorazon: ImageVector = iconoTrazos(
+    "ManoCorazon",
+    "M11 14h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 16",
+    "m7 20 1.6-1.4c.3-.4.8-.6 1.4-.6h4c1.1 0 2.1-.4 2.8-1.2l4.6-4.4a2 2 0 0 0-2.75-2.91l-4.2 3.9",
+    "m2 15 6 6",
+    "M19.5 8.5c.7-.7 1.5-1.6 1.5-2.7A2.73 2.73 0 0 0 16 4a2.78 2.78 0 0 0-5 1.8c0 1.2.8 2 1.5 2.8L16 12Z"
+)
+
+/** Burbuja de mensaje: el botón verde que abre WhatsApp. */
+val IconoMensaje: ImageVector = iconoTrazos(
+    "Mensaje",
+    "M7.9 20A9 9 0 1 0 4 16.1L2 22Z"
+)
+
+/** Teléfono: el botón que llama cuando la campaña no tiene WhatsApp. */
+val IconoTelefono: ImageVector = iconoTrazos(
+    "Telefono",
+    "M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+)
+
+/** Cámara de Instagram (solo el contorno; se pinta en blanco sobre el círculo de colores). */
+val IconoInstagram: ImageVector = iconoTrazos(
+    "Instagram",
+    "M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4z",
+    "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z",
+    "M17.5 6.5h.01"
+)
