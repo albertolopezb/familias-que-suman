@@ -159,6 +159,7 @@ private fun ContenidoPerfil(
         // Switch de Cuentas (Demo)
         SeccionSwitchCuentas(
             esAdmin = usuarioActual.esAdmin,
+            correoActual = usuarioActual.correo,
             onSwitchCuenta = onSwitchCuenta
         )
 
@@ -234,12 +235,13 @@ private fun ContenidoPerfil(
 @Composable
 private fun SeccionSwitchCuentas(
     esAdmin: Boolean,
+    correoActual: String,
     onSwitchCuenta: (Boolean) -> Unit
 ) {
     EtiquetaSeccion("CAMBIAR CUENTA (MODO PRUEBAS)")
     TarjetaPerfil {
         Text(
-            text = "Cuenta activa: ${if (esAdmin) "Administrador" else "Ana Rodríguez (Usuario)"}",
+            text = "Sesión activa: $correoActual\nRol actual: ${if (esAdmin) "Administrador" else "Usuario Normal"}",
             style = MaterialTheme.typography.bodyMedium,
             color = Tinta
         )
@@ -255,7 +257,7 @@ private fun SeccionSwitchCuentas(
                 ),
                 modifier = Modifier.weight(1f)
             ) {
-                Text(if (!esAdmin) "✓ Usuario" else "Usuario Normal")
+                Text(if (!esAdmin) "✓ Normal" else "Normal")
             }
 
             Button(
@@ -265,7 +267,7 @@ private fun SeccionSwitchCuentas(
                 ),
                 modifier = Modifier.weight(1f)
             ) {
-                Text(if (esAdmin) "✓ Modo Admin" else "Modo Admin")
+                Text(if (esAdmin) "✓ Admin" else "Admin")
             }
         }
     }

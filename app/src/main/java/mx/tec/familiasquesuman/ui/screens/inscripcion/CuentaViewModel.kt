@@ -149,12 +149,28 @@ class CuentaViewModel(
             _actividades.value = actividadRepository.getActividades()
             _asociaciones.value = actividadRepository.getAsociaciones()
             val familia = perfilRepository.getFamilia()
+
+            // 1. Cuenta Normal Hardcodeada (Ana Rodríguez)
             cuentas[familia.correo] = CuentaGuardada(
-                CuentaDePrueba.CONTRASENA,
+                CuentaDePrueba.CONTRASENA, // O "familia123"
                 Sesion(familia.nombre, familia.correo, CuentaDePrueba.titular),
                 CuentaDePrueba.acompanantes,
                 CuentaDePrueba.inscripciones,
                 perfilRepository.getFavoritas().map { it.id }.toSet()
+            )
+
+            // 2. Cuenta de Administrador Hardcodeada
+            val correoAdmin = "admin@correo.com"
+            cuentas[correoAdmin] = CuentaGuardada(
+                contrasena = "admin123", // Contraseña para la cuenta de admin
+                sesion = Sesion(
+                    familia = "Administrador General",
+                    correo = correoAdmin,
+                    titular = Acompanante("Administrador General", edad = 30)
+                ),
+                acompanantes = emptyList(),
+                inscripciones = emptyMap(),
+                favoritas = emptySet()
             )
         }
     }
