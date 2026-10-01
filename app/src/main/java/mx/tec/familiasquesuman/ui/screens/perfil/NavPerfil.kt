@@ -116,7 +116,9 @@ fun NavGraphBuilder.grafoPerfil(
         val sesionActual by cuentaVm.sesion.collectAsStateWithLifecycle()
 
         // 2. Determinamos si es Admin o Usuario Normal según el correo en sesión
-        val usuarioCalculado = UsuariosHardcodeados.obtenerPorCorreo(sesionActual?.correo)
+        val base = UsuariosHardcodeados.obtenerPorCorreo(sesionActual?.correo)
+        // El nombre y el correo son los de la cuenta con la que se entró, no los de ejemplo.
+        val usuarioCalculado = sesionActual?.let { base.copy(correo = it.correo, nombreFamilia = it.familia) } ?: base
 
         PerfilScreen(
             estado = estado,
