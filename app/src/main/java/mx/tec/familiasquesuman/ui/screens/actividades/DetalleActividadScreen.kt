@@ -377,7 +377,7 @@ private fun PieDeAccion(
                     Casilla(
                         marcada = simularSinCupo,
                         onCambio = onSimularSinCupoChange,
-                        texto = "Prueba: al confirmar, otra familia gana los últimos lugares (P-08)"
+                        texto = "Prueba: al confirmar, otra familia gana los últimos lugares"
                     )
                 }
                 BotonAmarillo(
