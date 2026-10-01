@@ -104,10 +104,10 @@ fun DetalleCampanaScreen(
     onLlamar: () -> Unit = {},
     onOpcion: (OpcionDonacion) -> Unit = {},
     onComoLlegar: (PuntoEntrega) -> Unit = {},
-    onAbrirEnlace: (String) -> Unit = {}
+    onAbrirEnlace: (String) -> Unit = {},
+    esFavorita: Boolean = false,
+    onAlternarFavorita: () -> Unit = {}
 ) {
-    // Corazón solo en memoria (como en Actividades): se llena y se vacía; guardarlo de verdad queda pendiente.
-    var esFavorita by rememberSaveable { mutableStateOf(false) }
     Column(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Row(
             modifier = Modifier.fillMaxWidth().background(Superficie).padding(horizontal = 12.dp, vertical = 6.dp),
@@ -122,7 +122,7 @@ fun DetalleCampanaScreen(
                 color = Tinta,
                 modifier = Modifier.weight(1f).padding(start = 12.dp)
             )
-            BotonCircular(onClick = { esFavorita = !esFavorita }) {
+            BotonCircular(onClick = onAlternarFavorita) {
                 Icon(
                     if (esFavorita) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                     contentDescription = if (esFavorita) "Quitar de favoritas" else "Agregar a favoritas",

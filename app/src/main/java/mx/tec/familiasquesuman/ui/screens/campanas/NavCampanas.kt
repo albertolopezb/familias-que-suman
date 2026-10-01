@@ -32,6 +32,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import mx.tec.familiasquesuman.domain.Campana
 import mx.tec.familiasquesuman.domain.PuntoEntrega
+import mx.tec.familiasquesuman.ui.screens.inscripcion.alternarFavorita
+import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
 import mx.tec.familiasquesuman.ui.state.UiState
 
@@ -162,6 +164,9 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController) {
         val irAConfirmado by vm.irAConfirmado.collectAsStateWithLifecycle()
         val nombreAsociacion by vm.nombreAsociacion.collectAsStateWithLifecycle()
         val contexto = LocalContext.current
+        // El corazón usa los favoritos compartidos de la cuenta, igual que Inicio y Actividades.
+        val cuenta = cuentaViewModel()
+        val favoritas by cuenta.favoritas.collectAsStateWithLifecycle()
 
         LaunchedEffect(id) { vm.cargar(id) }
         LaunchedEffect(irAConfirmado) {
@@ -209,7 +214,9 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController) {
                         }
                     },
                     onComoLlegar = { punto -> abrirMapa(contexto, punto) },
-                    onAbrirEnlace = { enlace -> abrir(contexto, Intent(Intent.ACTION_VIEW, Uri.parse(enlace))) }
+                    onAbrirEnlace = { enlace -> abrir(contexto, Intent(Intent.ACTION_VIEW, Uri.parse(enlace))) },
+                    esFavorita = id in favoritas,
+                    onAlternarFavorita = { nav.alternarFavorita(cuenta, id) }
                 )
             }
         }
