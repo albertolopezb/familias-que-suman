@@ -163,8 +163,19 @@ class CuentaViewModel(
     // ── A dónde regresar ──
 
     fun recordarRegreso(actividadId: String, simularSinCupo: Boolean) {
+        _destinoPendiente = null
         _regreso.value = Regreso(actividadId, simularSinCupo)
     }
+
+    /** Pantalla que pidió sesión (perfil, mis actividades...): se abre al entrar. */
+    private var _destinoPendiente: String? = null
+
+    fun recordarDestino(ruta: String) {
+        _regreso.value = null
+        _destinoPendiente = ruta
+    }
+
+    fun tomarDestino(): String? = _destinoPendiente.also { _destinoPendiente = null }
 
     /** Devuelve el regreso pendiente y lo olvida, para que no se use dos veces. */
     fun tomarRegreso(): Regreso? = _regreso.value.also { _regreso.value = null }

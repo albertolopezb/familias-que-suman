@@ -14,6 +14,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import mx.tec.familiasquesuman.ui.navigation.Rutas
+import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
 
 object RutasPerfil {
@@ -54,7 +55,7 @@ fun NavGraphBuilder.grafoPerfil(nav: NavController, onEncuestaFinalizada: (() ->
             onAvisosFavoritosChange = vm::cambiarAvisosFavoritos,
             onUrgenciasCiudadChange = vm::cambiarUrgenciasCiudad,
             onAvisoPrivacidad = { nav.navigate(RutasPerfil.AVISO_PRIVACIDAD) { launchSingleTop = true } },
-            onCerrarSesion = vm::solicitarCierreSesion
+            onCerrarSesion = cuentaViewModel()::cerrarSesion
         )
     }
     composable(RutasPerfil.AVISO_PRIVACIDAD) {

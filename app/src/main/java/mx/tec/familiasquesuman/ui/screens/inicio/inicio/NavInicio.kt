@@ -6,6 +6,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import mx.tec.familiasquesuman.ui.screens.inscripcion.RutasInscripcion
+import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
 
 object RutasInicio {
@@ -25,7 +27,8 @@ object RutasInicio {
 fun NavGraphBuilder.grafoInicio(
     nav: NavController,
     onNavegarAActividades: () -> Unit = {},
-    onNavegarACampanas: () -> Unit = {}
+    onNavegarACampanas: () -> Unit = {},
+    onVerAgenda: () -> Unit = {}
 ) {
     composable(RutasInicio.SPLASH) {
         SplashScreen(
@@ -59,11 +62,16 @@ fun NavGraphBuilder.grafoInicio(
     composable(RutasInicio.INICIO) {
         val vm: InicioViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val asociacionDestacada by vm.asociacionDestacada.collectAsStateWithLifecycle()
+        val sesion by cuentaViewModel().sesion.collectAsStateWithLifecycle()
 
         InicioScreen(
             ciudad = vm.ciudadElegida,
             onCambiarCiudad = vm::cambiarCiudad,
             asociacion = asociacionDestacada,
+            nombreFamilia = sesion?.familia,
+            onVerAgenda = onVerAgenda,
+            onCrearCuenta = { nav.navigate(RutasInscripcion.CREAR_CUENTA) { launchSingleTop = true } },
+            onIniciarSesion = { nav.navigate(RutasInscripcion.INICIAR_SESION) { launchSingleTop = true } },
             // Explorar lleva a las actividades.
             onExplorarClick = onNavegarAActividades,
             onActividadesClick = onNavegarAActividades,
