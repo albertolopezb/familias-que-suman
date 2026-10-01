@@ -315,12 +315,13 @@ fun NavGraphBuilder.grafoInscripcion(nav: NavController) {
             CargandoView()
             return@composable
         }
+        val contexto = LocalContext.current
+        val nombreAsociacion = asociaciones.firstOrNull { it.id == actividad.asociacionId }?.nombre ?: "La asociación"
         ConfirmacionScreen(
             actividad = actividad,
-            asociacion = asociaciones.firstOrNull { it.id == actividad.asociacionId }?.nombre ?: "La asociación",
+            asociacion = nombreAsociacion,
             asistentes = listOf(titular) + (inscripciones[actividadId] ?: emptyList()),
-            // RF-07: el Intent al calendario va con el resto de integraciones del teléfono, en la etapa 2.
-            onAgregarAlCalendario = { },
+            onAgregarAlCalendario = { agregarActividadAlCalendario(contexto, actividad, nombreAsociacion) },
             onVerMisActividades = { nav.irAMisActividades() }
         )
     }
