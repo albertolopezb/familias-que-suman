@@ -13,7 +13,7 @@ class ActividadRepository {
     suspend fun getActividad(id: String): Actividad =
         DatosDePrueba.actividades.first { it.id == id }
 
-    suspend fun getAsociaciones(): List<Asociacion> = DatosDePrueba.asociaciones
+    suspend fun getAsociaciones(): List<Asociacion> = DatosDePrueba.asociaciones.toList()
 
     suspend fun getAsociacion(id: String): Asociacion =
         DatosDePrueba.asociaciones.first { it.id == id }
@@ -41,7 +41,48 @@ class ActividadRepository {
     private fun organizadoresPorId(): Map<String, Asociacion> =
         (DatosDePrueba.asociaciones + DatosDePrueba.organizadores).associateBy { it.id }
 
-    suspend fun getProyectos(): List<Proyecto> = DatosDePrueba.proyectos
+    suspend fun getProyectos(): List<Proyecto> = DatosDePrueba.proyectos.toList()
 
-    suspend fun getCentros(): List<CentroVisiteo> = DatosDePrueba.centros
+    suspend fun getCentros(): List<CentroVisiteo> = DatosDePrueba.centros.toList()
+
+    // ── Administración (solo en memoria, como el resto de los datos de prueba) ──
+
+    suspend fun agregarAsociacion(asociacion: Asociacion) {
+        DatosDePrueba.asociaciones.add(asociacion)
+    }
+
+    suspend fun editarAsociacion(asociacion: Asociacion) {
+        val i = DatosDePrueba.asociaciones.indexOfFirst { it.id == asociacion.id }
+        if (i >= 0) DatosDePrueba.asociaciones[i] = asociacion
+    }
+
+    suspend fun borrarAsociacion(id: String) {
+        DatosDePrueba.asociaciones.removeAll { it.id == id }
+    }
+
+    suspend fun agregarProyecto(proyecto: Proyecto) {
+        DatosDePrueba.proyectos.add(0, proyecto)
+    }
+
+    suspend fun editarProyecto(proyecto: Proyecto) {
+        val i = DatosDePrueba.proyectos.indexOfFirst { it.id == proyecto.id }
+        if (i >= 0) DatosDePrueba.proyectos[i] = proyecto
+    }
+
+    suspend fun borrarProyecto(id: String) {
+        DatosDePrueba.proyectos.removeAll { it.id == id }
+    }
+
+    suspend fun agregarCentro(centro: CentroVisiteo) {
+        DatosDePrueba.centros.add(0, centro)
+    }
+
+    suspend fun editarCentro(centro: CentroVisiteo) {
+        val i = DatosDePrueba.centros.indexOfFirst { it.id == centro.id }
+        if (i >= 0) DatosDePrueba.centros[i] = centro
+    }
+
+    suspend fun borrarCentro(id: String) {
+        DatosDePrueba.centros.removeAll { it.id == id }
+    }
 }

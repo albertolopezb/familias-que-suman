@@ -112,6 +112,38 @@ class CampanasViewModel(
         }
     }
 
+    // ---- Administración (solo en memoria) ----
+
+    fun guardarCampana(original: Campana?, v: List<String>) {
+        viewModelScope.launch {
+            val base = original ?: Campana(
+                id = "c${System.currentTimeMillis()}", titulo = "", asociacionId = "", categoria = "",
+                cierra = "", urgente = false, descripcion = "", unidadMeta = "", metaTotal = 0,
+                completados = 0, articulos = emptyList()
+            )
+            val nueva = base.copy(
+                titulo = v[0].trim(),
+                categoria = v[1].trim(),
+                cierra = v[2].trim(),
+                descripcion = v[3].trim(),
+                unidadMeta = v[4].trim(),
+                metaTotal = v[5].toIntOrNull() ?: base.metaTotal,
+                completados = v[6].toIntOrNull() ?: base.completados,
+                ciudad = v[7].trim().ifBlank { base.ciudad },
+                urgente = v[8] == "true"
+            )
+            if (original == null) repo.agregarCampana(nueva) else repo.editarCampana(nueva)
+            carga.value = UiState.Exito(repo.getCampanas())
+        }
+    }
+
+    fun borrarCampana(id: String) {
+        viewModelScope.launch {
+            repo.borrarCampana(id)
+            carga.value = UiState.Exito(repo.getCampanas())
+        }
+    }
+
     // ---- Chips rápidos y píldoras de la lista ----
 
     /** null = "Todas". Un chip es solo para navegar: limpia los filtros de la hoja. */

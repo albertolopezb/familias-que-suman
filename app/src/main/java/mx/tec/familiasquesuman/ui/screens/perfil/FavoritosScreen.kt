@@ -12,19 +12,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import mx.tec.familiasquesuman.domain.Asociacion
 import mx.tec.familiasquesuman.ui.components.CargandoView
 import mx.tec.familiasquesuman.ui.components.ErrorView
 import mx.tec.familiasquesuman.ui.screens.perfil.componentes.TarjetaFavorita
 import mx.tec.familiasquesuman.ui.state.UiState
 import mx.tec.familiasquesuman.ui.theme.*
 
+enum class TipoFavorito(val etiqueta: String) {
+    ASOCIACION("Asociación"), ACTIVIDAD("Actividad"), CAMPANA("Campaña")
+}
+
+/** Algo que la familia marcó con el corazón: una asociación, una actividad o una campaña. */
+data class ItemFavorito(val id: String, val tipo: TipoFavorito, val titulo: String, val detalle: String)
+
 @Composable
 fun FavoritosScreen(
-    estado: UiState<List<Asociacion>>,
+    estado: UiState<List<ItemFavorito>>,
     onVolver: () -> Unit,
     onReintentar: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onAbrir: (ItemFavorito) -> Unit = {},
+    onQuitar: (ItemFavorito) -> Unit = {}
 ) {
     Column(modifier.fillMaxSize().background(Fondo)) {
         Surface(color = Superficie) {
@@ -46,17 +54,22 @@ fun FavoritosScreen(
             ) {
                 item {
                     // Texto del diseño. El envío de notificaciones no está implementado en esta etapa.
-                    Text("Te avisamos cuando estas asociaciones publiquen una actividad o campaña nueva.",
+                    Text("Aquí están las asociaciones, actividades y campañas que guardaste.",
                         style = MaterialTheme.typography.bodyLarge, color = TintaSuave)
                 }
                 if (estado.datos.isEmpty()) {
                     item {
-                        Text("Todavía no tienes asociaciones favoritas.",
+                        Text("Todavía no tienes favoritos. Toca el corazón en una asociación, actividad o campaña para guardarla aquí.",
                             style = MaterialTheme.typography.bodyLarge, color = TintaSuave)
                     }
                 }
-                items(estado.datos, key = { it.id }) { asociacion ->
-                    TarjetaFavorita(asociacion.nombre, asociacion.categoria)
+                items(estado.datos, key = { it.id }) { item ->
+                    TarjetaFavorita(
+                        nombre = item.titulo,
+                        categoria = item.detalle,
+                        onClick = { onAbrir(item) },
+                        onQuitar = { onQuitar(item) }
+                    )
                 }
             }
         }

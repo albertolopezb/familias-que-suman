@@ -204,7 +204,7 @@ fun InicioScreen(
                 ) {
                     MetricaItem("12", "Actividades realizadas", Modifier.weight(1f))
                     MetricaItem("3", "Próximas esta semana", Modifier.weight(1f))
-                    MetricaItem("4", "Favoritas guardadas", Modifier.weight(1f))
+                    MetricaItem(favoritas.size.toString(), "Favoritas guardadas", Modifier.weight(1f))
                 }
                 Spacer(modifier = Modifier.height(28.dp))
             }

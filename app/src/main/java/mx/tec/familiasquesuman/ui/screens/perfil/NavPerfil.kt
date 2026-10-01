@@ -16,6 +16,9 @@ import androidx.navigation.compose.composable
 import mx.tec.familiasquesuman.domain.Usuario
 import mx.tec.familiasquesuman.domain.UsuariosHardcodeados
 import mx.tec.familiasquesuman.ui.navigation.Rutas
+import mx.tec.familiasquesuman.ui.screens.actividades.RutasActividades
+import mx.tec.familiasquesuman.ui.screens.campanas.RutasCampanas
+import mx.tec.familiasquesuman.ui.screens.inicio.RutasInicio
 import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
 import mx.tec.familiasquesuman.ui.state.UiState
@@ -130,11 +133,29 @@ fun NavGraphBuilder.grafoPerfil(
     composable(RutasPerfil.FAVORITOS) {
         val cuenta = cuentaViewModel()
         val asociaciones by cuenta.asociaciones.collectAsStateWithLifecycle()
+        val actividades by cuenta.actividades.collectAsStateWithLifecycle()
+        val campanas by cuenta.campanas.collectAsStateWithLifecycle()
         val favoritas by cuenta.favoritas.collectAsStateWithLifecycle()
+        val items = asociaciones.filter { it.id in favoritas }
+            .map { ItemFavorito(it.id, TipoFavorito.ASOCIACION, it.nombre, it.categoria) } +
+            actividades.filter { it.id in favoritas }
+                .map { ItemFavorito(it.id, TipoFavorito.ACTIVIDAD, it.titulo, "Actividad · ${it.fecha}") } +
+            campanas.filter { it.id in favoritas }
+                .map { ItemFavorito(it.id, TipoFavorito.CAMPANA, it.titulo, "Campaña · ${it.categoria.ifBlank { "Donación" }}") }
         FavoritosScreen(
-            estado = UiState.Exito(asociaciones.filter { it.id in favoritas }),
+            estado = UiState.Exito(items),
             onVolver = { nav.popBackStack() },
-            onReintentar = {}
+            onReintentar = {},
+            onAbrir = { item ->
+                nav.navigate(
+                    when (item.tipo) {
+                        TipoFavorito.ASOCIACION -> RutasInicio.asociacion(item.id)
+                        TipoFavorito.ACTIVIDAD -> RutasActividades.detalle(item.id)
+                        TipoFavorito.CAMPANA -> RutasCampanas.detalle(item.id)
+                    }
+                )
+            },
+            onQuitar = { item -> cuenta.alternarFavorita(item.id) }
         )
     }
     composable(RutasPerfil.INSIGNIAS) {

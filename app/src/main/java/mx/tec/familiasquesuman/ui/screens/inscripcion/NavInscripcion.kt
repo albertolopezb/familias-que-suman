@@ -92,6 +92,7 @@ private fun NavController.irAMiPerfil() = navigate(Rutas.PERFIL) {
  */
 fun NavController.alternarFavorita(cuenta: CuentaViewModel, id: String) {
     if (cuenta.sesion.value == null) {
+        cuenta.recordarFavoritoPendiente(id)
         navigate(RutasInscripcion.INICIAR_SESION) { launchSingleTop = true }
     } else {
         cuenta.alternarFavorita(id)

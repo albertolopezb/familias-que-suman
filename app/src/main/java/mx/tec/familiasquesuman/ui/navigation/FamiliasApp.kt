@@ -150,7 +150,8 @@ fun FamiliasApp() {
                     onNavegarAActividades = { nav.navigate(RutasActividades.LISTA) },
                     onNavegarACampanas = { nav.navigate(RutasCampanas.LISTA) },
                     // "Ver agenda" es lo de la familia: Mis actividades (pide sesión).
-                    onVerAgenda = { abrirConSesion(Rutas.MIS_ACTIVIDADES) }
+                    onVerAgenda = { abrirConSesion(Rutas.MIS_ACTIVIDADES) },
+                    esAdmin = { usuarioActual.esAdmin }
                 )
 
                 // Pasamos esAdmin dinámicamente según la cuenta activa
@@ -169,7 +170,7 @@ fun FamiliasApp() {
                     onResponderEncuesta = { nav.navigate(RutasPerfil.ENCUESTA_FINAL) }
                 )
 
-                grafoCampanas(nav)
+                grafoCampanas(nav, esAdmin = { usuarioActual.esAdmin })
                 grafoInscripcion(nav)
             }
         }

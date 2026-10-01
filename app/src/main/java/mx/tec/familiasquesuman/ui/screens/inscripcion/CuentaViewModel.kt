@@ -9,6 +9,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import mx.tec.familiasquesuman.data.ActividadRepository
+import mx.tec.familiasquesuman.domain.Campana
+import mx.tec.familiasquesuman.data.FavoritosStore
+import mx.tec.familiasquesuman.data.CampanaRepository
 import mx.tec.familiasquesuman.data.PerfilRepository
 import mx.tec.familiasquesuman.domain.Acompanante
 import mx.tec.familiasquesuman.domain.Actividad
@@ -91,7 +94,9 @@ data class CancelacionUi(
  */
 class CuentaViewModel(
     private val actividadRepository: ActividadRepository,
-    private val perfilRepository: PerfilRepository
+    private val perfilRepository: PerfilRepository,
+    private val campanaRepository: CampanaRepository,
+    private val favoritosStore: FavoritosStore
 ) : ViewModel() {
 
     private data class CuentaGuardada(
@@ -122,6 +127,12 @@ class CuentaViewModel(
     private val _actividades = MutableStateFlow<List<Actividad>>(emptyList())
     val actividades: StateFlow<List<Actividad>> = _actividades.asStateFlow()
 
+    private val _campanas = MutableStateFlow<List<Campana>>(emptyList())
+    val campanas: StateFlow<List<Campana>> = _campanas.asStateFlow()
+
+    /** El corazón que se tocó sin sesión: se pone solo al entrar. */
+    private var favoritoPendiente: String? = null
+
     private val _asociaciones = MutableStateFlow<List<Asociacion>>(emptyList())
     val asociaciones: StateFlow<List<Asociacion>> = _asociaciones.asStateFlow()
 
@@ -148,6 +159,7 @@ class CuentaViewModel(
         viewModelScope.launch {
             _actividades.value = actividadRepository.getActividades()
             _asociaciones.value = actividadRepository.getAsociaciones()
+            _campanas.value = campanaRepository.getCampanas()
             val familia = perfilRepository.getFamilia()
 
             // 1. Cuenta Normal Hardcodeada (Ana Rodríguez)
@@ -156,7 +168,7 @@ class CuentaViewModel(
                 Sesion(familia.nombre, familia.correo, CuentaDePrueba.titular),
                 CuentaDePrueba.acompanantes,
                 CuentaDePrueba.inscripciones,
-                perfilRepository.getFavoritas().map { it.id }.toSet()
+                favoritosStore.cargar(familia.correo) ?: perfilRepository.getFavoritas().map { it.id }.toSet()
             )
 
             // 2. Cuenta de Administrador Hardcodeada
@@ -172,6 +184,15 @@ class CuentaViewModel(
                 inscripciones = emptyMap(),
                 favoritas = emptySet()
             )
+        }
+    }
+
+    /** El admin cambió el directorio: se vuelve a leer para que Inicio y Favoritos no queden viejos. */
+    fun recargarCatalogo() {
+        viewModelScope.launch {
+            _actividades.value = actividadRepository.getActividades()
+            _asociaciones.value = actividadRepository.getAsociaciones()
+            _campanas.value = campanaRepository.getCampanas()
         }
     }
 
@@ -269,13 +290,23 @@ class CuentaViewModel(
         _sesion.value = cuenta.sesion
         _acompanantes.value = cuenta.acompanantes
         _inscripciones.value = cuenta.inscripciones
-        _favoritas.value = cuenta.favoritas
+        val guardadas = favoritosStore.cargar(cuenta.sesion.correo) ?: cuenta.favoritas
+        val pendiente = favoritoPendiente
+        favoritoPendiente = null
+        _favoritas.value = if (pendiente != null) guardadas + pendiente else guardadas
+        if (pendiente != null) favoritosStore.guardar(cuenta.sesion.correo, _favoritas.value)
     }
 
     /** Pone o quita el corazón. Solo con sesión: quien llama decide qué hacer si no la hay. */
     fun alternarFavorita(id: String) {
-        if (_sesion.value == null) return
+        val correo = _sesion.value?.correo ?: return
         _favoritas.update { if (id in it) it - id else it + id }
+        favoritosStore.guardar(correo, _favoritas.value)
+    }
+
+    /** Sin sesión el corazón pide entrar; al hacerlo, queda marcado. */
+    fun recordarFavoritoPendiente(id: String) {
+        favoritoPendiente = id
     }
 
     // ── P-27 · Recuperar ──

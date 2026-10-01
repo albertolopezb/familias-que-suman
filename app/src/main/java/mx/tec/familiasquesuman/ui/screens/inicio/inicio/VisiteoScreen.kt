@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -33,6 +34,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.domain.CentroVisiteo
+import mx.tec.familiasquesuman.ui.components.BotonCrearAdmin
+import mx.tec.familiasquesuman.ui.components.FilaAccionesAdmin
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Etiqueta
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.FilaDato
@@ -55,7 +58,11 @@ fun VisiteoScreen(
     centros: List<CentroVisiteo> = emptyList(),
     ciudad: String = "Monterrey, N.L.",
     onIrAInicio: () -> Unit = {},
-    onComoAyudar: () -> Unit = {}
+    onComoAyudar: () -> Unit = {},
+    esAdmin: Boolean = false,
+    onCrearCentro: () -> Unit = {},
+    onEditarCentro: (CentroVisiteo) -> Unit = {},
+    onBorrarCentro: (CentroVisiteo) -> Unit = {}
 ) {
     var tipo by remember { mutableStateOf("Todos") }
     var busqueda by remember { mutableStateOf("") }
@@ -63,6 +70,7 @@ fun VisiteoScreen(
         .filter { tipo == "Todos" || it.tipo == tipo }
         .filter { busqueda.isBlank() || it.nombre.contains(busqueda.trim(), ignoreCase = true) }
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize().background(Web.Fondo)) {
         EncabezadoApp()
         LazyColumn(
@@ -112,13 +120,29 @@ fun VisiteoScreen(
                 }
             }
             items(visibles, key = { it.id }) { centro ->
-                TarjetaCentro(
-                    centro = centro,
-                    onComoAyudar = onComoAyudar,
-                    onVerDetalles = { onCentroClick(centro.id) }
-                )
+                Column {
+                    TarjetaCentro(
+                        centro = centro,
+                        onComoAyudar = onComoAyudar,
+                        onVerDetalles = { onCentroClick(centro.id) }
+                    )
+                    if (esAdmin) {
+                        FilaAccionesAdmin(
+                            onEditar = { onEditarCentro(centro) },
+                            onBorrar = { onBorrarCentro(centro) }
+                        )
+                    }
+                }
             }
         }
+    }
+    if (esAdmin) {
+        BotonCrearAdmin(
+            descripcion = "Crear centro",
+            onClick = onCrearCentro,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
+        )
+    }
     }
 }
 

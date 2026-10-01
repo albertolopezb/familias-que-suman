@@ -33,7 +33,7 @@ internal object DatosDePrueba {
 
     val impacto = Impacto(actividadesRealizadas = 12, horasDeServicio = 36, campanasApoyadas = 4)
 
-    val asociaciones = listOf(
+    val asociaciones = mutableListOf(
         Asociacion("a1", "Comedor Comunitario San Bernabé", "Alimentación",
             "Damos comida caliente a 180 familias de la colonia y armamos despensas de fin de mes.",
             "Av. Rómulo Garza 240, Col. San Bernabé, Monterrey",
@@ -256,7 +256,7 @@ internal object DatosDePrueba {
      * apartar (RF-21). Sus 100 apartados son de ejemplo para la demostración: ponlos en 0 si
      * ya no se necesitan.
      */
-    val campanas = listOf(
+    val campanas = mutableListOf(
         Campana("c1", "Destellos de Luz", "", "Salud",
             cierra = "", urgente = false,
             descripcion = "Destellos de Luz A.B.P. cuenta con más de 29 años de experiencia brindando " +
@@ -328,7 +328,7 @@ internal object DatosDePrueba {
     )
 
     /** Los proyectos activos de familiasquesuman.com/proyectos. */
-    val proyectos = listOf(
+    val proyectos = mutableListOf(
         Proyecto("pr1", "Trazo... Escribiendo una nueva historia",
             "Somos un grupo de mujeres voluntarias que realizamos visitas quincenales al Centro de " +
                 "Reinserción Social de Escobedo para acompañar a mujeres privadas de la libertad " +
@@ -375,7 +375,7 @@ internal object DatosDePrueba {
     )
 
     /** Los centros verificados de familiasquesuman.com/directorio. */
-    val centros = listOf(
+    val centros = mutableListOf(
         CentroVisiteo("ce1", "Morada del Anciano Desvalido Cadereyta", "Asilos",
             "Asilo de ancianos donde se atienden 24 horas a 46 adultos mayores.",
             "Atención a adultos mayores en abandono, soledad y falta de apoyo familiar. Se les " +

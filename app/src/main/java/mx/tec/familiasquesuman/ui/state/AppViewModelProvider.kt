@@ -90,7 +90,12 @@ object AppViewModelProvider {
         }
         initializer {
             val c = familiasApplication().container
-            CuentaViewModel(c.actividadRepository, c.perfilRepository)
+            CuentaViewModel(
+                c.actividadRepository,
+                c.perfilRepository,
+                c.campanaRepository,
+                mx.tec.familiasquesuman.data.FavoritosStore(familiasApplication())
+            )
         }
         initializer { AcompanantesViewModel(familiasApplication().container.actividadRepository) }
     }

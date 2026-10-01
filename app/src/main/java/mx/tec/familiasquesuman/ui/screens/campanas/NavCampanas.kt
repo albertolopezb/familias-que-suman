@@ -32,6 +32,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import mx.tec.familiasquesuman.domain.Campana
 import mx.tec.familiasquesuman.domain.PuntoEntrega
+import mx.tec.familiasquesuman.ui.components.CampoAdmin
+import mx.tec.familiasquesuman.ui.components.DialogoConfirmarBorrado
+import mx.tec.familiasquesuman.ui.components.DialogoFormularioAdmin
+import mx.tec.familiasquesuman.ui.components.TipoCampo
 import mx.tec.familiasquesuman.ui.screens.inscripcion.alternarFavorita
 import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
@@ -98,7 +102,7 @@ private fun abrirMapa(contexto: Context, direccion: String) {
  *     grafoCampanas(nav)
  * Y para llegar desde Inicio ("Quiero Donar"): nav.navigate(RutasCampanas.LISTA)
  */
-fun NavGraphBuilder.grafoCampanas(nav: NavController) {
+fun NavGraphBuilder.grafoCampanas(nav: NavController, esAdmin: () -> Boolean = { false }) {
 
     // P-09 / 09b / 09c / 09d + hoja de filtros P-10
     composable(RutasCampanas.LISTA) {
@@ -112,6 +116,10 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController) {
         val nombres by vm.nombresAsociacion.collectAsStateWithLifecycle()
         var verFiltros by rememberSaveable { mutableStateOf(false) }
         val contexto = LocalContext.current
+        var creando by remember { mutableStateOf(false) }
+        var editando by remember { mutableStateOf<Campana?>(null) }
+        var borrando by remember { mutableStateOf<Campana?>(null) }
+        val lista = (estado as? UiState.Exito)?.datos.orEmpty()
 
         CampanasScreen(
             estado = estado,
@@ -136,8 +144,44 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController) {
                 abrirWhatsApp(contexto, numero, "Hola, tengo algo para donar y me gustaría coordinar la entrega.")
             },
             onComoLlegar = { direccion -> abrirMapa(contexto, direccion) },
-            onAbrirEnlace = { enlace -> abrir(contexto, Intent(Intent.ACTION_VIEW, Uri.parse(enlace))) }
+            onAbrirEnlace = { enlace -> abrir(contexto, Intent(Intent.ACTION_VIEW, Uri.parse(enlace))) },
+            esAdmin = esAdmin(),
+            onCrearCampana = { creando = true },
+            onEditarCampana = { id -> editando = lista.firstOrNull { it.id == id } },
+            onBorrarCampana = { id -> borrando = lista.firstOrNull { it.id == id } }
         )
+
+        if (creando || editando != null) {
+            val actual = editando
+            DialogoFormularioAdmin(
+                titulo = if (actual == null) "Crear campaña" else "Editar campaña",
+                campos = listOf(
+                    CampoAdmin("Título", actual?.titulo.orEmpty()),
+                    CampoAdmin("Categoría", actual?.categoria.orEmpty()),
+                    CampoAdmin("Cierra (ej. 30 de diciembre)", actual?.cierra.orEmpty()),
+                    CampoAdmin("Descripción", actual?.descripcion.orEmpty(), TipoCampo.MULTILINEA),
+                    CampoAdmin("Unidad de la meta (kits, despensas…)", actual?.unidadMeta.orEmpty()),
+                    CampoAdmin("Meta total", (actual?.metaTotal ?: 0).toString(), TipoCampo.NUMERO),
+                    CampoAdmin("Completados", (actual?.completados ?: 0).toString(), TipoCampo.NUMERO),
+                    CampoAdmin("Ciudad", actual?.ciudad ?: "Monterrey"),
+                    CampoAdmin("Urgente", (actual?.urgente ?: false).toString(), TipoCampo.INTERRUPTOR)
+                ),
+                onGuardar = { valores ->
+                    vm.guardarCampana(actual, valores)
+                    creando = false
+                    editando = null
+                },
+                onDescartar = { creando = false; editando = null }
+            )
+        }
+
+        borrando?.let { campana ->
+            DialogoConfirmarBorrado(
+                nombre = campana.titulo,
+                onConfirmar = { vm.borrarCampana(campana.id); borrando = null },
+                onDescartar = { borrando = null }
+            )
+        }
 
         if (verFiltros) {
             FiltrosSheet(
