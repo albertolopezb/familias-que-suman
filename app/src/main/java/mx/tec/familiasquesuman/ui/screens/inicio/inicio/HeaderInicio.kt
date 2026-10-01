@@ -18,7 +18,7 @@ import mx.tec.familiasquesuman.ui.theme.AzulMarinoPrimario
 
 /** El saludo del Inicio. La ciudad y el perfil están en el encabezado de arriba. */
 @Composable
-fun HeaderInicio(nombreFamilia: String) {
+fun HeaderInicio(nombreFamilia: String?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -28,13 +28,13 @@ fun HeaderInicio(nombreFamilia: String) {
     ) {
         Column {
             Text(
-                text = "¡Buenos días!",
+                text = if (nombreFamilia == null) "¡Qué gusto verte por aquí!" else saludoDelDia(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.Gray
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = nombreFamilia,
+                    text = nombreFamilia ?: "Bienvenida, familia",
                     style = MaterialTheme.typography.headlineSmall,
                     color = AzulMarinoPrimario
                 )
@@ -43,4 +43,10 @@ fun HeaderInicio(nombreFamilia: String) {
             }
         }
     }
+}
+
+private fun saludoDelDia(): String = when (java.time.LocalTime.now().hour) {
+    in 5..11 -> "¡Buenos días!"
+    in 12..18 -> "¡Buenas tardes!"
+    else -> "¡Buenas noches!"
 }

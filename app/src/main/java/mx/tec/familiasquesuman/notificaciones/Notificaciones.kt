@@ -23,8 +23,7 @@ import mx.tec.familiasquesuman.R
  * Notificaciones reales del sistema (P-25): canales, permiso y envío.
  *
  * Al tocar una notificación se abre la app con el enlace `familiasquesuman://actividad/{id}`.
- * La pantalla que registre ese `navDeepLink` es la que se abre: hoy es el detalle temporal
- * de la parte 3; al integrar, el enlace se mueve al DetalleActividad de la parte 2.
+ * La pantalla que se abre es el DetalleActividad, que registra ese `navDeepLink`.
  * El enlace se maneja solo: NavHost lo lee del Intent al arrancar, sin tocar MainActivity.
  */
 object Notificaciones {

@@ -6,6 +6,8 @@ import mx.tec.familiasquesuman.domain.ArticuloMeta
 import mx.tec.familiasquesuman.domain.Asociacion
 import mx.tec.familiasquesuman.domain.Campana
 import mx.tec.familiasquesuman.domain.CentroVisiteo
+import mx.tec.familiasquesuman.domain.OpcionDonacion
+import mx.tec.familiasquesuman.domain.PuntoEntrega
 import mx.tec.familiasquesuman.domain.EstadoParticipacion
 import mx.tec.familiasquesuman.domain.Familia
 import mx.tec.familiasquesuman.domain.Impacto
@@ -240,35 +242,81 @@ internal object DatosDePrueba {
             yaPaso = true)
     )
 
+    /**
+     * Las campañas de familiasquesuman.com/donar, con sus textos tal cual los publica el sitio.
+     * Solo Bibliotecas Infantiles tiene meta de artículos, así que es la única que se puede
+     * apartar (RF-21). Sus 100 apartados son de ejemplo para la demostración: ponlos en 0 si
+     * ya no se necesitan.
+     */
     val campanas = listOf(
-        Campana("c1", "Kits de primera comunión para San Bernabé", "a4", "Útiles escolares",
-            cierra = "20 de septiembre", urgente = true,
-            descripcion = "Cuarenta y cinco niños hacen su primera comunión el 4 de octubre. Aparta lo que vayas a llevar para que no se junten cosas repetidas.",
-            unidadMeta = "kits", metaTotal = 45, completados = 18,
-            articulos = listOf(
-                ArticuloMeta("c1-1", "Rosario blanco", 45, 12),
-                ArticuloMeta("c1-2", "Biblia infantil", 45, 30),
-                ArticuloMeta("c1-3", "Vela decorada", 45, 45),
-                ArticuloMeta("c1-4", "Mochila con útiles", 45, 8)
+        Campana("c1", "Destellos de Luz", "", "Salud",
+            cierra = "", urgente = false,
+            descripcion = "Destellos de Luz A.B.P. cuenta con más de 29 años de experiencia brindando " +
+                "atención oftalmológica integral y programas educativos que impulsan la autonomía y " +
+                "calidad de vida de personas con discapacidad visual.",
+            unidadMeta = "", metaTotal = 0, completados = 0, articulos = emptyList(),
+            imagen = "campana_destellos",
+            telefono = "8180924504", whatsapp = "8180924504", contactoNombre = "Mariana Báez",
+            descripcionLarga = "Destellos de Luz A.B.P. es una asociación con más de 29 años de " +
+                "trayectoria, que cuenta con un área médica y un área educativa.\n\n" +
+                "En el área Médica: brindamos atención oftalmológica integral, respaldada por un " +
+                "cuerpo médico altruista especializado, desde la valoración médica hasta cirugías y " +
+                "tratamientos especializados, para quienes más lo necesitan.\n\n" +
+                "En el área Educativa: a través de 7 programas de educación fortalecemos las " +
+                "habilidades de personas con discapacidad visual para favorecer su superación y " +
+                "mejorar su calidad de vida.",
+            comoAyudar = "Dona herramientas para personas con discapacidad visual las cuales les " +
+                "facilitan su desplazamiento y aprendizaje.",
+            opcionesDonacion = listOf(
+                OpcionDonacion("Bastón para desplazamiento", "\$700"),
+                OpcionDonacion("Computadora parlante", "\$21,000"),
+                OpcionDonacion("Cirugía", "\$14,000")
+            ),
+            instagram = "https://www.instagram.com/destellosdeluzabp/"),
+        Campana("c2", "Tapitas que Suman", "", "",
+            cierra = "30 de diciembre", urgente = false,
+            descripcion = "Recolección de tapitas de plástico para reciclaje",
+            unidadMeta = "", metaTotal = 0, completados = 0, articulos = emptyList(),
+            imagen = "campana_tapitas", textoBoton = "Quiero juntar",
+            telefono = "8110809078", whatsapp = "8110809078", contactoNombre = "Familias que Suman",
+            descripcionLarga = "Junta en casa todas las tapitas de plástico para reciclaje y ayuda a " +
+                "la alimentación y el medio ambiente.",
+            comoAyudar = "Ayudanos a difundir entre familiares y amigos y invitalos a juntar todas las " +
+                "tapitas de botellas de plástico. Se pueden reciclar, se reutiliza ese plásticoy con " +
+                "ese dinero recaudado podemos ayudar a niños con cáncer y a sus familias."),
+        Campana("c3", "Suma a su Mesa", "", "Alimentos",
+            cierra = "30 de octubre", urgente = false,
+            descripcion = "Recoleccion de alimentos y productos de limpieza para el Asilo de Ancianos " +
+                "Morada del Anciano Desvalido de Cadereyta. Se sirven 6,900 servicios de " +
+                "alimentación al mes.",
+            unidadMeta = "", metaTotal = 0, completados = 0, articulos = emptyList(),
+            imagen = "campana_suma_mesa",
+            telefono = "8114707350", whatsapp = "8114707350", contactoNombre = "Adriana Guerra",
+            descripcionLarga = "Recolección de alimentos no perecederos y productos de limpieza para " +
+                "el Asilo con Adultos Mayores en Cadereyta. Alimentos: aceite, arroz, frijoles, " +
+                "lentejas, azúcar, avena, atún, productos enlatados, leche, té, café, galletas, " +
+                "gelatina, pasta, saladitas, servilletas, papel de baño. Productos de limpieza: " +
+                "escobas, trapeador, bolsas de basura, cloro, fabuloso, pinol, esponjas, jabón " +
+                "liquido, desengrasante.",
+            comoAyudar = "Recolecta entre familia y amigos alimentos y productos de limpieza. Existen " +
+                "3 puntos de entrega. Reúne entre tu comunidad y hagan una gran donación.",
+            puntosEntrega = listOf(
+                PuntoEntrega("Calle Cóndor 1001", "Fraccionamiento Azhara"),
+                PuntoEntrega("Río Amazonas 327", "Del Valle, 66220 San Pedro Garza García"),
+                PuntoEntrega("Fuego 45", "Colonia Olinca")
             )),
-        Campana("c2", "Despensas de fin de mes", "a1", "Alimentos",
-            cierra = "30 de septiembre", urgente = false,
-            descripcion = "Arroz, frijol y aceite para 300 familias de la colonia.",
-            unidadMeta = "despensas", metaTotal = 300, completados = 120,
-            articulos = listOf(
-                ArticuloMeta("c2-1", "Arroz, bolsa de 1 kg", 300, 140),
-                ArticuloMeta("c2-2", "Frijol, bolsa de 1 kg", 300, 120),
-                ArticuloMeta("c2-3", "Aceite, 1 litro", 300, 95)
-            )),
-        Campana("c3", "Ropa de invierno para el albergue", "a3", "Ropa",
-            cierra = "15 de octubre", urgente = false,
-            descripcion = "Cobijas, chamarras y calcetines para la temporada de frío.",
-            unidadMeta = "prendas", metaTotal = 200, completados = 40,
-            articulos = listOf(
-                ArticuloMeta("c3-1", "Cobijas", 80, 20),
-                ArticuloMeta("c3-2", "Chamarras", 70, 12),
-                ArticuloMeta("c3-3", "Calcetines, par", 50, 8)
-            ))
+        Campana("c4", "Bibliotecas Infantiles", "", "Útiles escolares",
+            cierra = "", urgente = false,
+            descripcion = "Recolección de cuentos infantiles para crear Bibliotecas",
+            unidadMeta = "cuentos", metaTotal = 300, completados = 100,
+            articulos = listOf(ArticuloMeta("c4-1", "Cuentos infantiles", 300, 100)),
+            imagen = "campana_bibliotecas",
+            telefono = "8120322281", contactoNombre = "Familias que Suman",
+            metaTexto = "250-300 cuentos",
+            descripcionLarga = "Reúne cuentos infantiles para crear Bibliotecas para niños. No " +
+                "diccionarios, no libros de texto y no libros de colorear. Se necesitan entre 250 y " +
+                "300 cuentos para juntar la Biblioteca.",
+            comoAyudar = "Junta cuentos desde preescolar hasta secundaria en buen estado.")
     )
 
     /** Los proyectos activos de familiasquesuman.com/proyectos. */

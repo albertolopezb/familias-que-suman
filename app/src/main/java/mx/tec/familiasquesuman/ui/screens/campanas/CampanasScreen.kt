@@ -27,13 +27,27 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -50,8 +64,16 @@ import mx.tec.familiasquesuman.ui.theme.ErrorRojo
 import mx.tec.familiasquesuman.ui.theme.ErrorTexto
 import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
 import mx.tec.familiasquesuman.ui.theme.MarcaAzul
+import mx.tec.familiasquesuman.ui.theme.MarcaOro
 import mx.tec.familiasquesuman.ui.theme.Tinta
 import mx.tec.familiasquesuman.ui.theme.TintaSuave
+
+/**
+ * La web no tiene filtros en "Donar a campaña", así que se ocultan. El código de los filtros
+ * (chips, hoja y píldoras) sigue aquí y en CampanasViewModel: para volver a mostrarlos
+ * (RF-20) basta con poner esto en `true`.
+ */
+private const val MostrarFiltrosEnLista = false
 
 /**
  * P-09, P-09b, P-09c y P-09d: la lista de campañas con sus cuatro estados.
@@ -71,33 +93,82 @@ fun CampanasScreen(
     onCampanaClick: (String) -> Unit,
     onReintentar: () -> Unit,
     modifier: Modifier = Modifier,
-    nombresAsociacion: Map<String, String> = emptyMap()
+    nombresAsociacion: Map<String, String> = emptyMap(),
+    chipElegido: String? = null,
+    onAyudar: (Campana) -> Unit = {},
+    onNoEncontre: () -> Unit = {}
+,
+    esAdmin: Boolean = false,
+    onCrearCampana: () -> Unit = {},
+    onEditarCampana: (String) -> Unit = {},
+    onBorrarCampana: (String) -> Unit = {}
 ) {
-    Column(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        floatingActionButton = {
+            if (esAdmin) {
+                FloatingActionButton(
+                    onClick = onCrearCampana,
+                    containerColor = MarcaAzul,
+                    contentColor = Color.White
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Crear Campaña")
+                }
+            }
+        }
+    ) { innerPadding ->
+    Column(modifier = Modifier.fillMaxSize().padding(innerPadding).background(MaterialTheme.colorScheme.background)) {
+    // Qué modo se está viendo. Solo es estado de pantalla (como "qué pestaña"), no de datos.
+    var modo by rememberSaveable { mutableStateOf(ModoDonar.CAMPANA) }
+
         EncabezadoApp()
-        BarraSuperior(onBack = onBack, onAbrirFiltros = onAbrirFiltros)
+        BarraSuperior(onBack = onBack, esAdmin = esAdmin)
+        SelectorModoDonar(modo = modo, onElegir = { modo = it })
+
+        if (modo == ModoDonar.TENGO_ALGO) {
+            ProximamenteTengoAlgo()
+            return@Column
+        }
 
         when (estado) {
             is UiState.Cargando -> ListaCargando()
             is UiState.Error -> EstadoError(mensaje = estado.mensaje, onReintentar = onReintentar)
             is UiState.Exito -> {
                 if (estado.datos.isEmpty()) {
+                    // Lo que está filtrando ahora: el chip tocado o lo aplicado desde la hoja.
+                    val efectivos = if (chipElegido != null) FiltrosCampanas(setOf(chipElegido)) else filtros
                     Column {
-                        if (filtros.hayActivos) {
-                            FiltrosActivos(filtros, onQuitarCategoria, onQuitarUrgentes)
+                        if (MostrarFiltrosEnLista && efectivos.hayActivos) {
+                            FiltrosDeArriba(
+                                filtros = filtros,
+                                chipElegido = chipElegido,
+                                onChipRapido = onChipRapido,
+                                onAbrirFiltros = onAbrirFiltros,
+                                onQuitarCategoria = onQuitarCategoria,
+                                onQuitarUrgentes = onQuitarUrgentes,
+                                conMargen = true
+                            )
                         }
-                        EstadoVacio(filtros, totalAbiertas, onQuitarFiltros)
+                        EstadoVacio(efectivos, totalAbiertas, onQuitarFiltros)
                     }
                 } else {
                     ListaConDatos(
                         campanas = estado.datos,
                         nombresAsociacion = nombresAsociacion,
                         filtros = filtros,
+                        chipElegido = chipElegido,
                         onChipRapido = onChipRapido,
+                        onAbrirFiltros = onAbrirFiltros,
                         onQuitarCategoria = onQuitarCategoria,
                         onQuitarUrgentes = onQuitarUrgentes,
-                        onCampanaClick = onCampanaClick
+                        onCampanaClick = onCampanaClick,
+                        onAyudar = onAyudar,
+                        onNoEncontre = onNoEncontre,
+                        esAdmin = esAdmin,
+                        onEditarCampana = onEditarCampana,
+                        onBorrarCampana = onBorrarCampana
                     )
+                    }
                 }
             }
         }
@@ -105,7 +176,7 @@ fun CampanasScreen(
 }
 
 @Composable
-private fun BarraSuperior(onBack: () -> Unit, onAbrirFiltros: () -> Unit) {
+private fun BarraSuperior(onBack: () -> Unit, esAdmin: Boolean = false) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -114,14 +185,89 @@ private fun BarraSuperior(onBack: () -> Unit, onAbrirFiltros: () -> Unit) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = MarcaAzul)
         }
         Text(
-            "Quiero Donar",
+            if (esAdmin) "Quiero Donar (Admin)" else "Quiero Donar",
             style = MaterialTheme.typography.titleLarge,
             color = MarcaAzul,
             modifier = Modifier.weight(1f)
         )
-        IconButton(onClick = onAbrirFiltros) {
-            Icon(IconoFiltro, contentDescription = "Filtros", tint = MarcaAzul)
+    }
+}
+
+/** Los dos modos de "Quiero Donar", igual que en la web. */
+enum class ModoDonar { CAMPANA, TENGO_ALGO }
+
+/**
+ * Los dos botones de arriba. El modo que estás viendo va de color (amarillo / azul) y el otro en
+ * gris, para que se entienda dónde estás y cómo cambiar.
+ */
+@Composable
+private fun SelectorModoDonar(modo: ModoDonar, onElegir: (ModoDonar) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        BotonModo(
+            texto = "Donar a campaña",
+            activo = modo == ModoDonar.CAMPANA,
+            colorActivo = MarcaOro,
+            textoActivo = Tinta,
+            onClick = { onElegir(ModoDonar.CAMPANA) },
+            modifier = Modifier.weight(1f)
+        )
+        BotonModo(
+            texto = "Tengo algo para donar",
+            activo = modo == ModoDonar.TENGO_ALGO,
+            colorActivo = MarcaAzul,
+            textoActivo = Color.White,
+            onClick = { onElegir(ModoDonar.TENGO_ALGO) },
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun BotonModo(
+    texto: String,
+    activo: Boolean,
+    colorActivo: Color,
+    textoActivo: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.height(48.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = if (activo) colorActivo else Color.White,
+        border = if (activo) null else BorderStroke(1.dp, Borde)
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            Text(
+                text = texto,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (activo) textoActivo else TintaSuave,
+                textAlign = TextAlign.Center
+            )
         }
+    }
+}
+
+/** Mientras se acuerda con el equipo cómo se llenan los datos de "Tengo algo para donar". */
+@Composable
+private fun ProximamenteTengoAlgo() {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text("Próximamente", style = MaterialTheme.typography.titleMedium, color = MarcaAzul)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Aquí vas a poder ver a qué asociaciones llevar lo que tienes para donar.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = TintaSuave,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -130,67 +276,159 @@ private fun ListaConDatos(
     campanas: List<Campana>,
     nombresAsociacion: Map<String, String>,
     filtros: FiltrosCampanas,
+    chipElegido: String?,
     onChipRapido: (String?) -> Unit,
+    onAbrirFiltros: () -> Unit,
     onQuitarCategoria: (String) -> Unit,
     onQuitarUrgentes: () -> Unit,
-    onCampanaClick: (String) -> Unit
+    onCampanaClick: (String) -> Unit,
+    onAyudar: (Campana) -> Unit,
+    onNoEncontre: () -> Unit,
+    esAdmin: Boolean = false,
+    onEditarCampana: (String) -> Unit = {},
+    onBorrarCampana: (String) -> Unit = {}
 ) {
     LazyColumn(
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item {
-            if (filtros.soloUrgentes || filtros.categorias.size > 1 ||
-                filtros.categorias.any { it !in CategoriasRapidas }
-            ) {
-                // Con filtros de la hoja, se ven como píldoras con ✕.
-                FiltrosActivos(filtros, onQuitarCategoria, onQuitarUrgentes)
-            } else {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    item {
-                        PildoraFiltro("Todas", seleccionada = filtros.categorias.isEmpty(), onClick = { onChipRapido(null) })
-                    }
-                    items(CategoriasRapidas) { cat ->
-                        PildoraFiltro(cat, seleccionada = cat in filtros.categorias, onClick = { onChipRapido(cat) })
+        if (MostrarFiltrosEnLista) {
+            item {
+                FiltrosDeArriba(
+                    filtros = filtros,
+                    chipElegido = chipElegido,
+                    onChipRapido = onChipRapido,
+                    onAbrirFiltros = onAbrirFiltros,
+                    onQuitarCategoria = onQuitarCategoria,
+                    onQuitarUrgentes = onQuitarUrgentes,
+                    conMargen = false
+                )
+            }
+        }
+        items(campanas, key = { it.id }) { campana ->
+            Column {
+                TarjetaCampana(
+                    campana = campana,
+                    onClick = { onCampanaClick(campana.id) },
+                    onAyudar = { onAyudar(campana) },
+                    nombreAsociacion = nombresAsociacion[campana.asociacionId]
+                )
+                if (esAdmin) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { onEditarCampana(campana.id) }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MarcaAzul)
+                        }
+                        IconButton(onClick = { onBorrarCampana(campana.id) }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = ErrorRojo)
+                        }
                     }
                 }
             }
         }
-        item {
-            val n = campanas.size
-            Text(
-                text = if (n == 1) "1 campaña abierta en Monterrey" else "$n campañas abiertas en Monterrey",
-                style = MaterialTheme.typography.bodyLarge,
-                color = TintaSuave
-            )
-        }
-        items(campanas, key = { it.id }) { campana ->
-            TarjetaCampana(
-                campana = campana,
-                onClick = { onCampanaClick(campana.id) },
-                nombreAsociacion = nombresAsociacion[campana.asociacionId]
-            )
-        }
+        item { TarjetaNoEncontre(onClick = onNoEncontre) }
     }
 }
 
-/** Píldoras azules con ✕ arriba de la lista: los filtros que están activos. */
+/** Al final de la lista, como en el sitio: la tarjeta punteada para quien no halló dónde donar. */
 @Composable
-private fun FiltrosActivos(
-    filtros: FiltrosCampanas,
-    onQuitarCategoria: (String) -> Unit,
-    onQuitarUrgentes: () -> Unit
-) {
-    LazyRow(
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+private fun TarjetaNoEncontre(onClick: () -> Unit) {
+    val trazo = Color(0xFFD7E0EA)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .drawBehind {
+                drawRoundRect(
+                    color = trazo,
+                    cornerRadius = CornerRadius(16.dp.toPx()),
+                    style = Stroke(
+                        width = 2.dp.toPx(),
+                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 8f))
+                    )
+                )
+            }
+            .padding(vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
-        items(filtros.categorias.toList()) { cat ->
-            PildoraFiltro(cat, seleccionada = true, onClick = { onQuitarCategoria(cat) }, onQuitar = { onQuitarCategoria(cat) })
+        Text(
+            "¿No encontré dónde donarlo?",
+            style = MaterialTheme.typography.labelLarge,
+            color = TintaSuave
+        )
+        Text(
+            "Cuéntanos y te ayudamos",
+            style = MaterialTheme.typography.bodySmall,
+            color = TintaSuave
+        )
+    }
+}
+
+/**
+ * Lo de arriba de la lista:
+ *  - la fila de chips ("Todas" y las categorías), que se desliza. Son botones para navegar: el
+ *    elegido va en azul y NUNCA lleva ✕;
+ *  - debajo, solo si se aplicó algo desde la hoja de filtros, una píldora azul con ✕ por cada
+ *    filtro (categorías y "Urgentes"), para quitarlo.
+ * [conMargen]: la lista ya trae su propio margen de 16 dp; el estado vacío no.
+ */
+@Composable
+private fun FiltrosDeArriba(
+    filtros: FiltrosCampanas,
+    chipElegido: String?,
+    onChipRapido: (String?) -> Unit,
+    onAbrirFiltros: () -> Unit,
+    onQuitarCategoria: (String) -> Unit,
+    onQuitarUrgentes: () -> Unit,
+    conMargen: Boolean
+) {
+    val margen = if (conMargen) 16.dp else 0.dp
+    Column(
+        modifier = if (conMargen) Modifier.padding(vertical = 8.dp) else Modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            LazyRow(
+                modifier = Modifier.weight(1f),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(start = margen),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    PildoraFiltro(
+                        "Todas",
+                        seleccionada = chipElegido == null && !filtros.hayActivos,
+                        onClick = { onChipRapido(null) }
+                    )
+                }
+                items(CategoriasRapidas) { cat ->
+                    PildoraFiltro(cat, seleccionada = cat == chipElegido, onClick = { onChipRapido(cat) })
+                }
+            }
+            // Fijo al final de la fila: no se va con el deslizamiento de los chips.
+            IconButton(onClick = onAbrirFiltros) {
+                Icon(IconoFiltro, contentDescription = "Filtros", tint = MarcaAzul)
+            }
         }
-        if (filtros.soloUrgentes) {
-            item {
-                PildoraFiltro("Urgentes", seleccionada = true, onClick = onQuitarUrgentes, onQuitar = onQuitarUrgentes)
+        if (filtros.hayActivos) {
+            LazyRow(
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = margen),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(filtros.categorias.toList()) { cat ->
+                    PildoraFiltro(cat, seleccionada = true, onClick = { onQuitarCategoria(cat) }, onQuitar = { onQuitarCategoria(cat) })
+                }
+                if (filtros.soloUrgentes) {
+                    item {
+                        PildoraFiltro("Urgentes", seleccionada = true, onClick = onQuitarUrgentes, onQuitar = onQuitarUrgentes)
+                    }
+                }
             }
         }
     }
@@ -337,10 +575,14 @@ private val campanasDePrueba = listOf(
 )
 
 @Composable
-private fun PruebaLista(estado: UiState<List<Campana>>, filtros: FiltrosCampanas = FiltrosCampanas()) {
+private fun PruebaLista(
+    estado: UiState<List<Campana>>,
+    filtros: FiltrosCampanas = FiltrosCampanas(),
+    chipElegido: String? = null
+) {
     FamiliasQueSumanTheme {
         CampanasScreen(
-            estado = estado, filtros = filtros, totalAbiertas = 3,
+            estado = estado, filtros = filtros, chipElegido = chipElegido, totalAbiertas = 3,
             nombresAsociacion = mapOf(
                 "a4" to "Parroquia San Bernabé",
                 "a1" to "Comedor Comunitario San Bernabé",
@@ -361,6 +603,24 @@ private fun PreviewCargando() = PruebaLista(UiState.Cargando)
 @Preview(showBackground = true, heightDp = 780) @Composable
 private fun PreviewVaciaPorFiltros() =
     PruebaLista(UiState.Exito(emptyList()), FiltrosCampanas(setOf("Juguetes"), soloUrgentes = true))
+
+/** Un chip tocado sin campañas: el chip se queda como botón azul, sin píldora ni ✕. */
+@Preview(showBackground = true, heightDp = 780) @Composable
+private fun PreviewVaciaPorChip() =
+    PruebaLista(UiState.Exito(emptyList()), chipElegido = "Juguetes")
+
+/** Chip elegido con resultados. */
+@Preview(showBackground = true, heightDp = 780) @Composable
+private fun PreviewConChip() =
+    PruebaLista(UiState.Exito(campanasDePrueba.filter { it.categoria == "Alimentos" }), chipElegido = "Alimentos")
+
+/** Filtros aplicados desde la hoja: píldoras con ✕ debajo de los chips. */
+@Preview(showBackground = true, heightDp = 780) @Composable
+private fun PreviewConFiltrosDeLaHoja() =
+    PruebaLista(
+        UiState.Exito(campanasDePrueba.filter { it.categoria in setOf("Alimentos", "Ropa") }),
+        FiltrosCampanas(setOf("Alimentos", "Ropa"), soloUrgentes = false)
+    )
 
 @Preview(showBackground = true, heightDp = 780) @Composable
 private fun PreviewError() = PruebaLista(UiState.Error("No se pudieron cargar las campañas"))
