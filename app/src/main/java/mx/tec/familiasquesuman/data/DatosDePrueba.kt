@@ -444,7 +444,7 @@ internal object DatosDePrueba {
             nombreAsociacion = "Cíclica",
             fecha = "sábado, 26 de septiembre",
             mes = "SEPTIEMBRE",
-            estado = EstadoParticipacion.ENCUESTA_PENDIENTE
+            estado = EstadoParticipacion.SIN_PENDIENTES
         ),
         Participacion(
             id = "p2",

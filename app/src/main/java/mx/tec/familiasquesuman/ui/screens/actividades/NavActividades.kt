@@ -225,6 +225,9 @@ fun NavGraphBuilder.grafoActividades(
     composable(RutasActividades.MIS_ACTIVIDADES) {
         val vm: MisActividadesViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val estado by vm.estado.collectAsStateWithLifecycle()
+        // Solo las actividades a las que esta cuenta se inscribió.
+        val inscripciones by cuentaViewModel().inscripciones.collectAsStateWithLifecycle()
+        LaunchedEffect(inscripciones.keys) { vm.cargar(inscripciones.keys) }
 
         when (val actual = estado) {
             is UiState.Cargando -> CargandoView()

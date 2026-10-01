@@ -72,7 +72,10 @@ object AppViewModelProvider {
             DetalleActividadViewModel(familiasApplication().container.actividadRepository)
         }
         initializer {
-            MisActividadesViewModel(familiasApplication().container.perfilRepository)
+            MisActividadesViewModel(
+                familiasApplication().container.perfilRepository,
+                familiasApplication().container.actividadRepository
+            )
         }
 
         // Parte 4 · Campañas

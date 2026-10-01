@@ -20,10 +20,10 @@ internal object CuentaDePrueba {
     val acompanantes = listOf(Acompanante("Mateo Rodríguez", 9), Acompanante("Renata Rodríguez", 7))
 
     /**
-     * Empieza sin inscripciones para que la primera a "Preparar despensas" sea la
-     * inscripción exitosa del Figma (P-07). Para cancelar (P-20), primero inscríbete.
+     * Ana ya viene inscrita a la Posada Sendero para poder enseñar Mis Actividades y cancelar
+     * (P-20). Las demás actividades empiezan sin inscripción (P-07).
      */
-    val inscripciones = emptyMap<String, List<Acompanante>>()
+    val inscripciones = mapOf("act2" to emptyList<Acompanante>())
 
     /** Sin fechas reales no se puede calcular; es el texto del Figma (P-20). */
     const val FALTA_PARA_ACTIVIDAD = "Faltan 3 días para la actividad, todavía estás a tiempo."
