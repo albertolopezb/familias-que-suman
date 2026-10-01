@@ -44,6 +44,7 @@ object RutasActividades {
 fun NavGraphBuilder.grafoActividades(
     nav: NavController,
     ciudad: String = "Monterrey, N.L.",
+    esAdmin: () -> Boolean = { false },
     onCambiarCiudad: () -> Unit = {},
     onIrAInicio: () -> Unit = { nav.popBackStack() },
     onInscribirme: (String) -> Unit = {},
@@ -61,6 +62,7 @@ fun NavGraphBuilder.grafoActividades(
         ActividadesScreen(
             estado = estado,
             ciudad = ciudad,
+            esAdmin = esAdmin(), // Viene del NavHost principal
             onActividadClick = { id -> nav.navigate(RutasActividades.detalle(id)) },
             onUnirme = onInscribirme,
             onCompartir = { item -> compartirActividad(contexto, item) },
@@ -69,7 +71,17 @@ fun NavGraphBuilder.grafoActividades(
             onReintentar = vm::cargar,
             onVerGuardadas = { nav.navigate(RutasActividades.SIN_CONEXION) },
             onVerAsociaciones = onVerAsociaciones,
-            onForzarEstado = vm::siguienteModoDePrueba
+            onForzarEstado = vm::siguienteModoDePrueba,
+            // Conexión de los eventos Admin
+            onBorrarActividad = { id ->
+                vm.borrarActividad(id) // Llama a la función del ViewModel que borra y recarga
+            },
+            onCrearActividad = {
+                // nav.navigate("crear_actividad")
+            },
+            onEditarActividad = { id ->
+                // nav.navigate("editar_actividad/$id")
+            }
         )
     }
 

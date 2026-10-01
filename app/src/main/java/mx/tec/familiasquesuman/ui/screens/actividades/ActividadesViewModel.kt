@@ -69,4 +69,11 @@ class ActividadesViewModel(
         modo = ModoDePrueba.entries[(modo.ordinal + 1) % ModoDePrueba.entries.size]
         cargar()
     }
+
+    fun borrarActividad(id: String) {
+        viewModelScope.launch {
+            actividadRepository.borrarActividad(id)
+            cargar() // Vuelve a cargar la lista para actualizar la vista
+        }
+    }
 }

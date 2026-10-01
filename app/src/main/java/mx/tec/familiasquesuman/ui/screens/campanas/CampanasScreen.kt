@@ -27,7 +27,12 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -71,33 +76,60 @@ fun CampanasScreen(
     onCampanaClick: (String) -> Unit,
     onReintentar: () -> Unit,
     modifier: Modifier = Modifier,
-    nombresAsociacion: Map<String, String> = emptyMap()
+    nombresAsociacion: Map<String, String> = emptyMap(),
+    esAdmin: Boolean = false,
+    onCrearCampana: () -> Unit = {},
+    onEditarCampana: (String) -> Unit = {},
+    onBorrarCampana: (String) -> Unit = {}
 ) {
-    Column(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        EncabezadoApp()
-        BarraSuperior(onBack = onBack, onAbrirFiltros = onAbrirFiltros)
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        floatingActionButton = {
+            if (esAdmin) {
+                FloatingActionButton(
+                    onClick = onCrearCampana,
+                    containerColor = MarcaAzul,
+                    contentColor = Color.White
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Crear Campaña")
+                }
+            }
+        }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            EncabezadoApp()
+            BarraSuperior(onBack = onBack, onAbrirFiltros = onAbrirFiltros, esAdmin = esAdmin)
 
-        when (estado) {
-            is UiState.Cargando -> ListaCargando()
-            is UiState.Error -> EstadoError(mensaje = estado.mensaje, onReintentar = onReintentar)
-            is UiState.Exito -> {
-                if (estado.datos.isEmpty()) {
-                    Column {
-                        if (filtros.hayActivos) {
-                            FiltrosActivos(filtros, onQuitarCategoria, onQuitarUrgentes)
+            when (estado) {
+                is UiState.Cargando -> ListaCargando()
+                is UiState.Error -> EstadoError(mensaje = estado.mensaje, onReintentar = onReintentar)
+                is UiState.Exito -> {
+                    if (estado.datos.isEmpty()) {
+                        Column {
+                            if (filtros.hayActivos) {
+                                FiltrosActivos(filtros, onQuitarCategoria, onQuitarUrgentes)
+                            }
+                            EstadoVacio(filtros, totalAbiertas, onQuitarFiltros)
                         }
-                        EstadoVacio(filtros, totalAbiertas, onQuitarFiltros)
+                    } else {
+                        ListaConDatos(
+                            campanas = estado.datos,
+                            nombresAsociacion = nombresAsociacion,
+                            filtros = filtros,
+                            onChipRapido = onChipRapido,
+                            onQuitarCategoria = onQuitarCategoria,
+                            onQuitarUrgentes = onQuitarUrgentes,
+                            onCampanaClick = onCampanaClick,
+                            esAdmin = esAdmin,
+                            onEditarCampana = onEditarCampana,
+                            onBorrarCampana = onBorrarCampana
+                        )
                     }
-                } else {
-                    ListaConDatos(
-                        campanas = estado.datos,
-                        nombresAsociacion = nombresAsociacion,
-                        filtros = filtros,
-                        onChipRapido = onChipRapido,
-                        onQuitarCategoria = onQuitarCategoria,
-                        onQuitarUrgentes = onQuitarUrgentes,
-                        onCampanaClick = onCampanaClick
-                    )
                 }
             }
         }
@@ -105,7 +137,11 @@ fun CampanasScreen(
 }
 
 @Composable
-private fun BarraSuperior(onBack: () -> Unit, onAbrirFiltros: () -> Unit) {
+private fun BarraSuperior(
+    onBack: () -> Unit,
+    onAbrirFiltros: () -> Unit,
+    esAdmin: Boolean = false
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -114,7 +150,7 @@ private fun BarraSuperior(onBack: () -> Unit, onAbrirFiltros: () -> Unit) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = MarcaAzul)
         }
         Text(
-            "Quiero Donar",
+            if (esAdmin) "Quiero Donar (Admin)" else "Quiero Donar",
             style = MaterialTheme.typography.titleLarge,
             color = MarcaAzul,
             modifier = Modifier.weight(1f)
@@ -133,10 +169,13 @@ private fun ListaConDatos(
     onChipRapido: (String?) -> Unit,
     onQuitarCategoria: (String) -> Unit,
     onQuitarUrgentes: () -> Unit,
-    onCampanaClick: (String) -> Unit
+    onCampanaClick: (String) -> Unit,
+    esAdmin: Boolean = false,
+    onEditarCampana: (String) -> Unit = {},
+    onBorrarCampana: (String) -> Unit = {}
 ) {
     LazyColumn(
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
@@ -165,11 +204,29 @@ private fun ListaConDatos(
             )
         }
         items(campanas, key = { it.id }) { campana ->
-            TarjetaCampana(
-                campana = campana,
-                onClick = { onCampanaClick(campana.id) },
-                nombreAsociacion = nombresAsociacion[campana.asociacionId]
-            )
+            Column {
+                TarjetaCampana(
+                    campana = campana,
+                    onClick = { onCampanaClick(campana.id) },
+                    nombreAsociacion = nombresAsociacion[campana.asociacionId]
+                )
+                if (esAdmin) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { onEditarCampana(campana.id) }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MarcaAzul)
+                        }
+                        IconButton(onClick = { onBorrarCampana(campana.id) }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = ErrorRojo)
+                        }
+                    }
+                }
+            }
         }
     }
 }
