@@ -86,7 +86,6 @@ fun IniciarSesionScreen(
             TextButton(onClick = onOlvideContrasena, contentPadding = PaddingValues(0.dp)) {
                 Text("¿Olvidaste tu contraseña?", style = MaterialTheme.typography.labelLarge, color = MarcaAzul)
             }
-            if (regresoA != null) NotaAmbar(regresoA, etiqueta = "Al entrar regresas a")
         }
         BarraAccionesInferior {
             BotonPrimario(
