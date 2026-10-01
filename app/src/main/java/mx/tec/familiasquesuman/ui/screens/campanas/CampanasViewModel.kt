@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -19,8 +20,8 @@ import mx.tec.familiasquesuman.ui.state.UiState
 /** Categorías que ofrece el Figma en la hoja de filtros (P-10). */
 val CategoriasFiltro = listOf("Alimentos", "Ropa", "Juguetes", "Salud", "Útiles escolares")
 
-/** Chips rápidos de arriba de la lista (P-09). */
-val CategoriasRapidas = listOf("Alimentos", "Juguetes")
+/** Chips de arriba de la lista: las mismas categorías de la hoja de filtros, en el mismo orden. */
+val CategoriasRapidas = CategoriasFiltro
 
 data class FiltrosCampanas(
     val categorias: Set<String> = emptySet(),
@@ -34,8 +35,11 @@ data class FiltrosCampanas(
 
 /**
  * Filtros de campañas (RF-20). El filtrado es en Kotlin sobre la lista del repositorio.
- * Hay dos juegos de filtros: los [aplicados] (los que ve la lista) y el [borrador]
- * (lo que se está moviendo dentro de la hoja, sin aplicar todavía).
+ * Hay tres cosas, y solo una de las dos primeras está activa a la vez ("una cosa o la otra"):
+ *  - el [chipElegido] de la fila de arriba: un botón para navegar, sin ✕;
+ *  - los [aplicados] desde la hoja de filtros: salen como píldoras con ✕;
+ *  - el [borrador], lo que se está moviendo dentro de la hoja sin aplicar todavía.
+ * Tocar un chip limpia los filtros de la hoja, y aplicar la hoja regresa los chips a "Todas".
  */
 class CampanasViewModel(
     private val repo: CampanaRepository,
@@ -44,23 +48,29 @@ class CampanasViewModel(
 
     private val carga = MutableStateFlow<UiState<List<Campana>>>(UiState.Cargando)
     private val _aplicados = MutableStateFlow(FiltrosCampanas())
+    private val _chip = MutableStateFlow<String?>(null)
     private val _borrador = MutableStateFlow(FiltrosCampanas())
 
     val aplicados: StateFlow<FiltrosCampanas> = _aplicados.asStateFlow()
+
+    /** Categoría del chip tocado; null = "Todas". */
+    val chipElegido: StateFlow<String?> = _chip.asStateFlow()
     val borrador: StateFlow<FiltrosCampanas> = _borrador.asStateFlow()
 
     /** Lista ya filtrada, con el mismo UiState que pinta los cuatro estados. */
     val campanas: StateFlow<UiState<List<Campana>>> =
-        combine(carga, _aplicados) { estado, filtros ->
+        combine(carga, _aplicados, _chip) { estado, filtros, chip ->
             when (estado) {
-                is UiState.Exito -> UiState.Exito(estado.datos.filter { filtros.acepta(it) })
+                is UiState.Exito -> UiState.Exito(
+                    estado.datos.filter { (chip == null || it.categoria == chip) && filtros.acepta(it) }
+                )
                 else -> estado
             }
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UiState.Cargando)
 
     /** Cuántas campañas hay abiertas sin ningún filtro ("Hay 3 campañas abiertas con otros filtros"). */
     val totalAbiertas: StateFlow<Int> =
-        carga.combine(_aplicados) { estado, _ ->
+        carga.map { estado ->
             (estado as? UiState.Exito)?.datos?.size ?: 0
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
@@ -104,9 +114,10 @@ class CampanasViewModel(
 
     // ---- Chips rápidos y píldoras de la lista ----
 
-    /** null = "Todas". */
+    /** null = "Todas". Un chip es solo para navegar: limpia los filtros de la hoja. */
     fun elegirChipRapido(categoria: String?) {
-        _aplicados.update { it.copy(categorias = if (categoria == null) emptySet() else setOf(categoria)) }
+        _chip.value = categoria
+        _aplicados.value = FiltrosCampanas()
     }
 
     fun quitarCategoria(categoria: String) {
@@ -117,14 +128,18 @@ class CampanasViewModel(
         _aplicados.update { it.copy(soloUrgentes = false) }
     }
 
+    /** "Quitar filtros" del estado vacío: deja todo como al entrar. */
     fun quitarFiltros() {
         _aplicados.value = FiltrosCampanas()
+        _chip.value = null
     }
 
     // ---- Hoja de filtros ----
 
     fun abrirFiltros() {
-        _borrador.value = _aplicados.value
+        // Si había un chip elegido, la hoja lo trae marcado: al aplicar pasa a ser una píldora con ✕.
+        val chip = _chip.value
+        _borrador.value = if (chip != null) FiltrosCampanas(setOf(chip)) else _aplicados.value
     }
 
     fun alternarCategoriaBorrador(categoria: String) {
@@ -143,6 +158,7 @@ class CampanasViewModel(
 
     fun aplicarFiltros() {
         _aplicados.value = _borrador.value
+        _chip.value = null
     }
 
     // ---- Solo para pruebas: borrar cuando llegue el backend ----

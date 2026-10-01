@@ -68,20 +68,48 @@ data class ArticuloMeta(
     val completo: Boolean get() = apartados >= meta
 }
 
+/** Una opción de donación con su precio (Destellos de Luz). Solo informa: la app no cobra. */
+data class OpcionDonacion(
+    val nombre: String,
+    val precio: String             // "$700"
+)
+
+/** Un punto donde se entrega lo recolectado (Suma a su Mesa). */
+data class PuntoEntrega(
+    val direccion: String,         // "Calle Cóndor 1001"
+    val colonia: String            // "Fraccionamiento Azhara"
+)
+
 data class Campana(
     val id: String,
     val titulo: String,
     val asociacionId: String,
     val categoria: String,
-    val cierra: String,
+    val cierra: String,            // "30 de diciembre"; vacío si la campaña no tiene fecha límite
     val urgente: Boolean,
     val descripcion: String,
     val unidadMeta: String,        // "kits", "despensas", "prendas"
     val metaTotal: Int,
     val completados: Int,
-    val articulos: List<ArticuloMeta>
+    val articulos: List<ArticuloMeta>,
+    // --- Lo que trae cada campaña en familiasquesuman.com/donar. Todo opcional. ---
+    val imagen: String? = null,               // nombre del drawable, sin extensión
+    val ciudad: String = "Monterrey",
+    val textoBoton: String = "Quiero ayudar", // "Quiero juntar" en Tapitas
+    val telefono: String? = null,             // solo dígitos
+    val whatsapp: String? = null,             // solo dígitos; sin WhatsApp, el botón llama
+    val contactoNombre: String? = null,
+    val metaTexto: String? = null,            // "250-300 cuentos"
+    val descripcionLarga: String = "",
+    val comoAyudar: String = "",
+    val opcionesDonacion: List<OpcionDonacion> = emptyList(),
+    val puntosEntrega: List<PuntoEntrega> = emptyList(),
+    val instagram: String? = null             // enlace completo
 ) {
     val progreso: Float get() = if (metaTotal == 0) 0f else completados.toFloat() / metaTotal
+
+    /** Solo las campañas con una meta de artículos se pueden apartar (RF-21). */
+    val sePuedeApartar: Boolean get() = articulos.isNotEmpty()
 }
 
 data class Acompanante(
