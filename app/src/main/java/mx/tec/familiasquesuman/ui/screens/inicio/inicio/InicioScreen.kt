@@ -2,6 +2,7 @@ package mx.tec.familiasquesuman.ui.screens.inicio
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,6 +32,10 @@ fun InicioScreen(
     onCambiarCiudad: (String) -> Unit,
     asociacion: Asociacion?,
     nombreFamilia: String?,
+    causas: List<Asociacion>,
+    favoritas: Set<String>,
+    onAlternarFavorita: (String) -> Unit,
+    onCausaClick: (String) -> Unit,
     onVerAgenda: () -> Unit,
     onCrearCuenta: () -> Unit,
     onIniciarSesion: () -> Unit,
@@ -221,21 +226,17 @@ fun InicioScreen(
             }
 
             // Tarjetas de Causas
-            TarjetaCausa(
-                nombre = "Banco de Alimentos CDMX",
-                etiqueta = "Alimentación",
-                descripcion = "Recolección y distribución de alimentos para familias en situación ...",
-                esFavorito = true
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            TarjetaCausa(
-                nombre = "Tejiendo Redes Educativas",
-                etiqueta = "Educación",
-                descripcion = "Apoyo escolar y talleres creativos para niños de comunidades marginadas.",
-                esFavorito = false
-            )
+            causas.forEachIndexed { i, causa ->
+                if (i > 0) Spacer(modifier = Modifier.height(12.dp))
+                TarjetaCausa(
+                    nombre = causa.nombre,
+                    etiqueta = causa.categoria,
+                    descripcion = causa.descripcion,
+                    esFavorito = causa.id in favoritas,
+                    onClick = { onCausaClick(causa.id) },
+                    onAlternarFavorito = { onAlternarFavorita(causa.id) }
+                )
+            }
 
             Spacer(modifier = Modifier.height(28.dp))
 
@@ -335,10 +336,12 @@ private fun TarjetaCausa(
     nombre: String,
     etiqueta: String,
     descripcion: String,
-    esFavorito: Boolean
+    esFavorito: Boolean,
+    onClick: () -> Unit,
+    onAlternarFavorito: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -378,11 +381,13 @@ private fun TarjetaCausa(
                     color = Color.Gray
                 )
             }
-            Icon(
-                imageVector = if (esFavorito) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
-                contentDescription = null,
-                tint = if (esFavorito) AmbarAcento else Color.Gray
-            )
+            IconButton(onClick = onAlternarFavorito) {
+                Icon(
+                    imageVector = if (esFavorito) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = if (esFavorito) "Quitar de favoritas" else "Guardar en favoritas",
+                    tint = if (esFavorito) AmbarAcento else Color.Gray
+                )
+            }
         }
     }
 }

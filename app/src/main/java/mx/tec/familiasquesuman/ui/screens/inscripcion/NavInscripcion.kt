@@ -86,6 +86,18 @@ private fun NavController.irAMiPerfil() = navigate(Rutas.PERFIL) {
     launchSingleTop = true
 }
 
+/**
+ * El corazón de favoritos. Con sesión lo pone o lo quita; sin sesión pide entrar
+ * y, al hacerlo, se regresa a la pantalla donde se tocó.
+ */
+fun NavController.alternarFavorita(cuenta: CuentaViewModel, id: String) {
+    if (cuenta.sesion.value == null) {
+        navigate(RutasInscripcion.INICIAR_SESION) { launchSingleTop = true }
+    } else {
+        cuenta.alternarFavorita(id)
+    }
+}
+
 /** Después de crear cuenta o entrar: a la inscripción pendiente, o de regreso. */
 private fun NavController.continuarDespuesDeEntrar(cuenta: CuentaViewModel, rutaActual: String) {
     val regreso = cuenta.tomarRegreso()
