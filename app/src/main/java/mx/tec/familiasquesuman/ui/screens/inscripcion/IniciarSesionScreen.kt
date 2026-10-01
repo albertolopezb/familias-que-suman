@@ -96,7 +96,7 @@ fun IniciarSesionScreen(
                 cargando = ui.enviando
             )
             TextButton(onClick = onCrearCuenta, modifier = Modifier.fillMaxWidth()) {
-                Text("¿No tienes cuenta? Crear una", style = MaterialTheme.typography.labelMedium, color = TintaSuave)
+                Text("¿No tienes cuenta? Crear una", style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp), color = TintaSuave)
             }
         }
     }

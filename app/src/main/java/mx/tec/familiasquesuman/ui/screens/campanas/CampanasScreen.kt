@@ -27,7 +27,12 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -95,14 +100,32 @@ fun CampanasScreen(
     onLlamar: (String) -> Unit = {},
     onWhatsAppCentro: (String) -> Unit = {},
     onComoLlegar: (String) -> Unit = {},
-    onAbrirEnlace: (String) -> Unit = {}
+    onAbrirEnlace: (String) -> Unit = {},
+    esAdmin: Boolean = false,
+    onCrearCampana: () -> Unit = {},
+    onEditarCampana: (String) -> Unit = {},
+    onBorrarCampana: (String) -> Unit = {}
 ) {
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        floatingActionButton = {
+            if (esAdmin) {
+                FloatingActionButton(
+                    onClick = onCrearCampana,
+                    containerColor = MarcaAzul,
+                    contentColor = Color.White
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Crear Campaña")
+                }
+            }
+        }
+    ) { innerPadding ->
+    Column(modifier = Modifier.fillMaxSize().padding(innerPadding).background(MaterialTheme.colorScheme.background)) {
     // Qué modo se está viendo. Solo es estado de pantalla (como "qué pestaña"), no de datos.
     var modo by rememberSaveable { mutableStateOf(ModoDonar.CAMPANA) }
 
-    Column(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         EncabezadoApp()
-        BarraSuperior(onBack = onBack)
+        BarraSuperior(onBack = onBack, esAdmin = esAdmin)
         SelectorModoDonar(modo = modo, onElegir = { modo = it })
 
         if (modo == ModoDonar.TENGO_ALGO) {
@@ -149,8 +172,12 @@ fun CampanasScreen(
                         onQuitarUrgentes = onQuitarUrgentes,
                         onCampanaClick = onCampanaClick,
                         onAyudar = onAyudar,
-                        onNoEncontre = onNoEncontre
+                        onNoEncontre = onNoEncontre,
+                        esAdmin = esAdmin,
+                        onEditarCampana = onEditarCampana,
+                        onBorrarCampana = onBorrarCampana
                     )
+                    }
                 }
             }
         }
@@ -158,7 +185,7 @@ fun CampanasScreen(
 }
 
 @Composable
-private fun BarraSuperior(onBack: () -> Unit) {
+private fun BarraSuperior(onBack: () -> Unit, esAdmin: Boolean = false) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -167,7 +194,7 @@ private fun BarraSuperior(onBack: () -> Unit) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = MarcaAzul)
         }
         Text(
-            "Quiero Donar",
+            if (esAdmin) "Quiero Donar (Admin)" else "Quiero Donar",
             style = MaterialTheme.typography.titleLarge,
             color = MarcaAzul,
             modifier = Modifier.weight(1f)
@@ -246,10 +273,13 @@ private fun ListaConDatos(
     onQuitarUrgentes: () -> Unit,
     onCampanaClick: (String) -> Unit,
     onAyudar: (Campana) -> Unit,
-    onNoEncontre: () -> Unit
+    onNoEncontre: () -> Unit,
+    esAdmin: Boolean = false,
+    onEditarCampana: (String) -> Unit = {},
+    onBorrarCampana: (String) -> Unit = {}
 ) {
     LazyColumn(
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         if (MostrarFiltrosEnLista) {
@@ -266,12 +296,30 @@ private fun ListaConDatos(
             }
         }
         items(campanas, key = { it.id }) { campana ->
-            TarjetaCampana(
-                campana = campana,
-                onClick = { onCampanaClick(campana.id) },
-                onAyudar = { onAyudar(campana) },
-                nombreAsociacion = nombresAsociacion[campana.asociacionId]
-            )
+            Column {
+                TarjetaCampana(
+                    campana = campana,
+                    onClick = { onCampanaClick(campana.id) },
+                    onAyudar = { onAyudar(campana) },
+                    nombreAsociacion = nombresAsociacion[campana.asociacionId]
+                )
+                if (esAdmin) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = { onEditarCampana(campana.id) }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MarcaAzul)
+                        }
+                        IconButton(onClick = { onBorrarCampana(campana.id) }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = ErrorRojo)
+                        }
+                    }
+                }
+            }
         }
         item { TarjetaNoEncontre(onClick = onNoEncontre) }
     }

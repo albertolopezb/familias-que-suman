@@ -15,7 +15,6 @@ import mx.tec.familiasquesuman.ui.screens.inicio.InicioViewModel
 import mx.tec.familiasquesuman.ui.screens.campanas.CampanasViewModel
 import mx.tec.familiasquesuman.ui.screens.campanas.DetalleCampanaViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.PerfilViewModel
-import mx.tec.familiasquesuman.ui.screens.perfil.FavoritosViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.InsigniasViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.TestimonioViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.EncuestaViewModel
@@ -45,9 +44,6 @@ object AppViewModelProvider {
         }
         initializer {
             InsigniasViewModel(familiasApplication().container.perfilRepository)
-        }
-        initializer {
-            FavoritosViewModel(familiasApplication().container.perfilRepository)
         }
         initializer {
             PerfilViewModel(familiasApplication().container.perfilRepository)

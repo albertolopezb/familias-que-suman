@@ -98,7 +98,8 @@ class CuentaViewModel(
         val contrasena: String,
         val sesion: Sesion,
         val acompanantes: List<Acompanante>,
-        val inscripciones: Map<String, List<Acompanante>>
+        val inscripciones: Map<String, List<Acompanante>>,
+        val favoritas: Set<String> = emptySet()
     )
 
     private val cuentas = mutableMapOf<String, CuentaGuardada>()
@@ -113,6 +114,10 @@ class CuentaViewModel(
     /** actividadId → acompañantes que van (sin contar al titular). */
     private val _inscripciones = MutableStateFlow<Map<String, List<Acompanante>>>(emptyMap())
     val inscripciones: StateFlow<Map<String, List<Acompanante>>> = _inscripciones.asStateFlow()
+
+    /** Ids de las asociaciones y actividades que la familia marcó con el corazón. */
+    private val _favoritas = MutableStateFlow<Set<String>>(emptySet())
+    val favoritas: StateFlow<Set<String>> = _favoritas.asStateFlow()
 
     private val _actividades = MutableStateFlow<List<Actividad>>(emptyList())
     val actividades: StateFlow<List<Actividad>> = _actividades.asStateFlow()
@@ -148,7 +153,8 @@ class CuentaViewModel(
                 CuentaDePrueba.CONTRASENA,
                 Sesion(familia.nombre, familia.correo, CuentaDePrueba.titular),
                 CuentaDePrueba.acompanantes,
-                CuentaDePrueba.inscripciones
+                CuentaDePrueba.inscripciones,
+                perfilRepository.getFavoritas().map { it.id }.toSet()
             )
         }
     }
@@ -163,8 +169,19 @@ class CuentaViewModel(
     // ── A dónde regresar ──
 
     fun recordarRegreso(actividadId: String, simularSinCupo: Boolean) {
+        _destinoPendiente = null
         _regreso.value = Regreso(actividadId, simularSinCupo)
     }
+
+    /** Pantalla que pidió sesión (perfil, mis actividades...): se abre al entrar. */
+    private var _destinoPendiente: String? = null
+
+    fun recordarDestino(ruta: String) {
+        _regreso.value = null
+        _destinoPendiente = ruta
+    }
+
+    fun tomarDestino(): String? = _destinoPendiente.also { _destinoPendiente = null }
 
     /** Devuelve el regreso pendiente y lo olvida, para que no se use dos veces. */
     fun tomarRegreso(): Regreso? = _regreso.value.also { _regreso.value = null }
@@ -224,17 +241,25 @@ class CuentaViewModel(
 
     fun cerrarSesion() {
         _sesion.value?.let { s ->
-            cuentas[s.correo]?.let { cuentas[s.correo] = it.copy(acompanantes = _acompanantes.value, inscripciones = _inscripciones.value) }
+            cuentas[s.correo]?.let { cuentas[s.correo] = it.copy(acompanantes = _acompanantes.value, inscripciones = _inscripciones.value, favoritas = _favoritas.value) }
         }
         _sesion.value = null
         _acompanantes.value = emptyList()
         _inscripciones.value = emptyMap()
+        _favoritas.value = emptySet()
     }
 
     private fun abrirSesion(cuenta: CuentaGuardada) {
         _sesion.value = cuenta.sesion
         _acompanantes.value = cuenta.acompanantes
         _inscripciones.value = cuenta.inscripciones
+        _favoritas.value = cuenta.favoritas
+    }
+
+    /** Pone o quita el corazón. Solo con sesión: quien llama decide qué hacer si no la hay. */
+    fun alternarFavorita(id: String) {
+        if (_sesion.value == null) return
+        _favoritas.update { if (id in it) it - id else it + id }
     }
 
     // ── P-27 · Recuperar ──

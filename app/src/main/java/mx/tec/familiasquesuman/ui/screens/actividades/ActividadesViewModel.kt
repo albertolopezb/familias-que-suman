@@ -69,4 +69,105 @@ class ActividadesViewModel(
         modo = ModoDePrueba.entries[(modo.ordinal + 1) % ModoDePrueba.entries.size]
         cargar()
     }
+
+    fun borrarActividad(id: String) {
+        viewModelScope.launch {
+            val estadoActual = _estado.value
+            if (estadoActual is UiState.Exito) {
+                // Filtramos la lista eliminando la actividad con el ID correspondiente
+                val listaActualizada = estadoActual.datos.filterNot { it.actividad.id == id }
+
+                // Actualizamos el estado de la vista al instante
+                _estado.value = UiState.Exito(listaActualizada)
+                _guardadas.value = listaActualizada
+            }
+        }
+    }
+
+    fun crearActividad(
+        titulo: String,
+        descripcion: String,
+        fecha: String,
+        horario: String,
+        direccion: String,
+        cupoTotal: Int,
+        lugaresDisponibles: Int,
+        edadMinima: Int?
+    ) {
+        viewModelScope.launch {
+            val estadoActual = _estado.value
+            val nuevaActividad = mx.tec.familiasquesuman.domain.Actividad(
+                id = System.currentTimeMillis().toString(),
+                asociacionId = "1",
+                titulo = titulo,
+                descripcion = descripcion,
+                fecha = fecha,
+                horario = horario,
+                direccion = direccion,
+                cupoTotal = cupoTotal,
+                lugaresDisponibles = lugaresDisponibles,
+                edadMinima = edadMinima
+            )
+
+            // Si ya hay una lista cargada, creamos una Asociación simulada y la añadimos a la lista
+            if (estadoActual is UiState.Exito) {
+                val nuevaConAsociacion = mx.tec.familiasquesuman.domain.ActividadConAsociacion(
+                    actividad = nuevaActividad,
+                    asociacion = estadoActual.datos.firstOrNull()?.asociacion
+                        ?: mx.tec.familiasquesuman.domain.Asociacion(
+                            id = "1",
+                            nombre = "Asociación del Norte",
+                            categoria = "Comunidad",
+                            descripcion = "",
+                            direccion = "Monterrey, N.L.",
+                            telefono = "",
+                            whatsapp = "",
+                            correo = ""
+                        )
+                )
+
+                val listaActualizada = estadoActual.datos + nuevaConAsociacion
+                _estado.value = UiState.Exito(listaActualizada)
+                _guardadas.value = listaActualizada
+            }
+        }
+    }
+
+    fun editarActividad(
+        id: String,
+        nuevoTitulo: String,
+        nuevaDescripcion: String,
+        nuevaFecha: String,
+        nuevoHorario: String,
+        nuevaDireccion: String,
+        nuevoCupoTotal: Int,
+        nuevosLugaresDisponibles: Int,
+        nuevaEdadMinima: Int?
+    ) {
+        viewModelScope.launch {
+            val estadoActual = _estado.value
+            if (estadoActual is UiState.Exito) {
+                val listaActualizada = estadoActual.datos.map { item ->
+                    if (item.actividad.id == id) {
+                        val actividadEditada = item.actividad.copy(
+                            titulo = nuevoTitulo,
+                            descripcion = nuevaDescripcion,
+                            fecha = nuevaFecha,
+                            horario = nuevoHorario,
+                            direccion = nuevaDireccion,
+                            cupoTotal = nuevoCupoTotal,
+                            lugaresDisponibles = nuevosLugaresDisponibles,
+                            edadMinima = nuevaEdadMinima
+                        )
+                        item.copy(actividad = actividadEditada)
+                    } else {
+                        item
+                    }
+                }
+
+                _estado.value = UiState.Exito(listaActualizada)
+                _guardadas.value = listaActualizada
+            }
+        }
+    }
 }

@@ -2,6 +2,7 @@ package mx.tec.familiasquesuman.ui.screens.inicio
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +31,14 @@ fun InicioScreen(
     ciudad: String,
     onCambiarCiudad: (String) -> Unit,
     asociacion: Asociacion?,
+    nombreFamilia: String?,
+    causas: List<Asociacion>,
+    favoritas: Set<String>,
+    onAlternarFavorita: (String) -> Unit,
+    onCausaClick: (String) -> Unit,
+    onVerAgenda: () -> Unit,
+    onCrearCuenta: () -> Unit,
+    onIniciarSesion: () -> Unit,
     onExplorarClick: () -> Unit,
     onActividadesClick: () -> Unit,
     onDonarClick: () -> Unit,
@@ -46,7 +55,7 @@ fun InicioScreen(
             .verticalScroll(rememberScrollState())
     ) {
         // Saludo; la ciudad y el perfil están en la barra de arriba.
-        HeaderInicio(nombreFamilia = "Familia Rodríguez")
+        HeaderInicio(nombreFamilia = nombreFamilia)
 
         Column(modifier = Modifier.padding(horizontal = 20.dp)) {
             // Banner Principal con Imagen de fondo + Overlay azul transparente
@@ -187,17 +196,18 @@ fun InicioScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Tarjetas de Métricas Estadísticas
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                MetricaItem("12", "Actividades realizadas", Modifier.weight(1f))
-                MetricaItem("3", "Próximas esta semana", Modifier.weight(1f))
-                MetricaItem("4", "Favoritas guardadas", Modifier.weight(1f))
+            // Las métricas son de la familia: solo con sesión.
+            if (nombreFamilia != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    MetricaItem("12", "Actividades realizadas", Modifier.weight(1f))
+                    MetricaItem("3", "Próximas esta semana", Modifier.weight(1f))
+                    MetricaItem("4", "Favoritas guardadas", Modifier.weight(1f))
+                }
+                Spacer(modifier = Modifier.height(28.dp))
             }
-
-            Spacer(modifier = Modifier.height(28.dp))
 
             // Sección Causas Destacadas
             Row(
@@ -216,75 +226,76 @@ fun InicioScreen(
             }
 
             // Tarjetas de Causas
-            TarjetaCausa(
-                nombre = "Banco de Alimentos CDMX",
-                etiqueta = "Alimentación",
-                descripcion = "Recolección y distribución de alimentos para familias en situación ...",
-                esFavorito = true
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            TarjetaCausa(
-                nombre = "Tejiendo Redes Educativas",
-                etiqueta = "Educación",
-                descripcion = "Apoyo escolar y talleres creativos para niños de comunidades marginadas.",
-                esFavorito = false
-            )
+            causas.forEachIndexed { i, causa ->
+                if (i > 0) Spacer(modifier = Modifier.height(12.dp))
+                TarjetaCausa(
+                    nombre = causa.nombre,
+                    etiqueta = causa.categoria,
+                    descripcion = causa.descripcion,
+                    esFavorito = causa.id in favoritas,
+                    onClick = { onCausaClick(causa.id) },
+                    onAlternarFavorito = { onAlternarFavorita(causa.id) }
+                )
+            }
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Sección Tu Próxima Actividad
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Tu próxima actividad",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = AzulBannerFondo
-                )
-                TextButton(onClick = onActividadesClick) {
-                    Text("Ver agenda", color = AmbarAcento)
+            if (nombreFamilia != null) {
+                // Sección Tu Próxima Actividad
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Tu próxima actividad",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = AzulBannerFondo
+                    )
+                    TextButton(onClick = onVerAgenda) {
+                        Text("Ver agenda", color = AmbarAcento)
+                    }
                 }
-            }
 
-            // Banner Próxima Actividad
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 32.dp),
-                colors = CardDefaults.cardColors(containerColor = AzulBannerFondo),
-                shape = RoundedCornerShape(20.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            color = VerdeConfirmado,
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
+                // Banner Próxima Actividad
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 32.dp),
+                    colors = CardDefaults.cardColors(containerColor = AzulBannerFondo),
+                    shape = RoundedCornerShape(20.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(
+                                color = VerdeConfirmado,
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    text = "✓ Inscrita",
+                                    color = Color.White,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "✓ Inscrita",
-                                color = Color.White,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                style = MaterialTheme.typography.labelMedium
+                                text = "Mañana",
+                                color = AmbarAcento,
+                                style = MaterialTheme.typography.labelLarge
                             )
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Mañana",
-                            color = AmbarAcento,
-                            style = MaterialTheme.typography.labelLarge
+                            text = "Apoyo en Comedor Comunitario",
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleMedium
                         )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Apoyo en Comedor Comunitario",
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleMedium
-                    )
                 }
+
+            } else {
+                InvitacionCuenta(onCrearCuenta = onCrearCuenta, onIniciarSesion = onIniciarSesion)
             }
         }
     }
@@ -325,10 +336,12 @@ private fun TarjetaCausa(
     nombre: String,
     etiqueta: String,
     descripcion: String,
-    esFavorito: Boolean
+    esFavorito: Boolean,
+    onClick: () -> Unit,
+    onAlternarFavorito: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -368,11 +381,45 @@ private fun TarjetaCausa(
                     color = Color.Gray
                 )
             }
-            Icon(
-                imageVector = if (esFavorito) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
-                contentDescription = null,
-                tint = if (esFavorito) AmbarAcento else Color.Gray
+            IconButton(onClick = onAlternarFavorito) {
+                Icon(
+                    imageVector = if (esFavorito) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = if (esFavorito) "Quitar de favoritas" else "Guardar en favoritas",
+                    tint = if (esFavorito) AmbarAcento else Color.Gray
+                )
+            }
+        }
+    }
+}
+
+/** Lo que ve quien aún no tiene sesión en lugar de su agenda. */
+@Composable
+private fun InvitacionCuenta(onCrearCuenta: () -> Unit, onIniciarSesion: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
+        colors = CardDefaults.cardColors(containerColor = AzulBannerFondo),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text("Suma con tu familia", color = Color.White, style = MaterialTheme.typography.titleLarge)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Crea tu cuenta para inscribirte, ver tu agenda y guardar tus favoritas.",
+                color = Color.White.copy(alpha = 0.9f),
+                style = MaterialTheme.typography.bodyMedium
             )
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onCrearCuenta,
+                colors = ButtonDefaults.buttonColors(containerColor = AmbarAcento),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Crear cuenta", color = AzulBannerFondo, fontWeight = FontWeight.Bold)
+            }
+            TextButton(onClick = onIniciarSesion, modifier = Modifier.fillMaxWidth()) {
+                Text("Ya tengo cuenta · Iniciar sesión", color = Color.White)
+            }
         }
     }
 }

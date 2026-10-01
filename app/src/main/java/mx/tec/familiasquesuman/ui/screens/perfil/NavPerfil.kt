@@ -1,11 +1,11 @@
 package mx.tec.familiasquesuman.ui.screens.perfil
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.LaunchedEffect
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.result.PickVisualMediaRequest
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -13,8 +13,12 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import mx.tec.familiasquesuman.domain.Usuario
+import mx.tec.familiasquesuman.domain.UsuariosHardcodeados
 import mx.tec.familiasquesuman.ui.navigation.Rutas
+import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
+import mx.tec.familiasquesuman.ui.state.UiState
 
 object RutasPerfil {
     const val FAVORITOS = "perfil/favoritos"
@@ -27,9 +31,13 @@ object RutasPerfil {
     fun testimonio(actividadId: String) = "perfil/testimonio/${Uri.encode(actividadId)}"
 }
 
-fun NavGraphBuilder.grafoPerfil(nav: NavController, onEncuestaFinalizada: (() -> Unit)? = null) {
+fun NavGraphBuilder.grafoPerfil(
+    nav: NavController,
+    usuarioActual: () -> Usuario = { UsuariosHardcodeados.USUARIO_NORMAL },
+    onSwitchCuenta: (Boolean) -> Unit,
+    onEncuestaFinalizada: (() -> Unit)? = null
+) {
     composable(RutasPerfil.ENCUESTA_PREVIA) {
-        // Instancia por destino y configuración propia: no comparte respuestas ni definición con P-22.
         val vm: EncuestaViewModel = viewModel(factory = viewModelFactory {
             initializer { EncuestaViewModel(EncuestaPreviaP33) }
         })
@@ -38,7 +46,6 @@ fun NavGraphBuilder.grafoPerfil(nav: NavController, onEncuestaFinalizada: (() ->
             estado = estado,
             onVolver = { nav.popBackStack() },
             onSeleccionarRespuesta = vm::seleccionarRespuesta,
-            // Preguntas 2/3 y destino posterior pendientes; no se inventa una transición.
             onSiguiente = { vm.avanzar() }
         )
     }
@@ -54,7 +61,7 @@ fun NavGraphBuilder.grafoPerfil(nav: NavController, onEncuestaFinalizada: (() ->
             onAvisosFavoritosChange = vm::cambiarAvisosFavoritos,
             onUrgenciasCiudadChange = vm::cambiarUrgenciasCiudad,
             onAvisoPrivacidad = { nav.navigate(RutasPerfil.AVISO_PRIVACIDAD) { launchSingleTop = true } },
-            onCerrarSesion = vm::solicitarCierreSesion
+            onCerrarSesion = cuentaViewModel()::cerrarSesion
         )
     }
     composable(RutasPerfil.AVISO_PRIVACIDAD) {
@@ -79,7 +86,6 @@ fun NavGraphBuilder.grafoPerfil(nav: NavController, onEncuestaFinalizada: (() ->
                     else nav.navigate(RutasPerfil.AVISO_PRIVACIDAD) { launchSingleTop = true }
                 }
             },
-            // Sin persistencia: salir no registra un recordatorio ni una encuesta enviada.
             onResponderDespues = { nav.popBackStack() }
         )
     }
@@ -101,20 +107,28 @@ fun NavGraphBuilder.grafoPerfil(nav: NavController, onEncuestaFinalizada: (() ->
     composable(Rutas.PERFIL) {
         val vm: PerfilViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val estado by vm.estado.collectAsStateWithLifecycle()
+
         PerfilScreen(
             estado = estado,
+            usuarioActual = usuarioActual(),
             onReintentar = vm::reintentar,
             onFavoritosClick = { nav.navigate(RutasPerfil.FAVORITOS) { launchSingleTop = true } },
             onInsigniasClick = { nav.navigate(RutasPerfil.INSIGNIAS) { launchSingleTop = true } },
             onMisActividadesClick = { nav.navigate(Rutas.MIS_ACTIVIDADES) { launchSingleTop = true } },
+            onSwitchCuenta = onSwitchCuenta,
             accesosDisponibles = true,
             favoritosDisponibles = true
         )
     }
     composable(RutasPerfil.FAVORITOS) {
-        val vm: FavoritosViewModel = viewModel(factory = AppViewModelProvider.Factory)
-        val estado by vm.estado.collectAsStateWithLifecycle()
-        FavoritosScreen(estado = estado, onVolver = { nav.popBackStack() }, onReintentar = vm::reintentar)
+        val cuenta = cuentaViewModel()
+        val asociaciones by cuenta.asociaciones.collectAsStateWithLifecycle()
+        val favoritas by cuenta.favoritas.collectAsStateWithLifecycle()
+        FavoritosScreen(
+            estado = UiState.Exito(asociaciones.filter { it.id in favoritas }),
+            onVolver = { nav.popBackStack() },
+            onReintentar = {}
+        )
     }
     composable(RutasPerfil.INSIGNIAS) {
         val vm: InsigniasViewModel = viewModel(factory = AppViewModelProvider.Factory)

@@ -6,6 +6,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import mx.tec.familiasquesuman.ui.screens.inscripcion.RutasInscripcion
+import mx.tec.familiasquesuman.ui.screens.inscripcion.alternarFavorita
+import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
 
 object RutasInicio {
@@ -25,7 +28,8 @@ object RutasInicio {
 fun NavGraphBuilder.grafoInicio(
     nav: NavController,
     onNavegarAActividades: () -> Unit = {},
-    onNavegarACampanas: () -> Unit = {}
+    onNavegarACampanas: () -> Unit = {},
+    onVerAgenda: () -> Unit = {}
 ) {
     composable(RutasInicio.SPLASH) {
         SplashScreen(
@@ -59,11 +63,23 @@ fun NavGraphBuilder.grafoInicio(
     composable(RutasInicio.INICIO) {
         val vm: InicioViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val asociacionDestacada by vm.asociacionDestacada.collectAsStateWithLifecycle()
+        val cuenta = cuentaViewModel()
+        val sesion by cuenta.sesion.collectAsStateWithLifecycle()
+        val asociaciones by cuenta.asociaciones.collectAsStateWithLifecycle()
+        val favoritas by cuenta.favoritas.collectAsStateWithLifecycle()
 
         InicioScreen(
             ciudad = vm.ciudadElegida,
             onCambiarCiudad = vm::cambiarCiudad,
             asociacion = asociacionDestacada,
+            nombreFamilia = sesion?.familia,
+            causas = asociaciones.take(2),
+            favoritas = favoritas,
+            onAlternarFavorita = { id -> nav.alternarFavorita(cuenta, id) },
+            onCausaClick = { id -> nav.navigate(RutasInicio.asociacion(id)) },
+            onVerAgenda = onVerAgenda,
+            onCrearCuenta = { nav.navigate(RutasInscripcion.CREAR_CUENTA) { launchSingleTop = true } },
+            onIniciarSesion = { nav.navigate(RutasInscripcion.INICIAR_SESION) { launchSingleTop = true } },
             // Explorar lleva a las actividades.
             onExplorarClick = onNavegarAActividades,
             onActividadesClick = onNavegarAActividades,
@@ -95,13 +111,14 @@ fun NavGraphBuilder.grafoInicio(
         vm.cargarAsociacion(id)
 
         val asociacion by vm.asociacion.collectAsStateWithLifecycle()
-        val esFavorito by vm.esFavorito.collectAsStateWithLifecycle()
+        val cuenta = cuentaViewModel()
+        val favoritas by cuenta.favoritas.collectAsStateWithLifecycle()
 
         asociacion?.let {
             AsociacionScreen(
                 asociacion = it,
-                esFavorito = esFavorito,
-                onToggleFavorito = vm::toggleFavorito,
+                esFavorito = id in favoritas,
+                onToggleFavorito = { nav.alternarFavorita(cuenta, id) },
                 onVerActividades = onNavegarAActividades
             )
         }
