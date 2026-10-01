@@ -39,6 +39,9 @@ import mx.tec.familiasquesuman.ui.screens.actividades.grafoActividades
 import mx.tec.familiasquesuman.ui.screens.inicio.RutasInicio
 import mx.tec.familiasquesuman.ui.screens.inscripcion.RutasInscripcion
 import mx.tec.familiasquesuman.ui.screens.inscripcion.grafoInscripcion
+import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.tec.familiasquesuman.ui.screens.inicio.grafoInicio
 import mx.tec.familiasquesuman.ui.screens.perfil.RutasPerfil
 import mx.tec.familiasquesuman.ui.screens.perfil.grafoPerfil
@@ -50,6 +53,28 @@ fun FamiliasApp() {
     val nav = rememberNavController()
     val entrada by nav.currentBackStackEntryAsState()
     val rutaActual = entrada?.destination?.route
+    val cuenta = cuentaViewModel()
+    val sesion by cuenta.sesion.collectAsStateWithLifecycle()
+
+    // Sin sesión no hay perfil, ni agenda, ni ajustes: se pide entrar y, al hacerlo, se abre lo que pidió.
+    val abrirConSesion: (String) -> Unit = { ruta ->
+        if (cuenta.sesion.value == null) {
+            cuenta.recordarDestino(ruta)
+            nav.navigate(RutasInscripcion.INICIAR_SESION) { launchSingleTop = true }
+        } else {
+            nav.navigate(ruta) { launchSingleTop = true }
+        }
+    }
+
+    // Al cerrar sesión, lo que era solo de la familia desaparece y se vuelve al Inicio.
+    LaunchedEffect(sesion) {
+        if (sesion == null && rutaActual in rutasConSesion) {
+            nav.navigate(RutasInicio.INICIO) {
+                popUpTo(RutasInicio.INICIO) { inclusive = false }
+                launchSingleTop = true
+            }
+        }
+    }
 
     val mostrarBarraInferior = rutaActual != RutasInicio.SPLASH && rutaActual != RutasInicio.CIUDAD &&
         rutaActual != RutasPerfil.TESTIMONIO && rutaActual != RutasPerfil.ENCUESTA_FINAL &&
@@ -58,10 +83,18 @@ fun FamiliasApp() {
     CompositionLocalProvider(
         LocalIrAPerfil provides { destino ->
             when (destino) {
-                DestinoPerfil.PERFIL -> nav.navigate(Rutas.PERFIL) { launchSingleTop = true }
-                DestinoPerfil.MIS_ACTIVIDADES -> nav.navigate(Rutas.MIS_ACTIVIDADES) { launchSingleTop = true }
-                DestinoPerfil.NOTIFICACIONES, DestinoPerfil.AJUSTES ->
-                    nav.navigate(RutasPerfil.AJUSTES) { launchSingleTop = true }
+                DestinoPerfil.PERFIL -> abrirConSesion(Rutas.PERFIL)
+                DestinoPerfil.MIS_ACTIVIDADES -> abrirConSesion(Rutas.MIS_ACTIVIDADES)
+                DestinoPerfil.NOTIFICACIONES, DestinoPerfil.AJUSTES -> abrirConSesion(RutasPerfil.AJUSTES)
+                DestinoPerfil.INICIAR_SESION -> {
+                    cuenta.tomarDestino()
+                    nav.navigate(RutasInscripcion.INICIAR_SESION) { launchSingleTop = true }
+                }
+                DestinoPerfil.CREAR_CUENTA -> {
+                    cuenta.tomarDestino()
+                    nav.navigate(RutasInscripcion.CREAR_CUENTA) { launchSingleTop = true }
+                }
+                DestinoPerfil.CERRAR_SESION -> cuenta.cerrarSesion()
             }
         }
     ) {
@@ -85,7 +118,9 @@ fun FamiliasApp() {
                 // actividades, no a las que la familia ya tiene inscritas.
                 onNavegarAActividades = { nav.navigate(RutasActividades.LISTA) },
                 // "Quiero Donar" lleva a la lista de campañas (parte 4).
-                onNavegarACampanas = { nav.navigate(RutasCampanas.LISTA) }
+                onNavegarACampanas = { nav.navigate(RutasCampanas.LISTA) },
+                // "Ver agenda" es lo de la familia: Mis actividades (pide sesión).
+                onVerAgenda = { abrirConSesion(Rutas.MIS_ACTIVIDADES) }
             )
 
             grafoActividades(
@@ -115,6 +150,11 @@ fun FamiliasApp() {
     }
     }
 }
+
+/** Pantallas que solo existen con sesión abierta. */
+private val rutasConSesion = setOf(
+    Rutas.PERFIL, Rutas.MIS_ACTIVIDADES, RutasPerfil.AJUSTES, RutasPerfil.FAVORITOS, RutasPerfil.INSIGNIAS
+)
 
 /** Cambio de pestaña: una sola copia de cada pantalla y la pila limpia. */
 private fun NavController.irA(ruta: String) {

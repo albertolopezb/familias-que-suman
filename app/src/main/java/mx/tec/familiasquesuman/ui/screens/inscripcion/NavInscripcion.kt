@@ -72,9 +72,7 @@ fun cuentaViewModel(): CuentaViewModel {
     return viewModel(viewModelStoreOwner = actividad, factory = AppViewModelProvider.Factory)
 }
 
-// Saltos a otras partes. Mientras no existan, van a las pantallas temporales de
-// inscripcion/temporal/, que se registran en las mismas rutas de Rutas.
-// TODO(parte 2): "Ver otras actividades" → RutasActividades.LISTA cuando exista.
+// Saltos a otras partes de la app.
 private fun NavController.irAOtrasActividades() = navigate(RutasActividades.LISTA) {
     popUpTo(Rutas.INICIO)
     launchSingleTop = true
@@ -95,6 +93,11 @@ private fun NavController.continuarDespuesDeEntrar(cuenta: CuentaViewModel, ruta
         navigate(RutasInscripcion.acompanantes(regreso.actividadId, regreso.simularSinCupo)) {
             popUpTo(rutaActual) { inclusive = true }
         }
+        return
+    }
+    val destino = cuenta.tomarDestino()
+    if (destino != null) {
+        navigate(destino) { popUpTo(rutaActual) { inclusive = true } }
     } else {
         popBackStack()
     }

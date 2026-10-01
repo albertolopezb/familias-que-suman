@@ -14,6 +14,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,20 +32,21 @@ import mx.tec.familiasquesuman.ui.theme.AmbarAcento
 import mx.tec.familiasquesuman.ui.theme.AzulMarinoPrimario
 
 /** A dónde puede llevar el cuadrito de perfil. */
-enum class DestinoPerfil { PERFIL, MIS_ACTIVIDADES, NOTIFICACIONES, AJUSTES }
+enum class DestinoPerfil { PERFIL, MIS_ACTIVIDADES, NOTIFICACIONES, AJUSTES, INICIAR_SESION, CREAR_CUENTA, CERRAR_SESION }
 
 /** Lo provee FamiliasApp, que es quien navega. Sin proveedor (previews) no hace nada. */
 val LocalIrAPerfil = compositionLocalOf<(DestinoPerfil) -> Unit> { {} }
 
 /**
  * El botón de perfil de la esquina de arriba. Al tocarlo se abre un cuadrito con
- * lo importante: Mi perfil, Mis actividades, Notificaciones (solo si hay) y Ajustes.
+ * lo importante: con sesión, Mi perfil, Mis actividades, Notificaciones y Ajustes; sin sesión, entrar o crear cuenta.
  */
 @Composable
 fun BotonPerfil(
     modifier: Modifier = Modifier,
     hayNotificaciones: Boolean = true
 ) {
+    val conSesion = cuentaViewModel().sesion.collectAsStateWithLifecycle().value != null
     var abierto by remember { mutableStateOf(false) }
     val irA = LocalIrAPerfil.current
     val ir: (DestinoPerfil) -> Unit = { destino ->
@@ -66,7 +69,7 @@ fun BotonPerfil(
                 tint = AzulMarinoPrimario,
                 modifier = Modifier.size(20.dp)
             )
-            if (hayNotificaciones) {
+            if (hayNotificaciones && conSesion) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -85,12 +88,18 @@ fun BotonPerfil(
             offset = DpOffset(0.dp, 6.dp),
             modifier = Modifier.background(Color.White)
         ) {
-            Opcion("Mi perfil", IconosWeb.Usuario) { ir(DestinoPerfil.PERFIL) }
-            Opcion("Mis actividades", IconosWeb.Calendario) { ir(DestinoPerfil.MIS_ACTIVIDADES) }
-            if (hayNotificaciones) {
-                Opcion("Notificaciones", IconosWeb.Campana) { ir(DestinoPerfil.NOTIFICACIONES) }
+            if (conSesion) {
+                Opcion("Mi perfil", IconosWeb.Usuario) { ir(DestinoPerfil.PERFIL) }
+                Opcion("Mis actividades", IconosWeb.Calendario) { ir(DestinoPerfil.MIS_ACTIVIDADES) }
+                if (hayNotificaciones) {
+                    Opcion("Notificaciones", IconosWeb.Campana) { ir(DestinoPerfil.NOTIFICACIONES) }
+                }
+                Opcion("Ajustes", IconosWeb.Engrane) { ir(DestinoPerfil.AJUSTES) }
+                Opcion("Cerrar sesión", IconosWeb.Usuario) { ir(DestinoPerfil.CERRAR_SESION) }
+            } else {
+                Opcion("Iniciar sesión", IconosWeb.Usuario) { ir(DestinoPerfil.INICIAR_SESION) }
+                Opcion("Crear cuenta", IconosWeb.Usuario) { ir(DestinoPerfil.CREAR_CUENTA) }
             }
-            Opcion("Ajustes", IconosWeb.Engrane) { ir(DestinoPerfil.AJUSTES) }
         }
     }
 }
