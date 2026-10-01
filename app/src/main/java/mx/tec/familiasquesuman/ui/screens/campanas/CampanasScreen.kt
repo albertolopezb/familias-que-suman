@@ -91,7 +91,11 @@ fun CampanasScreen(
     nombresAsociacion: Map<String, String> = emptyMap(),
     chipElegido: String? = null,
     onAyudar: (Campana) -> Unit = {},
-    onNoEncontre: () -> Unit = {}
+    onNoEncontre: () -> Unit = {},
+    onLlamar: (String) -> Unit = {},
+    onWhatsAppCentro: (String) -> Unit = {},
+    onComoLlegar: (String) -> Unit = {},
+    onAbrirEnlace: (String) -> Unit = {}
 ) {
     // Qué modo se está viendo. Solo es estado de pantalla (como "qué pestaña"), no de datos.
     var modo by rememberSaveable { mutableStateOf(ModoDonar.CAMPANA) }
@@ -102,7 +106,13 @@ fun CampanasScreen(
         SelectorModoDonar(modo = modo, onElegir = { modo = it })
 
         if (modo == ModoDonar.TENGO_ALGO) {
-            ProximamenteTengoAlgo()
+            TengoAlgoParaDonar(
+                onLlamar = onLlamar,
+                onWhatsApp = onWhatsAppCentro,
+                onComoLlegar = onComoLlegar,
+                onAbrirEnlace = onAbrirEnlace,
+                onNoEncontre = onNoEncontre
+            )
             return@Column
         }
 
@@ -224,25 +234,6 @@ private fun BotonModo(
     }
 }
 
-/** Mientras se acuerda con el equipo cómo se llenan los datos de "Tengo algo para donar". */
-@Composable
-private fun ProximamenteTengoAlgo() {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text("Próximamente", style = MaterialTheme.typography.titleMedium, color = MarcaAzul)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "Aquí vas a poder ver a qué asociaciones llevar lo que tienes para donar.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = TintaSuave,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
 @Composable
 private fun ListaConDatos(
     campanas: List<Campana>,
@@ -288,7 +279,7 @@ private fun ListaConDatos(
 
 /** Al final de la lista, como en el sitio: la tarjeta punteada para quien no halló dónde donar. */
 @Composable
-private fun TarjetaNoEncontre(onClick: () -> Unit) {
+internal fun TarjetaNoEncontre(onClick: () -> Unit) {
     val trazo = Color(0xFFD7E0EA)
     Column(
         modifier = Modifier

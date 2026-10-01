@@ -117,3 +117,16 @@ val IconoInstagram: ImageVector = iconoTrazos(
     "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z",
     "M17.5 6.5h.01"
 )
+
+/** Flecha hacia abajo de las tarjetas que se despliegan (se gira para "cerrar"). */
+val IconoChevron: ImageVector = iconoTrazos("Chevron", "m6 9 6 6 6-6")
+
+/** Escudo de "Verificado". */
+val IconoEscudo: ImageVector = iconoTrazos(
+    "Escudo",
+    "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
+    grosor = 2f
+)
+
+/** Flecha de "Cómo llegar" y de la dirección. */
+val IconoNavegacion: ImageVector = iconoTrazos("Navegacion", "M3 11 22 2 13 21 11 13 3 11z")

@@ -80,8 +80,11 @@ private fun contactarCampana(contexto: Context, campana: Campana) {
 }
 
 /** "Cómo llegar": abre el punto en el mapa (Google Maps o, si no hay, el navegador). */
-private fun abrirMapa(contexto: Context, punto: PuntoEntrega) {
-    val consulta = Uri.encode("${punto.direccion}, ${punto.colonia}")
+private fun abrirMapa(contexto: Context, punto: PuntoEntrega): Unit =
+    abrirMapa(contexto, "${punto.direccion}, ${punto.colonia}")
+
+private fun abrirMapa(contexto: Context, direccion: String) {
+    val consulta = Uri.encode(direccion)
     abrir(
         contexto,
         Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/search/?api=1&query=$consulta"))
@@ -125,7 +128,13 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController) {
             onAyudar = { campana -> contactarCampana(contexto, campana) },
             onNoEncontre = {
                 abrirWhatsApp(contexto, WhatsAppGeneral, "Hola, no encontré dónde donar lo que tengo. ¿Me ayudan?")
-            }
+            },
+            onLlamar = { telefono -> abrir(contexto, Intent(Intent.ACTION_DIAL, Uri.parse("tel:$telefono"))) },
+            onWhatsAppCentro = { numero ->
+                abrirWhatsApp(contexto, numero, "Hola, tengo algo para donar y me gustaría coordinar la entrega.")
+            },
+            onComoLlegar = { direccion -> abrirMapa(contexto, direccion) },
+            onAbrirEnlace = { enlace -> abrir(contexto, Intent(Intent.ACTION_VIEW, Uri.parse(enlace))) }
         )
 
         if (verFiltros) {
