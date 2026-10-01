@@ -16,6 +16,8 @@ import mx.tec.familiasquesuman.notificaciones.Notificaciones
 import mx.tec.familiasquesuman.ui.components.CargandoView
 import mx.tec.familiasquesuman.ui.components.ErrorView
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.compartirActividad
+import mx.tec.familiasquesuman.ui.screens.inscripcion.alternarFavorita
+import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
 import mx.tec.familiasquesuman.ui.state.UiState
 import androidx.compose.runtime.setValue
@@ -186,7 +188,8 @@ fun NavGraphBuilder.grafoActividades(
         LaunchedEffect(id) { vm.cargar(id) }
 
         val estado by vm.estado.collectAsStateWithLifecycle()
-        val esFavorito by vm.esFavorito.collectAsStateWithLifecycle()
+        val cuenta = cuentaViewModel()
+        val favoritas by cuenta.favoritas.collectAsStateWithLifecycle()
 
         when (val actual = estado) {
             is UiState.Cargando -> CargandoView()
@@ -198,10 +201,10 @@ fun NavGraphBuilder.grafoActividades(
 
             is UiState.Exito -> DetalleActividadScreen(
                 item = actual.datos,
-                esFavorito = esFavorito,
+                esFavorito = id in favoritas,
                 onRegresar = { nav.popBackStack() },
                 onCompartir = { compartirActividad(contexto, actual.datos) },
-                onAlternarFavorito = vm::alternarFavorito,
+                onAlternarFavorito = { nav.alternarFavorita(cuenta, id) },
                 // Parte 3 conecta esto con la puerta de cuenta (RF-18).
                 onInscribirme = { onInscribirme(id) },
                 onVerOtrasActividades = {

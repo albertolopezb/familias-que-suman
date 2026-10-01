@@ -18,10 +18,6 @@ class DetalleActividadViewModel(
     private val _estado = MutableStateFlow<UiState<ActividadConAsociacion>>(UiState.Cargando)
     val estado: StateFlow<UiState<ActividadConAsociacion>> = _estado.asStateFlow()
 
-    /** Favorito en memoria (RF-17). Cuando haya cuenta, esto vive en el servidor. */
-    private val _esFavorito = MutableStateFlow(false)
-    val esFavorito: StateFlow<Boolean> = _esFavorito.asStateFlow()
-
     private var idCargado: String? = null
 
     /** Se llama desde un LaunchedEffect, no desde el cuerpo del composable. */
@@ -43,9 +39,5 @@ class DetalleActividadViewModel(
         val id = idCargado ?: return
         idCargado = null
         cargar(id)
-    }
-
-    fun alternarFavorito() {
-        _esFavorito.value = !_esFavorito.value
     }
 }

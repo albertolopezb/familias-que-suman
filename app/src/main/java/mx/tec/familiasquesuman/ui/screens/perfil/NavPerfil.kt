@@ -16,7 +16,9 @@ import androidx.navigation.compose.composable
 import mx.tec.familiasquesuman.domain.Usuario
 import mx.tec.familiasquesuman.domain.UsuariosHardcodeados
 import mx.tec.familiasquesuman.ui.navigation.Rutas
+import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
+import mx.tec.familiasquesuman.ui.state.UiState
 
 object RutasPerfil {
     const val FAVORITOS = "perfil/favoritos"
@@ -59,7 +61,7 @@ fun NavGraphBuilder.grafoPerfil(
             onAvisosFavoritosChange = vm::cambiarAvisosFavoritos,
             onUrgenciasCiudadChange = vm::cambiarUrgenciasCiudad,
             onAvisoPrivacidad = { nav.navigate(RutasPerfil.AVISO_PRIVACIDAD) { launchSingleTop = true } },
-            onCerrarSesion = vm::solicitarCierreSesion
+            onCerrarSesion = cuentaViewModel()::cerrarSesion
         )
     }
     composable(RutasPerfil.AVISO_PRIVACIDAD) {
@@ -119,9 +121,14 @@ fun NavGraphBuilder.grafoPerfil(
         )
     }
     composable(RutasPerfil.FAVORITOS) {
-        val vm: FavoritosViewModel = viewModel(factory = AppViewModelProvider.Factory)
-        val estado by vm.estado.collectAsStateWithLifecycle()
-        FavoritosScreen(estado = estado, onVolver = { nav.popBackStack() }, onReintentar = vm::reintentar)
+        val cuenta = cuentaViewModel()
+        val asociaciones by cuenta.asociaciones.collectAsStateWithLifecycle()
+        val favoritas by cuenta.favoritas.collectAsStateWithLifecycle()
+        FavoritosScreen(
+            estado = UiState.Exito(asociaciones.filter { it.id in favoritas }),
+            onVolver = { nav.popBackStack() },
+            onReintentar = {}
+        )
     }
     composable(RutasPerfil.INSIGNIAS) {
         val vm: InsigniasViewModel = viewModel(factory = AppViewModelProvider.Factory)

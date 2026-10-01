@@ -15,16 +15,9 @@ class AsociacionViewModel(
     private val _asociacion = MutableStateFlow<Asociacion?>(null)
     val asociacion: StateFlow<Asociacion?> = _asociacion
 
-    private val _esFavorito = MutableStateFlow(false)
-    val esFavorito: StateFlow<Boolean> = _esFavorito
-
     fun cargarAsociacion(id: String) {
         viewModelScope.launch {
             _asociacion.value = actividadRepository.getAsociacion(id)
         }
-    }
-
-    fun toggleFavorito() {
-        _esFavorito.value = !_esFavorito.value
     }
 }
