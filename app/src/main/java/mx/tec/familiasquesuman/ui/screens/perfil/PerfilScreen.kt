@@ -11,6 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -72,7 +73,6 @@ fun PerfilScreen(
         EncabezadoApp()
         Surface(color = Superficie) {
             Text(
-                // Cambia dinámicamente según el usuario que le pasamos
                 text = if (usuarioActual.esAdmin) "Perfil Admin" else "Mi Perfil",
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 style = MaterialTheme.typography.headlineMedium,
@@ -84,7 +84,7 @@ fun PerfilScreen(
             is UiState.Error -> ErrorView(estado.mensaje, onReintentar)
             is UiState.Exito -> ContenidoPerfil(
                 datos = estado.datos,
-                usuarioActual = usuarioActual, // <--- Pasar el usuario recibido por parámetro
+                usuarioActual = usuarioActual,
                 onFavoritosClick = onFavoritosClick,
                 onInsigniasClick = onInsigniasClick,
                 accesosDisponibles = accesosDisponibles,
@@ -117,6 +117,7 @@ private fun ContenidoPerfil(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        // Encabezado de Usuario
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
@@ -125,16 +126,25 @@ private fun ContenidoPerfil(
                 Modifier
                     .size(60.dp)
                     .clip(CircleShape)
-                    .background(if (usuarioActual.esAdmin) Color(0xFFFFD1D1) else Color(0xFFC5DEFF))
-            )
+                    .background(if (usuarioActual.esAdmin) Color(0xFFFFD1D1) else Color(0xFFC5DEFF)),
+                contentAlignment = Alignment.Center
+            ) {
+                if (usuarioActual.esAdmin) {
+                    Icon(
+                        imageVector = Icons.Outlined.Lock,
+                        contentDescription = "Admin",
+                        tint = Color(0xFFB3261E)
+                    )
+                }
+            }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = usuarioActual.nombreFamilia,
+                    text = if (usuarioActual.esAdmin) "Administrador General" else usuarioActual.nombreFamilia,
                     style = MaterialTheme.typography.headlineMedium,
                     color = Tinta
                 )
                 Text(
-                    text = "${usuarioActual.ciudad} · ${if (usuarioActual.esAdmin) "Administrador" else "Cuenta Familiar"}",
+                    text = "${usuarioActual.ciudad} · ${if (usuarioActual.esAdmin) "Modo Gestión" else "Cuenta Familiar"}",
                     style = MaterialTheme.typography.bodyLarge,
                     color = TintaSuave
                 )
@@ -152,52 +162,75 @@ private fun ContenidoPerfil(
             onSwitchCuenta = onSwitchCuenta
         )
 
-        EtiquetaSeccion("TU IMPACTO")
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            TarjetaMetrica(datos.impacto.actividadesRealizadas, "Actividades\nrealizadas", Modifier.weight(1f))
-            TarjetaMetrica(datos.impacto.horasDeServicio, "Horas\nde servicio", Modifier.weight(1f))
-            TarjetaMetrica(datos.impacto.campanasApoyadas, "Campañas\napoyadas", Modifier.weight(1f))
-        }
-
-        TarjetaPerfil {
-            Text("Actividades por mes", style = MaterialTheme.typography.titleMedium, color = Tinta)
-            Spacer(Modifier.height(12.dp))
-            GraficaBarras(etiquetasMensuales, valoresMensuales)
-        }
-
-        EtiquetaSeccion("PRÓXIMAS")
-        datos.proximas.forEach { actividad ->
+        // VISTA CONDICIONAL SEGÚN EL ROL
+        if (usuarioActual.esAdmin) {
+            // --- VISTA SIMPLIFICADA PARA ADMIN ---
+            EtiquetaSeccion("PANEL DE CONTROL ADMIN")
             TarjetaPerfil {
-                Text(actividad.titulo, style = MaterialTheme.typography.titleMedium, color = Tinta)
-                Spacer(Modifier.height(4.dp))
                 Text(
-                    "${actividad.fecha} · ${actividad.horario}",
+                    text = "Permisos de Edición Activos",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Tinta
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = "Desde este rol tienes habilitadas las funciones de creación, modificación y eliminación en:\n\n" +
+                            "• Actividades\n" +
+                            "• Proyectos\n" +
+                            "• Donaciones (Campañas)\n" +
+                            "• Directorio de Visiteo",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TintaSuave
                 )
             }
-        }
+        } else {
+            // --- VISTA DETALLADA DE LA FAMILIA ---
+            EtiquetaSeccion("TU IMPACTO")
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                TarjetaMetrica(datos.impacto.actividadesRealizadas, "Actividades\nrealizadas", Modifier.weight(1f))
+                TarjetaMetrica(datos.impacto.horasDeServicio, "Horas\nde servicio", Modifier.weight(1f))
+                TarjetaMetrica(datos.impacto.campanasApoyadas, "Campañas\napoyadas", Modifier.weight(1f))
+            }
 
-        AccesoPerfil(
-            "Mis actividades", Icons.Outlined.DateRange, onMisActividadesClick,
-            true, Modifier.fillMaxWidth()
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            TarjetaPerfil {
+                Text("Actividades por mes", style = MaterialTheme.typography.titleMedium, color = Tinta)
+                Spacer(Modifier.height(12.dp))
+                GraficaBarras(etiquetasMensuales, valoresMensuales)
+            }
+
+            EtiquetaSeccion("PRÓXIMAS")
+            datos.proximas.forEach { actividad ->
+                TarjetaPerfil {
+                    Text(actividad.titulo, style = MaterialTheme.typography.titleMedium, color = Tinta)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "${actividad.fecha} · ${actividad.horario}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TintaSuave
+                    )
+                }
+            }
+
             AccesoPerfil(
-                "Mis favoritos", Icons.Outlined.FavoriteBorder, onFavoritosClick,
-                favoritosDisponibles, Modifier.weight(1f)
+                "Mis actividades", Icons.Outlined.DateRange, onMisActividadesClick,
+                true, Modifier.fillMaxWidth()
             )
-            AccesoPerfil(
-                "Insignias", IconoInsignia, onInsigniasClick,
-                accesosDisponibles, Modifier.weight(1f)
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                AccesoPerfil(
+                    "Mis favoritos", Icons.Outlined.FavoriteBorder, onFavoritosClick,
+                    favoritosDisponibles, Modifier.weight(1f)
+                )
+                AccesoPerfil(
+                    "Insignias", IconoInsignia, onInsigniasClick,
+                    accesosDisponibles, Modifier.weight(1f)
+                )
+            }
         }
 
         ProbarNotificaciones()
     }
 }
 
-/** Componente de Switch de Cuentas para probar la alternancia entre Usuario y Admin */
 @Composable
 private fun SeccionSwitchCuentas(
     esAdmin: Boolean,
@@ -238,7 +271,6 @@ private fun SeccionSwitchCuentas(
     }
 }
 
-/** Los botones para ver cómo llegan las notificaciones. */
 @Composable
 private fun ProbarNotificaciones() {
     val contexto = LocalContext.current
