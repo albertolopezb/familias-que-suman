@@ -14,6 +14,7 @@ import mx.tec.familiasquesuman.domain.Impacto
 import mx.tec.familiasquesuman.domain.Participacion
 import mx.tec.familiasquesuman.domain.Proyecto
 import mx.tec.familiasquesuman.domain.TemaActividad
+import mx.tec.familiasquesuman.domain.Usuario
 
 // Datos falsos, idénticos a los del Figma. `internal`: solo los repositorios de
 // data/ los tocan. Ninguna pantalla ni ViewModel los importa directo; así, cuando
@@ -22,6 +23,13 @@ import mx.tec.familiasquesuman.domain.TemaActividad
 internal object DatosDePrueba {
 
     val familia = Familia("f1", "Familia Rodríguez", "Monterrey", "ana.rodriguez@correo.com")
+
+    val usuarioAdmin = Usuario(
+        correo = "admin@correo.com",
+        esAdmin = true,
+        nombreFamilia = "Administrador General",
+        ciudad = "Monterrey"
+    )
 
     val impacto = Impacto(actividadesRealizadas = 12, horasDeServicio = 36, campanasApoyadas = 4)
 

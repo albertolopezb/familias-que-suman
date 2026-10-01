@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import mx.tec.familiasquesuman.domain.UsuariosHardcodeados
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
 import mx.tec.familiasquesuman.ui.theme.AmbarAcento
 import mx.tec.familiasquesuman.ui.theme.AzulMarinoPrimario
@@ -46,7 +47,10 @@ fun BotonPerfil(
     modifier: Modifier = Modifier,
     hayNotificaciones: Boolean = true
 ) {
-    val conSesion = cuentaViewModel().sesion.collectAsStateWithLifecycle().value != null
+    val sesion by cuentaViewModel().sesion.collectAsStateWithLifecycle()
+    val conSesion = sesion != null
+    val esAdmin = UsuariosHardcodeados.obtenerPorCorreo(sesion?.correo).esAdmin
+
     var abierto by remember { mutableStateOf(false) }
     val irA = LocalIrAPerfil.current
     val ir: (DestinoPerfil) -> Unit = { destino ->
@@ -90,7 +94,12 @@ fun BotonPerfil(
         ) {
             if (conSesion) {
                 Opcion("Mi perfil", IconosWeb.Usuario) { ir(DestinoPerfil.PERFIL) }
-                Opcion("Mis actividades", IconosWeb.Calendario) { ir(DestinoPerfil.MIS_ACTIVIDADES) }
+
+                // Mostrar "Mis actividades" solo si NO es administrador
+                if (!esAdmin) {
+                    Opcion("Mis actividades", IconosWeb.Calendario) { ir(DestinoPerfil.MIS_ACTIVIDADES) }
+                }
+
                 if (hayNotificaciones) {
                     Opcion("Notificaciones", IconosWeb.Campana) { ir(DestinoPerfil.NOTIFICACIONES) }
                 }

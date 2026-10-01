@@ -42,7 +42,9 @@ import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Web
 import mx.tec.familiasquesuman.ui.screens.actividades.grafoActividades
 import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import mx.tec.familiasquesuman.domain.Usuario
 import mx.tec.familiasquesuman.ui.screens.campanas.RutasCampanas
 import mx.tec.familiasquesuman.ui.screens.campanas.grafoCampanas
 import mx.tec.familiasquesuman.ui.screens.inicio.RutasInicio
@@ -60,7 +62,13 @@ fun FamiliasApp() {
     val cuenta = cuentaViewModel()
     val sesion by cuenta.sesion.collectAsStateWithLifecycle()
 
-    // Sin sesión no hay perfil, ni agenda, ni ajustes: se pide entrar y, al hacerlo, se abre lo que pidió.
+    // Manejo del usuario actual sincronizado con la sesión
+    var usuarioActualOverride by remember<MutableState<Usuario?>> { mutableStateOf(null) }
+
+    // Si la sesión cambia o se actualiza, obtenemos el usuario correspondiente al correo activo
+    val usuarioActual = usuarioActualOverride
+        ?: UsuariosHardcodeados.obtenerPorCorreo(sesion?.correo)
+
     val abrirConSesion: (String) -> Unit = { ruta ->
         if (cuenta.sesion.value == null) {
             cuenta.recordarDestino(ruta)
@@ -72,6 +80,8 @@ fun FamiliasApp() {
 
     // Al cerrar sesión, lo que era solo de la familia desaparece y se vuelve al Inicio.
     LaunchedEffect(sesion) {
+        // Limpiamos la sobreescritura manual si el usuario cierra o cambia de sesión
+        usuarioActualOverride = null
         if (sesion == null && rutaActual in rutasConSesion) {
             nav.navigate(RutasInicio.INICIO) {
                 popUpTo(RutasInicio.INICIO) { inclusive = false }
@@ -79,10 +89,7 @@ fun FamiliasApp() {
             }
         }
     }
-
-    // Estado global de la sesión hardcodeada
-    var usuarioActual by remember { mutableStateOf(UsuariosHardcodeados.USUARIO_NORMAL) }
-
+ // MAYBE QUITAR ESTO ------!!!!!!!!
     val mostrarBarraInferior = rutaActual != RutasInicio.SPLASH && rutaActual != RutasInicio.CIUDAD &&
             rutaActual != RutasPerfil.TESTIMONIO && rutaActual != RutasPerfil.ENCUESTA_FINAL &&
             rutaActual != RutasPerfil.AVISO_PRIVACIDAD && rutaActual != RutasPerfil.ENCUESTA_PREVIA
@@ -97,11 +104,16 @@ fun FamiliasApp() {
                     cuenta.tomarDestino()
                     nav.navigate(RutasInscripcion.INICIAR_SESION) { launchSingleTop = true }
                 }
+
                 DestinoPerfil.CREAR_CUENTA -> {
                     cuenta.tomarDestino()
                     nav.navigate(RutasInscripcion.CREAR_CUENTA) { launchSingleTop = true }
                 }
-                DestinoPerfil.CERRAR_SESION -> cuenta.cerrarSesion()
+
+                DestinoPerfil.CERRAR_SESION -> {
+                    usuarioActualOverride = null
+                    cuenta.cerrarSesion()
+                }
             }
         }
     ) {
@@ -119,11 +131,13 @@ fun FamiliasApp() {
                 modifier = Modifier.padding(padding)
             ) {
                 // Pasamos usuarioActual y el handler para cambiar la cuenta desde el Perfil
+                // grafoPerfil en FamiliasApp.kt
                 grafoPerfil(
                     nav = nav,
                     usuarioActual = { usuarioActual },
                     onSwitchCuenta = { esAdmin ->
-                        usuarioActual = if (esAdmin) {
+                        // Cambiamos usuarioActualOverride (la variable var) en lugar de usuarioActual
+                        usuarioActualOverride = if (esAdmin) {
                             UsuariosHardcodeados.USUARIO_ADMIN
                         } else {
                             UsuariosHardcodeados.USUARIO_NORMAL

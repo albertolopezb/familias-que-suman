@@ -108,9 +108,16 @@ fun NavGraphBuilder.grafoPerfil(
         val vm: PerfilViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val estado by vm.estado.collectAsStateWithLifecycle()
 
+        // 1. Obtenemos la sesión activa de CuentaViewModel
+        val cuentaVm = cuentaViewModel()
+        val sesionActual by cuentaVm.sesion.collectAsStateWithLifecycle()
+
+        // 2. Determinamos si es Admin o Usuario Normal según el correo en sesión
+        val usuarioCalculado = UsuariosHardcodeados.obtenerPorCorreo(sesionActual?.correo)
+
         PerfilScreen(
             estado = estado,
-            usuarioActual = usuarioActual(),
+            usuarioActual = usuarioCalculado, // ← Usamos el usuario calculado en tiempo real
             onReintentar = vm::reintentar,
             onFavoritosClick = { nav.navigate(RutasPerfil.FAVORITOS) { launchSingleTop = true } },
             onInsigniasClick = { nav.navigate(RutasPerfil.INSIGNIAS) { launchSingleTop = true } },

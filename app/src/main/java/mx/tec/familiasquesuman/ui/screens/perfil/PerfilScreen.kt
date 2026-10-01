@@ -156,12 +156,6 @@ private fun ContenidoPerfil(
             }
         }
 
-        // Switch de Cuentas (Demo)
-        SeccionSwitchCuentas(
-            esAdmin = usuarioActual.esAdmin,
-            onSwitchCuenta = onSwitchCuenta
-        )
-
         // VISTA CONDICIONAL SEGÚN EL ROL
         if (usuarioActual.esAdmin) {
             // --- VISTA SIMPLIFICADA PARA ADMIN ---
@@ -228,46 +222,6 @@ private fun ContenidoPerfil(
         }
 
         ProbarNotificaciones()
-    }
-}
-
-@Composable
-private fun SeccionSwitchCuentas(
-    esAdmin: Boolean,
-    onSwitchCuenta: (Boolean) -> Unit
-) {
-    EtiquetaSeccion("CAMBIAR CUENTA (MODO PRUEBAS)")
-    TarjetaPerfil {
-        Text(
-            text = "Cuenta activa: ${if (esAdmin) "Administrador" else "Ana Rodríguez (Usuario)"}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Tinta
-        )
-        Spacer(Modifier.height(8.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedButton(
-                onClick = { onSwitchCuenta(false) },
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = if (!esAdmin) MarcaAzul.copy(alpha = 0.15f) else Color.Transparent
-                ),
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(if (!esAdmin) "✓ Usuario" else "Usuario Normal")
-            }
-
-            Button(
-                onClick = { onSwitchCuenta(true) },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (esAdmin) MarcaAzul else Color.Gray
-                ),
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(if (esAdmin) "✓ Modo Admin" else "Modo Admin")
-            }
-        }
     }
 }
 

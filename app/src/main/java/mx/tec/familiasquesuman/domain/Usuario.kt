@@ -7,6 +7,7 @@ data class Usuario(
     val ciudad: String
 )
 
+// En domain/Usuario.kt
 object UsuariosHardcodeados {
     val USUARIO_NORMAL = Usuario(
         correo = "ana.rodriguez@correo.com",
@@ -16,9 +17,19 @@ object UsuariosHardcodeados {
     )
 
     val USUARIO_ADMIN = Usuario(
-        correo = "admin@familiasquesuman.org",
+        correo = "admin@correo.com",
         esAdmin = true,
-        nombreFamilia = "Administrador del Sistema",
+        nombreFamilia = "Administrador General",
         ciudad = "Monterrey"
     )
+
+    fun obtenerPorCorreo(correo: String?): Usuario {
+        if (correo == null) return USUARIO_NORMAL
+        val correoLimpio = correo.trim().lowercase()
+        return if (correoLimpio == USUARIO_ADMIN.correo || correoLimpio.contains("admin")) {
+            USUARIO_ADMIN
+        } else {
+            USUARIO_NORMAL
+        }
+    }
 }
