@@ -105,7 +105,7 @@ fun CrearCuentaScreen(
                 cargando = ui.enviando
             )
             TextButton(onClick = onIniciarSesion, modifier = Modifier.fillMaxWidth()) {
-                Text("¿Ya tienes cuenta? Inicia sesión", style = MaterialTheme.typography.labelMedium, color = TintaSuave)
+                Text("¿Ya tienes cuenta? Inicia sesión", style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp), color = TintaSuave)
             }
         }
     }
