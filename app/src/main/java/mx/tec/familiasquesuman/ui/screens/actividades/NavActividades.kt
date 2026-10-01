@@ -2,6 +2,7 @@ package mx.tec.familiasquesuman.ui.screens.actividades
 
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -10,12 +11,18 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
+import mx.tec.familiasquesuman.domain.ActividadConAsociacion
 import mx.tec.familiasquesuman.notificaciones.Notificaciones
 import mx.tec.familiasquesuman.ui.components.CargandoView
 import mx.tec.familiasquesuman.ui.components.ErrorView
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.compartirActividad
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
 import mx.tec.familiasquesuman.ui.state.UiState
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 
 object RutasActividades {
     const val LISTA = "actividades"
@@ -59,10 +66,16 @@ fun NavGraphBuilder.grafoActividades(
         val estado by vm.estado.collectAsStateWithLifecycle()
         val contexto = LocalContext.current
 
+        // Estados locales para controlar los diálogos de Admin
+        var mostrandoCrear by remember { mutableStateOf<Boolean>(false) }
+        var actividadAEditar by remember { mutableStateOf<ActividadConAsociacion?>(null) }
+        // NUEVO: Estado para la actividad que se quiere confirmar borrar
+        var actividadABorrar by remember { mutableStateOf<ActividadConAsociacion?>(null) }
+
         ActividadesScreen(
             estado = estado,
             ciudad = ciudad,
-            esAdmin = esAdmin(), // Viene del NavHost principal
+            esAdmin = esAdmin(),
             onActividadClick = { id -> nav.navigate(RutasActividades.detalle(id)) },
             onUnirme = onInscribirme,
             onCompartir = { item -> compartirActividad(contexto, item) },
@@ -72,17 +85,91 @@ fun NavGraphBuilder.grafoActividades(
             onVerGuardadas = { nav.navigate(RutasActividades.SIN_CONEXION) },
             onVerAsociaciones = onVerAsociaciones,
             onForzarEstado = vm::siguienteModoDePrueba,
-            // Conexión de los eventos Admin
-            onBorrarActividad = { id ->
-                vm.borrarActividad(id) // Llama a la función del ViewModel que borra y recarga
+            onBorrarActividad = { id: String ->
+                // En lugar de borrar directo, guardamos el elemento a borrar para abrir la alerta
+                if (estado is UiState.Exito) {
+                    actividadABorrar = (estado as UiState.Exito).datos.find { it.actividad.id == id }
+                }
             },
             onCrearActividad = {
-                // nav.navigate("crear_actividad")
+                mostrandoCrear = true
             },
-            onEditarActividad = { id ->
-                // nav.navigate("editar_actividad/$id")
+            onEditarActividad = { id: String ->
+                if (estado is UiState.Exito) {
+                    actividadAEditar = (estado as UiState.Exito).datos.find { it.actividad.id == id }
+                }
             }
         )
+
+        // Diálogo para Crear
+        if (mostrandoCrear) {
+            DialogoFormularioActividad(
+                tituloDialogo = "Crear Nueva Actividad",
+                onGuardar = { titulo, desc, fecha, horario, direccion, cupoTotal, libres, edadMin ->
+                    vm.crearActividad(
+                        titulo = titulo,
+                        descripcion = desc,
+                        fecha = fecha,
+                        horario = horario,
+                        direccion = direccion,
+                        cupoTotal = cupoTotal,
+                        lugaresDisponibles = libres,
+                        edadMinima = edadMin
+                    )
+                    mostrandoCrear = false
+                },
+                onDescartar = { mostrandoCrear = false }
+            )
+        }
+
+        // Diálogo para Editar
+        // Diálogo para Editar
+        actividadAEditar?.let { item ->
+            DialogoFormularioActividad(
+                tituloDialogo = "Editar Actividad",
+                actividadInicial = item.actividad,
+                onGuardar = { titulo, desc, fecha, horario, direccion, cupoTotal, libres, edadMin ->
+                    vm.editarActividad(
+                        id = item.actividad.id,
+                        nuevoTitulo = titulo,
+                        nuevaDescripcion = desc,
+                        nuevaFecha = fecha,
+                        nuevoHorario = horario,
+                        nuevaDireccion = direccion,
+                        nuevoCupoTotal = cupoTotal,
+                        nuevosLugaresDisponibles = libres,
+                        nuevaEdadMinima = edadMin
+                    )
+                    actividadAEditar = null
+                },
+                onDescartar = { actividadAEditar = null }
+            )
+        }
+
+        actividadABorrar?.let { item ->
+            AlertDialog(
+                onDismissRequest = { actividadABorrar = null },
+                title = { Text("Eliminar Actividad") },
+                text = {
+                    Text("¿Estás seguro de que deseas eliminar \"${item.actividad.titulo}\"? Esta acción no se puede deshacer.")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            vm.borrarActividad(item.actividad.id)
+                            actividadABorrar = null
+                        }
+                    ) {
+                        Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { actividadABorrar = null }) {
+                        Text("Cancelar")
+                    }
+                }
+            )
+        }
     }
 
     composable(

@@ -20,6 +20,12 @@ import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.domain.ActividadConAsociacion
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.*
 import mx.tec.familiasquesuman.ui.state.UiState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @Composable
 fun ActividadesScreen(
@@ -122,6 +128,126 @@ fun ActividadesScreen(
             }
         }
     }
+}
+
+@Composable
+fun DialogoFormularioActividad(
+    tituloDialogo: String,
+    actividadInicial: mx.tec.familiasquesuman.domain.Actividad? = null,
+    onGuardar: (
+        titulo: String,
+        descripcion: String,
+        fecha: String,
+        horario: String,
+        direccion: String,
+        cupoTotal: Int,
+        lugaresDisponibles: Int,
+        edadMinima: Int?
+    ) -> Unit,
+    onDescartar: () -> Unit
+) {
+    var titulo by remember { mutableStateOf(actividadInicial?.titulo.orEmpty()) }
+    var descripcion by remember { mutableStateOf(actividadInicial?.descripcion.orEmpty()) }
+    var fecha by remember { mutableStateOf(actividadInicial?.fecha ?: "15 de Octubre, 2026") }
+    var horario by remember { mutableStateOf(actividadInicial?.horario ?: "10:00 - 13:00") }
+    var direccion by remember { mutableStateOf(actividadInicial?.direccion ?: "Monterrey, N.L.") }
+    var cupoTotalStr by remember { mutableStateOf(actividadInicial?.cupoTotal?.toString() ?: "20") }
+    var lugaresDisponiblesStr by remember { mutableStateOf(actividadInicial?.lugaresDisponibles?.toString() ?: "10") }
+    var edadMinimaStr by remember { mutableStateOf(actividadInicial?.edadMinima?.toString().orEmpty()) }
+
+    AlertDialog(
+        onDismissRequest = onDescartar,
+        title = { Text(tituloDialogo) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = titulo,
+                    onValueChange = { titulo = it },
+                    label = { Text("Título") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = descripcion,
+                    onValueChange = { descripcion = it },
+                    label = { Text("Descripción") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = fecha,
+                    onValueChange = { fecha = it },
+                    label = { Text("Fecha") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = horario,
+                    onValueChange = { horario = it },
+                    label = { Text("Horario") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = direccion,
+                    onValueChange = { direccion = it },
+                    label = { Text("Dirección / Lugar") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = cupoTotalStr,
+                        onValueChange = { cupoTotalStr = it },
+                        label = { Text("Cupo Total") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlinedTextField(
+                        value = lugaresDisponiblesStr,
+                        onValueChange = { lugaresDisponiblesStr = it },
+                        label = { Text("Lugares Libres") },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                OutlinedTextField(
+                    value = edadMinimaStr,
+                    onValueChange = { edadMinimaStr = it },
+                    label = { Text("Edad Mínima (Opcional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (titulo.isNotBlank()) {
+                        onGuardar(
+                            titulo,
+                            descripcion,
+                            fecha,
+                            horario,
+                            direccion,
+                            cupoTotalStr.toIntOrNull() ?: 20,
+                            lugaresDisponiblesStr.toIntOrNull() ?: 10,
+                            edadMinimaStr.toIntOrNull()
+                        )
+                    }
+                }
+            ) {
+                Text("Guardar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDescartar) {
+                Text("Cancelar")
+            }
+        }
+    )
 }
 
 private fun LazyListScope.tarjetasAdmin(
