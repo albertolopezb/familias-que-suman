@@ -31,6 +31,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import mx.tec.familiasquesuman.domain.Campana
 import mx.tec.familiasquesuman.domain.PuntoEntrega
+import mx.tec.familiasquesuman.domain.TipoSugerencia
 import mx.tec.familiasquesuman.ui.components.CampoAdmin
 import mx.tec.familiasquesuman.ui.components.WhatsAppGeneral
 import mx.tec.familiasquesuman.ui.components.abrir
@@ -41,6 +42,7 @@ import mx.tec.familiasquesuman.ui.components.DialogoFormularioAdmin
 import mx.tec.familiasquesuman.ui.components.TipoCampo
 import mx.tec.familiasquesuman.ui.screens.inscripcion.alternarFavorita
 import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
+import mx.tec.familiasquesuman.ui.screens.sugerencias.sugerir
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
 import mx.tec.familiasquesuman.ui.state.UiState
 
@@ -124,7 +126,8 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController, esAdmin: () -> Boolean = {
             esAdmin = esAdmin(),
             onCrearCampana = { creando = true },
             onEditarCampana = { id -> editando = lista.firstOrNull { it.id == id } },
-            onBorrarCampana = { id -> borrando = lista.firstOrNull { it.id == id } }
+            onBorrarCampana = { id -> borrando = lista.firstOrNull { it.id == id } },
+            onSugerir = { nav.sugerir(TipoSugerencia.CAMPANA) }
         )
 
         if (creando || editando != null) {

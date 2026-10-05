@@ -9,7 +9,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.*
@@ -67,7 +69,9 @@ fun PerfilScreen(
     accesosDisponibles: Boolean = true,
     etiquetasMensuales: List<String> = listOf("May", "Jun", "Jul", "Ago", "Sep"),
     valoresMensuales: List<Int> = emptyList(),
-    favoritosDisponibles: Boolean = accesosDisponibles
+    favoritosDisponibles: Boolean = accesosDisponibles,
+    onSugerirClick: () -> Unit = {},
+    onSugerenciasClick: () -> Unit = {}
 ) {
     Column(modifier.fillMaxSize().background(Fondo)) {
         EncabezadoApp()
@@ -92,7 +96,9 @@ fun PerfilScreen(
                 valoresMensuales = valoresMensuales,
                 favoritosDisponibles = favoritosDisponibles,
                 onMisActividadesClick = onMisActividadesClick,
-                onSwitchCuenta = onSwitchCuenta
+                onSwitchCuenta = onSwitchCuenta,
+                onSugerirClick = onSugerirClick,
+                onSugerenciasClick = onSugerenciasClick
             )
         }
     }
@@ -109,7 +115,9 @@ private fun ContenidoPerfil(
     valoresMensuales: List<Int>,
     favoritosDisponibles: Boolean,
     onMisActividadesClick: () -> Unit,
-    onSwitchCuenta: (Boolean) -> Unit
+    onSwitchCuenta: (Boolean) -> Unit,
+    onSugerirClick: () -> Unit,
+    onSugerenciasClick: () -> Unit
 ) {
     Column(
         Modifier
@@ -177,6 +185,10 @@ private fun ContenidoPerfil(
                     color = TintaSuave
                 )
             }
+            AccesoPerfil(
+                "Sugerencias recibidas", Icons.Outlined.Email, onSugerenciasClick,
+                true, Modifier.fillMaxWidth()
+            )
         } else {
             // --- VISTA DETALLADA DE LA FAMILIA ---
             EtiquetaSeccion("TU IMPACTO")
@@ -219,6 +231,10 @@ private fun ContenidoPerfil(
                     accesosDisponibles, Modifier.weight(1f)
                 )
             }
+            AccesoPerfil(
+                "Sugerir una actividad, campaña, proyecto o centro", Icons.Outlined.AddCircle,
+                onSugerirClick, true, Modifier.fillMaxWidth()
+            )
         }
 
         ProbarNotificaciones()

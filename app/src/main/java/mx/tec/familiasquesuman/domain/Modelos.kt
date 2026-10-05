@@ -224,3 +224,37 @@ data class CentroVisiteo(
     val whatsapp: String? = null,   // solo dígitos
     val instagram: String? = null   // enlace completo
 )
+
+// ---------------------------------------------------------------------------
+// Sugerencias: cualquier persona propone algo para publicar; el admin lo revisa.
+// ---------------------------------------------------------------------------
+
+/** Qué se sugiere. Cada tipo trae sus textos para no repetirlos en cada pantalla. */
+enum class TipoSugerencia(
+    val etiqueta: String,       // "Actividad"
+    val articulo: String,       // "una actividad"
+    val campoExtra: String,     // la pregunta que cambia según el tipo
+    val ejemploExtra: String
+) {
+    ACTIVIDAD("Actividad", "una actividad", "¿Cuándo y dónde sería?", "Ej. sábados en la mañana, Parque Fundidora"),
+    CAMPANA("Campaña para aportar", "una campaña", "¿Qué se necesita juntar?", "Ej. 200 despensas, útiles escolares"),
+    PROYECTO("Proyecto", "un proyecto", "¿A quién beneficia?", "Ej. 40 niños de la colonia Independencia"),
+    CENTRO("Centro para el directorio", "un centro", "Dirección del centro", "Ej. Cuautla 208, Col. 5 de Mayo, Monterrey")
+}
+
+enum class EstadoSugerencia { PENDIENTE, APROBADA, DESCARTADA }
+
+data class Sugerencia(
+    val id: String,
+    val tipo: TipoSugerencia,
+    val nombre: String,
+    val descripcion: String,
+    val detalleExtra: String,       // la respuesta a TipoSugerencia.campoExtra
+    val ciudad: String,
+    val organizacion: String,       // quién la organiza; puede ir vacío
+    val contactoCausa: String,      // teléfono, WhatsApp o enlace de la causa; puede ir vacío
+    val sugeridaPor: String,        // nombre de quien sugiere
+    val contactoDeQuienSugiere: String,
+    val fecha: String,              // "4 oct 2026"
+    val estado: EstadoSugerencia = EstadoSugerencia.PENDIENTE
+)

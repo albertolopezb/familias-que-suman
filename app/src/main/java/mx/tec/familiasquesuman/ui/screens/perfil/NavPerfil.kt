@@ -21,6 +21,9 @@ import mx.tec.familiasquesuman.ui.screens.campanas.RutasCampanas
 import mx.tec.familiasquesuman.ui.screens.inicio.RutasInicio
 import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
+import mx.tec.familiasquesuman.domain.TipoSugerencia
+import mx.tec.familiasquesuman.ui.screens.sugerencias.RutasSugerencias
+import mx.tec.familiasquesuman.ui.screens.sugerencias.sugerir
 import mx.tec.familiasquesuman.ui.state.UiState
 
 object RutasPerfil {
@@ -129,7 +132,9 @@ fun NavGraphBuilder.grafoPerfil(
             onMisActividadesClick = { nav.navigate(Rutas.MIS_ACTIVIDADES) { launchSingleTop = true } },
             onSwitchCuenta = onSwitchCuenta,
             accesosDisponibles = true,
-            favoritosDisponibles = true
+            favoritosDisponibles = true,
+            onSugerirClick = { nav.sugerir(TipoSugerencia.ACTIVIDAD) },
+            onSugerenciasClick = { nav.navigate(RutasSugerencias.BANDEJA) { launchSingleTop = true } }
         )
     }
     composable(RutasPerfil.FAVORITOS) {

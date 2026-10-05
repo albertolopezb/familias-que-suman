@@ -49,6 +49,7 @@ import mx.tec.familiasquesuman.ui.screens.campanas.RutasCampanas
 import mx.tec.familiasquesuman.ui.screens.campanas.grafoCampanas
 import mx.tec.familiasquesuman.ui.screens.inicio.RutasInicio
 import mx.tec.familiasquesuman.ui.screens.inicio.grafoInicio
+import mx.tec.familiasquesuman.ui.screens.sugerencias.grafoSugerencias
 import mx.tec.familiasquesuman.ui.screens.inscripcion.RutasInscripcion
 import mx.tec.familiasquesuman.ui.screens.inscripcion.grafoInscripcion
 import mx.tec.familiasquesuman.ui.screens.perfil.RutasPerfil
@@ -172,6 +173,7 @@ fun FamiliasApp() {
 
                 grafoCampanas(nav, esAdmin = { usuarioActual.esAdmin })
                 grafoInscripcion(nav)
+                grafoSugerencias(nav, esAdmin = { usuarioActual.esAdmin })
             }
         }
     }

@@ -19,6 +19,8 @@ import mx.tec.familiasquesuman.ui.components.ErrorView
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.compartirActividad
 import mx.tec.familiasquesuman.ui.screens.inscripcion.alternarFavorita
 import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
+import mx.tec.familiasquesuman.domain.TipoSugerencia
+import mx.tec.familiasquesuman.ui.screens.sugerencias.sugerir
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
 import mx.tec.familiasquesuman.ui.state.UiState
 import androidx.compose.runtime.setValue
@@ -89,6 +91,7 @@ fun NavGraphBuilder.grafoActividades(
             onVerGuardadas = { nav.navigate(RutasActividades.SIN_CONEXION) },
             onVerAsociaciones = onVerAsociaciones,
             onForzarEstado = vm::siguienteModoDePrueba,
+            onSugerir = { nav.sugerir(TipoSugerencia.ACTIVIDAD) },
             onBorrarActividad = { id: String ->
                 // En lugar de borrar directo, guardamos el elemento a borrar para abrir la alerta
                 if (estado is UiState.Exito) {

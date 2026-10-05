@@ -22,6 +22,7 @@ import mx.tec.familiasquesuman.ui.screens.perfil.AvisoPrivacidadViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.AjustesViewModel
 import mx.tec.familiasquesuman.ui.screens.inscripcion.AcompanantesViewModel
 import mx.tec.familiasquesuman.ui.screens.inscripcion.CuentaViewModel
+import mx.tec.familiasquesuman.ui.screens.sugerencias.SugerenciasViewModel
 
 /**
  * Cómo se construye cada ViewModel de la app.
@@ -101,6 +102,9 @@ object AppViewModelProvider {
             )
         }
         initializer { AcompanantesViewModel(familiasApplication().container.actividadRepository) }
+
+        // Sugerencias de actividades, campañas, proyectos y centros
+        initializer { SugerenciasViewModel(familiasApplication().container.sugerenciaRepository) }
     }
 }
 

@@ -45,6 +45,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.domain.Proyecto
+import mx.tec.familiasquesuman.domain.TipoSugerencia
+import mx.tec.familiasquesuman.ui.components.TarjetaSugerir
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Etiqueta
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.FilaDato
@@ -68,7 +70,8 @@ fun ProyectosScreen(
     onProyectoClick: (String) -> Unit = {},
     onCrearProyecto: () -> Unit = {},
     onEditarProyecto: (String) -> Unit = {},
-    onBorrarProyecto: (String) -> Unit = {}
+    onBorrarProyecto: (String) -> Unit = {},
+    onSugerir: () -> Unit = {}
 ) {
     var verActivos by remember { mutableStateOf(true) }
     var busqueda by remember { mutableStateOf("") }
@@ -136,6 +139,7 @@ fun ProyectosScreen(
                         onBorrar = { onBorrarProyecto(proyecto.id) }
                     )
                 }
+                item(key = "sugerir") { TarjetaSugerir(TipoSugerencia.PROYECTO, onSugerir) }
             }
         }
     }

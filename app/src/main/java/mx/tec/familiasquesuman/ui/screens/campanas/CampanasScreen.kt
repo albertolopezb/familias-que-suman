@@ -53,6 +53,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.domain.ArticuloMeta
 import mx.tec.familiasquesuman.domain.Campana
+import mx.tec.familiasquesuman.domain.TipoSugerencia
+import mx.tec.familiasquesuman.ui.components.TarjetaSugerir
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoCaja
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoFiltro
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.PildoraFiltro
@@ -104,7 +106,8 @@ fun CampanasScreen(
     esAdmin: Boolean = false,
     onCrearCampana: () -> Unit = {},
     onEditarCampana: (String) -> Unit = {},
-    onBorrarCampana: (String) -> Unit = {}
+    onBorrarCampana: (String) -> Unit = {},
+    onSugerir: () -> Unit = {}
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -175,7 +178,8 @@ fun CampanasScreen(
                         onNoEncontre = onNoEncontre,
                         esAdmin = esAdmin,
                         onEditarCampana = onEditarCampana,
-                        onBorrarCampana = onBorrarCampana
+                        onBorrarCampana = onBorrarCampana,
+                        onSugerir = onSugerir
                     )
                     }
                 }
@@ -276,7 +280,8 @@ private fun ListaConDatos(
     onNoEncontre: () -> Unit,
     esAdmin: Boolean = false,
     onEditarCampana: (String) -> Unit = {},
-    onBorrarCampana: (String) -> Unit = {}
+    onBorrarCampana: (String) -> Unit = {},
+    onSugerir: () -> Unit = {}
 ) {
     LazyColumn(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 80.dp),
@@ -322,6 +327,7 @@ private fun ListaConDatos(
             }
         }
         item { TarjetaNoEncontre(onClick = onNoEncontre) }
+        item(key = "sugerir") { TarjetaSugerir(TipoSugerencia.CAMPANA, onSugerir) }
     }
 }
 

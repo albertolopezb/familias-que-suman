@@ -27,6 +27,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 
+import mx.tec.familiasquesuman.domain.TipoSugerencia
+import mx.tec.familiasquesuman.ui.components.TarjetaSugerir
+
 @Composable
 fun ActividadesScreen(
     estado: UiState<List<ActividadConAsociacion>>,
@@ -45,7 +48,8 @@ fun ActividadesScreen(
     // callbacks de administración:
     onCrearActividad: () -> Unit = {},
     onEditarActividad: (String) -> Unit = {},
-    onBorrarActividad: (String) -> Unit = {}
+    onBorrarActividad: (String) -> Unit = {},
+    onSugerir: () -> Unit = {}
 ) {
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -122,6 +126,9 @@ fun ActividadesScreen(
                                 separacion = 12,
                                 opacidad = 0.6f
                             )
+                        }
+                        item(key = "sugerir") {
+                            TarjetaSugerir(TipoSugerencia.ACTIVIDAD, onSugerir, Modifier.padding(top = 8.dp))
                         }
                     }
                 }

@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import mx.tec.familiasquesuman.domain.Asociacion
 import mx.tec.familiasquesuman.domain.CentroVisiteo
 import mx.tec.familiasquesuman.domain.Proyecto
+import mx.tec.familiasquesuman.domain.TipoSugerencia
 import mx.tec.familiasquesuman.ui.components.CampoAdmin
 import mx.tec.familiasquesuman.ui.components.DialogoConfirmarBorrado
 import mx.tec.familiasquesuman.ui.components.DialogoFormularioAdmin
@@ -24,6 +25,7 @@ import mx.tec.familiasquesuman.ui.components.llamar
 import mx.tec.familiasquesuman.ui.screens.inscripcion.RutasInscripcion
 import mx.tec.familiasquesuman.ui.screens.inscripcion.alternarFavorita
 import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
+import mx.tec.familiasquesuman.ui.screens.sugerencias.sugerir
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
 
 object RutasInicio {
@@ -195,6 +197,7 @@ fun NavGraphBuilder.grafoInicio(
             centros = centros,
             onIrAInicio = { nav.navigate(RutasInicio.INICIO) },
             onComoAyudar = onNavegarACampanas,
+            onSugerir = { nav.sugerir(TipoSugerencia.CENTRO) },
             esAdmin = esAdmin(),
             onCrearCentro = { creando = true },
             onEditarCentro = { editando = it },
@@ -242,6 +245,7 @@ fun NavGraphBuilder.grafoInicio(
             esAdmin = esAdmin(),
             onIrAInicio = { nav.navigate(RutasInicio.INICIO) },
             onProyectoClick = { id -> nav.navigate(RutasInicio.proyecto(id)) },
+            onSugerir = { nav.sugerir(TipoSugerencia.PROYECTO) },
             onCrearProyecto = { creando = true },
             onEditarProyecto = { id -> editando = proyectos.firstOrNull { it.id == id } },
             onBorrarProyecto = { id -> borrando = proyectos.firstOrNull { it.id == id } }
