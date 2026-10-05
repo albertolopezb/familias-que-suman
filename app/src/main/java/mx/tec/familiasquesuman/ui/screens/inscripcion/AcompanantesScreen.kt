@@ -33,6 +33,7 @@ import mx.tec.familiasquesuman.ui.theme.ErrorTexto
 import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
 import mx.tec.familiasquesuman.ui.theme.Fondo
 import mx.tec.familiasquesuman.ui.theme.TintaSuave
+import java.time.LocalDate
 
 /**
  * P-06 · ¿Quiénes van? y P-06b · Enviando (todo en gris y "Reservando tus lugares…").
@@ -44,7 +45,7 @@ fun AcompanantesScreen(
     onAgregarFila: () -> Unit,
     onQuitarFila: (Int) -> Unit,
     onNombreChange: (Int, String) -> Unit,
-    onEdadChange: (Int, String) -> Unit,
+    onFechaNacimientoChange: (Int, LocalDate) -> Unit,
     onConsentimientoChange: (Boolean) -> Unit,
     onConfirmar: () -> Unit,
     onRegresar: () -> Unit
@@ -71,9 +72,9 @@ fun AcompanantesScreen(
                 if (fila.nueva) {
                     FilaAcompananteNueva(
                         nombre = fila.nombre,
-                        edad = fila.edad,
+                        fechaNacimiento = fila.fechaNacimiento,
                         onNombreChange = { onNombreChange(fila.id, it) },
-                        onEdadChange = { onEdadChange(fila.id, it) },
+                        onFechaNacimientoChange = { onFechaNacimientoChange(fila.id, it) },
                         onQuitar = { onQuitarFila(fila.id) },
                         errorNombre = ui.errorNombre(fila),
                         errorEdad = ui.errorEdad(fila),
@@ -82,7 +83,7 @@ fun AcompanantesScreen(
                 } else {
                     FilaAcompanante(
                         nombre = fila.nombre,
-                        edad = edadParaMostrar(Acompanante(fila.nombre, fila.edad.toIntOrNull() ?: 0), esTitular = false),
+                        edad = edadParaMostrar(Acompanante(fila.nombre, fila.edad ?: 0), esTitular = false),
                         error = ui.errorEdad(fila),
                         onQuitar = if (ui.enviando) null else ({ onQuitarFila(fila.id) })
                     )
@@ -145,7 +146,7 @@ private fun PieDeLugares(ui: AcompanantesUi, modifier: Modifier = Modifier) {
 private val uiDePrueba = AcompanantesUi(
     actividad = VistaPrevia.actividad,
     titular = VistaPrevia.titular,
-    filas = VistaPrevia.acompanantes.mapIndexed { i, p -> FilaUi(i, p.nombre, "${p.edad}", nueva = false) },
+    filas = VistaPrevia.acompanantes.mapIndexed { i, p -> FilaUi(i, p.nombre, null, nueva = false, edadGuardada = p.edad) },
     lugaresDisponibles = 8,
     consentimiento = true
 )
@@ -161,7 +162,7 @@ private fun AcompanantesPreview() {
 private fun AcompanantesFilaNuevaPreview() {
     FamiliasQueSumanTheme {
         AcompanantesScreen(
-            uiDePrueba.copy(filas = uiDePrueba.filas + FilaUi(9, "Leo", "4", nueva = true)),
+            uiDePrueba.copy(filas = uiDePrueba.filas + FilaUi(9, "Leo", LocalDate.now().minusYears(4), nueva = true)),
             {}, {}, { _, _ -> }, { _, _ -> }, {}, {}, {}
         )
     }

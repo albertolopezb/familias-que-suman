@@ -11,9 +11,27 @@ import mx.tec.familiasquesuman.data.ActividadRepository
 import mx.tec.familiasquesuman.domain.Acompanante
 import mx.tec.familiasquesuman.domain.Actividad
 import mx.tec.familiasquesuman.ui.state.UiState
+import java.time.LocalDate
+import java.time.Period
 
-/** Un renglón de P-06. `nueva` = recién agregada, todavía con campos para escribir. */
-data class FilaUi(val id: Int, val nombre: String, val edad: String, val nueva: Boolean)
+/**
+ * Un renglón de P-06. `nueva` = recién agregada, todavía con campos para llenar.
+ * La fecha de nacimiento se elige en un calendario y de ella sale la edad. Los acompañantes
+ * guardados antes de que existiera el calendario solo traen `edadGuardada`.
+ */
+data class FilaUi(
+    val id: Int,
+    val nombre: String,
+    val fechaNacimiento: LocalDate?,
+    val nueva: Boolean,
+    val edadGuardada: Int? = null
+) {
+    val edad: Int? get() = fechaNacimiento?.let { edadEnAnios(it) } ?: edadGuardada
+}
+
+/** Años cumplidos a hoy. */
+fun edadEnAnios(fechaNacimiento: LocalDate, hoy: LocalDate = LocalDate.now()): Int =
+    Period.between(fechaNacimiento, hoy).years
 
 /** Lo que muestra la hoja de P-08. */
 data class SinLugaresUi(val quedaban: Int, val ahora: Int, val cupoTotal: Int)
@@ -34,23 +52,18 @@ data class AcompanantesUi(
     fun errorNombre(fila: FilaUi): String? =
         if (fila.nombre.isNotEmpty() && fila.nombre.trim().length < 3) "Escribe su nombre" else null
 
-    /** Vacía todavía no es error; mal escrita o menor a la edad mínima, sí. */
+    /** Sin fecha todavía no es error; menor a la edad mínima, sí. */
     fun errorEdad(fila: FilaUi): String? {
-        if (fila.edad.isEmpty()) return null
-        val edad = fila.edad.toIntOrNull() ?: return "Edad en años"
+        val edad = fila.edad ?: return null
         val minima = edadMinima
-        return when {
-            edad !in 1..99 -> "Edad en años"
-            minima != null && edad < minima -> "La edad mínima para esta actividad es de $minima años"
-            else -> null
-        }
+        return if (minima != null && edad < minima) "La edad mínima para esta actividad es de $minima años" else null
     }
 
     private fun filaValida(fila: FilaUi): Boolean =
-        fila.nombre.trim().length >= 3 && fila.edad.isNotEmpty() && errorEdad(fila) == null
+        fila.nombre.trim().length >= 3 && fila.edad != null && errorEdad(fila) == null
 
     val personas: Int get() = 1 + filas.size
-    val hayMenores: Boolean get() = filas.any { (it.edad.toIntOrNull() ?: 99) < 18 }
+    val hayMenores: Boolean get() = filas.any { (it.edad ?: 99) < 18 }
     val excedeLugares: Boolean get() = personas > lugaresDisponibles
 
     val puedeConfirmar: Boolean
@@ -58,12 +71,12 @@ data class AcompanantesUi(
             filas.all { filaValida(it) } && (!hayMenores || consentimiento)
 
     val acompanantes: List<Acompanante>
-        get() = filas.map { Acompanante(it.nombre.trim(), it.edad.toIntOrNull() ?: 0) }
+        get() = filas.map { Acompanante(it.nombre.trim(), it.edad ?: 0, it.fechaNacimiento) }
 }
 
 /**
  * P-06 · P-06b · P-08. Lista de acompañantes que crece y se achica, validación de
- * nombre y edad, cálculo de lugares, y `confirmar()` con la espera simulada.
+ * nombre y fecha de nacimiento, cálculo de lugares, y `confirmar()` con la espera simulada.
  */
 class AcompanantesViewModel(private val actividadRepository: ActividadRepository) : ViewModel() {
 
@@ -93,7 +106,9 @@ class AcompanantesViewModel(private val actividadRepository: ActividadRepository
                     AcompanantesUi(
                         actividad = actividadRepository.getActividad(actividadId),
                         titular = titular,
-                        filas = guardados.map { FilaUi(siguienteId++, it.nombre, "${it.edad}", nueva = false) },
+                        filas = guardados.map {
+                            FilaUi(siguienteId++, it.nombre, it.fechaNacimiento, nueva = false, edadGuardada = it.edad)
+                        },
                         lugaresDisponibles = lugaresDisponibles
                     )
                 )
@@ -108,15 +123,15 @@ class AcompanantesViewModel(private val actividadRepository: ActividadRepository
         if (actual is UiState.Exito) _ui.value = UiState.Exito(cambio(actual.datos))
     }
 
-    fun agregarFila() = editar { it.copy(filas = it.filas + FilaUi(siguienteId++, "", "", nueva = true)) }
+    fun agregarFila() = editar { it.copy(filas = it.filas + FilaUi(siguienteId++, "", null, nueva = true)) }
 
     fun quitarFila(id: Int) = editar { ui -> ui.copy(filas = ui.filas.filterNot { it.id == id }) }
 
     fun onNombreChange(id: Int, nombre: String) =
         editar { ui -> ui.copy(filas = ui.filas.map { if (it.id == id) it.copy(nombre = nombre) else it }) }
 
-    fun onEdadChange(id: Int, edad: String) =
-        editar { ui -> ui.copy(filas = ui.filas.map { if (it.id == id) it.copy(edad = edad) else it }) }
+    fun onFechaNacimientoChange(id: Int, fecha: LocalDate) =
+        editar { ui -> ui.copy(filas = ui.filas.map { if (it.id == id) it.copy(fechaNacimiento = fecha) else it }) }
 
     fun onConsentimientoChange(valor: Boolean) = editar { it.copy(consentimiento = valor) }
 

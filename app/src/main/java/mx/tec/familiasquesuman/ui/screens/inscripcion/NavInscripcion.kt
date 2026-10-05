@@ -282,7 +282,7 @@ fun NavGraphBuilder.grafoInscripcion(nav: NavController) {
                         onAgregarFila = vm::agregarFila,
                         onQuitarFila = vm::quitarFila,
                         onNombreChange = vm::onNombreChange,
-                        onEdadChange = vm::onEdadChange,
+                        onFechaNacimientoChange = vm::onFechaNacimientoChange,
                         onConsentimientoChange = vm::onConsentimientoChange,
                         onConfirmar = vm::confirmar,
                         onRegresar = { nav.popBackStack() }

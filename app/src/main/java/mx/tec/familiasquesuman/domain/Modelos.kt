@@ -1,5 +1,7 @@
 package mx.tec.familiasquesuman.domain
 
+import java.time.LocalDate
+
 // Kotlin puro: ningún import de Android, Retrofit ni Room en este archivo.
 // Si falta un campo, se agrega aquí en un PR aparte; nadie define su propia versión.
 // Las fechas son texto mientras todo está en memoria; con el backend pasan a LocalDate.
@@ -114,7 +116,9 @@ data class Campana(
 
 data class Acompanante(
     val nombre: String,
-    val edad: Int
+    val edad: Int,
+    // Se elige en el calendario al inscribir; la edad se calcula con ella.
+    val fechaNacimiento: LocalDate? = null
 )
 
 data class Familia(
