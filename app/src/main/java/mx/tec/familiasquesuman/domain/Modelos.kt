@@ -181,8 +181,26 @@ data class Proyecto(
     val ciudad: String,
     val vigencia: String?,          // "Hasta 29 jun 2026"
     val logo: String?,              // nombre del drawable, sin extensión
-    val activo: Boolean = true
+    val activo: Boolean = true,
+    // --- Lo que trae el detalle en familiasquesuman.com/proyectos/{id}. Todo opcional. ---
+    val resumen: String = "",                         // la frase corta bajo el título
+    val acercaDe: String = "",                        // "Acerca del proyecto"
+    val formasDeApoyo: List<FormaDeApoyo> = emptyList(), // "Elige tu forma de apoyar"
+    val comoAyudar: String = "",                      // si no hay formas, un solo "¿Cómo ayudar?"
+    val telefono: String? = null,                     // solo dígitos
+    val whatsapp: String? = null,                     // solo dígitos
+    val instagram: String? = null                     // enlace completo
 )
+
+/** Una de las tarjetas de "Elige tu forma de apoyar". Tocarla abre WhatsApp con su título. */
+data class FormaDeApoyo(
+    val titulo: String,
+    val detalle: String,
+    val icono: IconoApoyo = IconoApoyo.CORAZON
+)
+
+/** El ícono de cada forma de apoyo, como en el sitio. */
+enum class IconoApoyo { CORAZON, LIBRO, DINERO }
 
 /** Un centro verificado que se puede visitar en familia (RF-03). */
 data class CentroVisiteo(
@@ -194,5 +212,11 @@ data class CentroVisiteo(
     val necesidades: List<String>,
     val direccion: String,
     val logo: String?,
-    val verificado: Boolean = true
+    val verificado: Boolean = true,
+    // --- Lo que trae el detalle en familiasquesuman.com/directorio/{id}. Todo opcional. ---
+    val comoAyudar: String = "",
+    val recomendaciones: String = "",
+    val telefono: String? = null,   // solo dígitos
+    val whatsapp: String? = null,   // solo dígitos
+    val instagram: String? = null   // enlace completo
 )

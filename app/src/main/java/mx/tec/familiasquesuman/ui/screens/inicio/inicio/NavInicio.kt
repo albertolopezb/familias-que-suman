@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -16,6 +17,10 @@ import mx.tec.familiasquesuman.ui.components.CampoAdmin
 import mx.tec.familiasquesuman.ui.components.DialogoConfirmarBorrado
 import mx.tec.familiasquesuman.ui.components.DialogoFormularioAdmin
 import mx.tec.familiasquesuman.ui.components.TipoCampo
+import mx.tec.familiasquesuman.ui.components.abrirEnlace
+import mx.tec.familiasquesuman.ui.components.abrirMapa
+import mx.tec.familiasquesuman.ui.components.abrirWhatsApp
+import mx.tec.familiasquesuman.ui.components.llamar
 import mx.tec.familiasquesuman.ui.screens.inscripcion.RutasInscripcion
 import mx.tec.familiasquesuman.ui.screens.inscripcion.alternarFavorita
 import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
@@ -29,10 +34,14 @@ object RutasInicio {
     const val EXPLORAR = "explorar"
     const val ASOCIACION = "asociacion/{asociacionId}"
     const val VISITEO = "visiteo"
+    const val CENTRO = "visiteo/{centroId}"
     const val PROYECTOS = "proyectos"
+    const val PROYECTO = "proyectos/{proyectoId}"
     const val TESTIMONIOS = "testimonios"
 
     fun asociacion(id: String) = "asociacion/$id"
+    fun centro(id: String) = "visiteo/$id"
+    fun proyecto(id: String) = "proyectos/$id"
 }
 
 fun NavGraphBuilder.grafoInicio(
@@ -182,8 +191,7 @@ fun NavGraphBuilder.grafoInicio(
         var editando by remember { mutableStateOf<CentroVisiteo?>(null) }
         var borrando by remember { mutableStateOf<CentroVisiteo?>(null) }
         VisiteoScreen(
-            // "Ver detalles" del centro llega con la ficha de asociación (RF-03).
-            onCentroClick = { },
+            onCentroClick = { id -> nav.navigate(RutasInicio.centro(id)) },
             centros = centros,
             onIrAInicio = { nav.navigate(RutasInicio.INICIO) },
             onComoAyudar = onNavegarACampanas,
@@ -233,6 +241,7 @@ fun NavGraphBuilder.grafoInicio(
             proyectos = proyectos,
             esAdmin = esAdmin(),
             onIrAInicio = { nav.navigate(RutasInicio.INICIO) },
+            onProyectoClick = { id -> nav.navigate(RutasInicio.proyecto(id)) },
             onCrearProyecto = { creando = true },
             onEditarProyecto = { id -> editando = proyectos.firstOrNull { it.id == id } },
             onBorrarProyecto = { id -> borrando = proyectos.firstOrNull { it.id == id } }
@@ -265,6 +274,50 @@ fun NavGraphBuilder.grafoInicio(
                 onDescartar = { borrando = null }
             )
         }
+    }
+
+    // Detalle de un centro, como familiasquesuman.com/directorio/{id}
+    composable(RutasInicio.CENTRO) { entrada ->
+        val id = entrada.arguments?.getString("centroId") ?: return@composable
+        val vm: DirectorioViewModel = viewModel(factory = AppViewModelProvider.Factory)
+        val centros by vm.centros.collectAsStateWithLifecycle()
+        val contexto = LocalContext.current
+        val centro = centros.firstOrNull { it.id == id } ?: return@composable
+        DetalleCentroScreen(
+            centro = centro,
+            onIrAInicio = { nav.navigate(RutasInicio.INICIO) },
+            onIrADirectorio = { nav.popBackStack() },
+            onWhatsApp = { numero ->
+                abrirWhatsApp(contexto, numero, "Hola, los encontré en Familias que Suman y me gustaría visitar ${centro.nombre}.")
+            },
+            onLlamar = { telefono -> llamar(contexto, telefono) },
+            onComoLlegar = { direccion -> abrirMapa(contexto, direccion) },
+            onAbrirEnlace = { enlace -> abrirEnlace(contexto, enlace) }
+        )
+    }
+
+    // Detalle de un proyecto, como familiasquesuman.com/proyectos/{id}
+    composable(RutasInicio.PROYECTO) { entrada ->
+        val id = entrada.arguments?.getString("proyectoId") ?: return@composable
+        val vm: DirectorioViewModel = viewModel(factory = AppViewModelProvider.Factory)
+        val proyectos by vm.proyectos.collectAsStateWithLifecycle()
+        val contexto = LocalContext.current
+        val proyecto = proyectos.firstOrNull { it.id == id } ?: return@composable
+        val numero = proyecto.whatsapp ?: proyecto.telefono
+        DetalleProyectoScreen(
+            proyecto = proyecto,
+            onIrAInicio = { nav.navigate(RutasInicio.INICIO) },
+            onIrAProyectos = { nav.popBackStack() },
+            // Como el sitio: "Quiero ayudar: <forma>" ya escrito en el WhatsApp del proyecto.
+            onFormaDeApoyo = { forma ->
+                numero?.let { abrirWhatsApp(contexto, it, "Quiero ayudar: ${forma.titulo}") }
+            },
+            onWhatsApp = {
+                numero?.let { abrirWhatsApp(contexto, it, "Hola, me interesa sumarme al proyecto ${proyecto.nombre}.") }
+            },
+            onLlamar = { telefono -> llamar(contexto, telefono) },
+            onAbrirEnlace = { enlace -> abrirEnlace(contexto, enlace) }
+        )
     }
 
     composable(RutasInicio.TESTIMONIOS) {

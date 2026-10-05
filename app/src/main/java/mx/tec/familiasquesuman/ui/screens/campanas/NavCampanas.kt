@@ -1,6 +1,5 @@
 package mx.tec.familiasquesuman.ui.screens.campanas
 
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -33,6 +32,10 @@ import androidx.navigation.navArgument
 import mx.tec.familiasquesuman.domain.Campana
 import mx.tec.familiasquesuman.domain.PuntoEntrega
 import mx.tec.familiasquesuman.ui.components.CampoAdmin
+import mx.tec.familiasquesuman.ui.components.WhatsAppGeneral
+import mx.tec.familiasquesuman.ui.components.abrir
+import mx.tec.familiasquesuman.ui.components.abrirMapa
+import mx.tec.familiasquesuman.ui.components.abrirWhatsApp
 import mx.tec.familiasquesuman.ui.components.DialogoConfirmarBorrado
 import mx.tec.familiasquesuman.ui.components.DialogoFormularioAdmin
 import mx.tec.familiasquesuman.ui.components.TipoCampo
@@ -51,25 +54,6 @@ object RutasCampanas {
     fun confirmado(id: String) = "campanas/$id/apartado"
 }
 
-/** El WhatsApp general de Familias que Suman (el de la burbuja verde del sitio). */
-private const val WhatsAppGeneral = "528120322281"
-
-/** Los números del sitio traen 10 dígitos; WhatsApp pide la lada de país (52 = México). */
-private fun conLadaDePais(numero: String) = if (numero.length == 10) "52$numero" else numero
-
-private fun abrir(contexto: Context, intent: Intent) {
-    try {
-        contexto.startActivity(intent)
-    } catch (e: ActivityNotFoundException) {
-        // Sin app que lo abra (por ejemplo, un emulador sin navegador): no pasa nada.
-    }
-}
-
-private fun abrirWhatsApp(contexto: Context, numero: String, mensaje: String) {
-    val url = "https://wa.me/${conLadaDePais(numero)}?text=${Uri.encode(mensaje)}"
-    abrir(contexto, Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-}
-
 /**
  * "Quiero ayudar" de una campaña: abre su WhatsApp con el mensaje ya escrito y, si no tiene,
  * marca su teléfono (ACTION_DIAL solo abre el marcador: no pide permiso ni llama sola).
@@ -85,17 +69,9 @@ private fun contactarCampana(contexto: Context, campana: Campana) {
     }
 }
 
-/** "Cómo llegar": abre el punto en el mapa (Google Maps o, si no hay, el navegador). */
+/** "Cómo llegar" de un punto de entrega. */
 private fun abrirMapa(contexto: Context, punto: PuntoEntrega): Unit =
     abrirMapa(contexto, "${punto.direccion}, ${punto.colonia}")
-
-private fun abrirMapa(contexto: Context, direccion: String) {
-    val consulta = Uri.encode(direccion)
-    abrir(
-        contexto,
-        Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/search/?api=1&query=$consulta"))
-    )
-}
 
 /**
  * Grafo de la parte 4. En FamiliasApp.kt se agrega UNA línea, al final del NavHost:

@@ -10,6 +10,8 @@ import mx.tec.familiasquesuman.domain.OpcionDonacion
 import mx.tec.familiasquesuman.domain.PuntoEntrega
 import mx.tec.familiasquesuman.domain.EstadoParticipacion
 import mx.tec.familiasquesuman.domain.Familia
+import mx.tec.familiasquesuman.domain.FormaDeApoyo
+import mx.tec.familiasquesuman.domain.IconoApoyo
 import mx.tec.familiasquesuman.domain.Impacto
 import mx.tec.familiasquesuman.domain.Participacion
 import mx.tec.familiasquesuman.domain.Proyecto
@@ -327,71 +329,180 @@ internal object DatosDePrueba {
             comoAyudar = "Junta cuentos desde preescolar hasta secundaria en buen estado.")
     )
 
-    /** Los proyectos activos de familiasquesuman.com/proyectos. */
+    /** Los proyectos activos de familiasquesuman.com/proyectos, con todo su detalle. */
     val proyectos = mutableListOf(
         Proyecto("pr1", "Trazo... Escribiendo una nueva historia",
             "Somos un grupo de mujeres voluntarias que realizamos visitas quincenales al Centro de " +
                 "Reinserción Social de Escobedo para acompañar a mujeres privadas de la libertad " +
                 "mediante pláticas de desarrollo humano, talleres de acuarela y actividades que " +
-                "fortalecen su autoestima, creatividad y crecimiento personal.",
+                "fortalecen su autoestima, creatividad y crecimiento personal.\n\n" +
+                "En cada encuentro buscamos ofrecer un espacio de escucha, aprendizaje y esperanza, " +
+                "recordándoles que siempre es posible comenzar de nuevo.",
             beneficiarios = "25 Mujeres", ciudad = "Monterrey", vigencia = null,
-            logo = "proyecto_trazo"),
+            logo = "proyecto_trazo",
+            resumen = "Voluntariado que visita a mujeres en el penal de Escobedo.",
+            acercaDe = "Trazo es un voluntariado que nace de la Asociación Renace, desde hace más de 2 " +
+                "años lleva pláticas de desarrollo humano y cursos de acuarela y caligrafía a mujeres " +
+                "privadas de la libertad quienes al final del semestre reciben un reconocimiento el " +
+                "cual les ayuda en su expediente judicial.",
+            formasDeApoyo = listOf(
+                FormaDeApoyo("Buscamos personas que quieran compartir su tiempo y talento.",
+                    "Voluntarias que imparten pláticas de desarrollo humano. • Talleres de acuarela y " +
+                        "actividades creativas. • Otros talleres que promuevan el aprendizaje y el " +
+                        "bienestar emocional.",
+                    IconoApoyo.LIBRO),
+                FormaDeApoyo("Aportación económica",
+                    "Para comprar materiales: • Pinturas, pinceles, papel y otros insumos. " +
+                        "• Aportaciones económicas para los alimentos que se entregan a las mujeres " +
+                        "privadas de la libertad durante cada visita.",
+                    IconoApoyo.DINERO)
+            ),
+            telefono = "8110771068", whatsapp = "8110771068"),
         Proyecto("pr2", "Voluntariado DIF Te Acompaña",
             "Acompañar a adultos mayores o jóvenes vulnerables, en soledad, con discapacidad o con " +
-                "una red de apoyo reducida. Realizar visitas en familia mínimo una vez cada 15 días.",
+                "una red de apoyo reducida. Realizar visitas en familia mínimo una vez cada 15 días. " +
+                "Se les puede asistir en compras de alimentos, medicamentos o solo una visita.",
             beneficiarios = "200 adultos mayores", ciudad = "San Pedro Garza García", vigencia = null,
-            logo = "proyecto_dif"),
+            logo = "proyecto_dif",
+            resumen = "Acompañar a personas vulnerables.",
+            acercaDe = "El voluntariado existe desde hace varios años y se busca apoyar a personas " +
+                "vulnerables con una visita o ayuda con alimentos, medicinas o acompañamiento.",
+            comoAyudar = "Inscribir a su familia para que el Voluntariado les asigne una persona para " +
+                "visitar o acompañar.",
+            telefono = "8113008725", whatsapp = "8113008725"),
         Proyecto("pr3", "Cocinando de Corazón a Corazón",
             "Comedor comunitario diocesano que lleva alimento y esperanza a personas y familias en " +
                 "situación vulnerable. A través de una red de parroquias, los alimentos preparados " +
-                "se distribuyen en distintas comunidades.",
+                "se distribuyen en distintas comunidades, permitiendo llegar de manera cercana y " +
+                "organizada a quienes más lo necesitan.\n\n" +
+                "Esta obra se sostiene gracias a la generosidad de benefactores, voluntarios y, de " +
+                "manera muy especial, de una gran red de amas de casa que regalan su tiempo y talento " +
+                "preparando los alimentos con cariño desde sus hogares.",
             beneficiarios = null, ciudad = "Monterrey", vigencia = null,
-            logo = "proyecto_cocinando"),
+            logo = "proyecto_cocinando",
+            resumen = "Comedor comunitario de alimentos preparados por una red de amas de casa que " +
+                "regalan su tiempo preparando alimentos desde sus hogares.",
+            acercaDe = "Desde hace 6 años un conjunto de amas de casa comenzaron a apoyar cocinando " +
+                "desde su casa para después repartir los alimentos en comunidades vulnerables. El " +
+                "proyecto creció y actualmente se entregan hasta 1000 platillos diarios.",
+            formasDeApoyo = listOf(
+                FormaDeApoyo("Cocinando desde casa",
+                    "Elige un día fijo a la semana y cocina un mínimo de 20 platillos."),
+                FormaDeApoyo("Apoya al equipo del comedor",
+                    "Elige un día fijo a la semana y apoya al comedor sirviendo y emplatando comidas."),
+                FormaDeApoyo("Aporta alimentos",
+                    "Aporta cualquier tipo de alimento para que otras familias puedan cocinar desde sus casas.")
+            ),
+            telefono = "8184596229", whatsapp = "8184596229",
+            instagram = "https://www.instagram.com/cocinando_de_corazon/"),
         Proyecto("pr4", "Forma-T",
             "Clases impartidas por voluntarias en escuelas públicas enfocadas en la formación en " +
                 "valores, escuela para padres y apoyo académico para niños y jóvenes.",
             beneficiarios = null, ciudad = "Monterrey", vigencia = null,
-            logo = "proyecto_forma_t"),
+            logo = "proyecto_forma_t",
+            resumen = "Asociación que busca provocar en la comunidad una formación de valores y " +
+                "talentos para ponerlos al servicio de los demás.",
+            acercaDe = "Desde el 2016 se ofrece apoyo académico impartido por voluntarias a alumnos de " +
+                "escuelas públicas con rezago escolar. Escuela para padres y formación en valores " +
+                "para familias y alumnos.",
+            formasDeApoyo = listOf(
+                FormaDeApoyo("Sesiones de 45 min en formación en valores.",
+                    "Ofrecer clases de formación en valores entre dos voluntarias. Sesiones de 45 " +
+                        "minutos una vez por semana.",
+                    IconoApoyo.LIBRO),
+                FormaDeApoyo("Sesiones de 50 min en apoyo académico.",
+                    "Ofrecer apoyo a alumnos con rezago escolar una vez por semana. Se les asigna un " +
+                        "alumno fijo a quien apoyarían durante el semestre en lecto-escritura o " +
+                        "matemáticas según sea necesario.",
+                    IconoApoyo.LIBRO)
+            ),
+            telefono = "8180201207", whatsapp = "8180201207",
+            instagram = "https://www.instagram.com/format_mty"),
         Proyecto("pr5", "Materno Infantil - REGALANDO ESTRELLAS",
             "Visita al Hospital Materno Infantil el primer sábado al mes junto con más familias. Se " +
                 "sirven aproximadamente 200 desayunos y se llevan juguetes o kits de higiene personal.",
             beneficiarios = "1500 Bebés, mamás, maternidad", ciudad = "Monterrey", vigencia = null,
-            logo = "actividad_regalando_estrellas"),
+            logo = "actividad_regalando_estrellas",
+            resumen = "Visita una vez al mes el Hospital Materno Infantil.",
+            acercaDe = "Desde hace ya 11 años se hacen visitas al Hospital Materno Infantil, se regalan " +
+                "200 desayunos, se visita a los enfermos y se regalan kits de higiene personal a las " +
+                "mujeres que se acaban de convertir en mamás.",
+            formasDeApoyo = listOf(
+                FormaDeApoyo("Armar kits de higiene personal para las mamás.",
+                    "Armar kits de higiene personal para las mamás con toallas húmedas para bebés, " +
+                        "chanclas, pañales, shampoo, cepillo de dientes, papel sanitario y agua."),
+                FormaDeApoyo("Entrega de desayunos a familiares de pacientes.",
+                    "Repartir aproximadamente 200 desayunos para los familiares de pacientes.")
+            ),
+            telefono = "8134021445", whatsapp = "8134021445",
+            instagram = "https://www.instagram.com/regalandoestrellas.mx/"),
         Proyecto("pr6", "Bibliotecas Infantiles - Familia Viva",
             "Recolección de cuentos infantiles de preescolar, primaria y secundaria para crear una " +
-                "biblioteca infantil que se donará a instituciones con niños.",
+                "biblioteca infantil que se entregará a instituciones con niños. Se pueden entregar en " +
+                "albergues, casas hogar, centros comunitarios y escuelas.",
             beneficiarios = null, ciudad = "Monterrey", vigencia = null,
-            logo = "proyecto_bibliotecas"),
+            logo = "proyecto_bibliotecas",
+            resumen = "Bibliotecas para entregar en colegios o instituciones infantiles.",
+            acercaDe = "Familia Viva detectó la necesidad de contar con más libros y espacios de lectura " +
+                "en escuelas públicas. A partir de ahí nació una campaña para recolectar y entregar " +
+                "libros y cuentos infantiles. En 2025, gracias al esfuerzo conjunto de Alas MX, " +
+                "Familia Viva y muchas familias voluntarias, se han logrado entregar hasta hoy 38 " +
+                "salitas de lectura en escuelas públicas. Es un proyecto sustentable porque tanto los " +
+                "libros como los muebles son reutilizados.",
+            comoAyudar = "Recolectar cuentos o libros desde preescolar, primaria y secundaria. Conseguir " +
+                "un librero o comprar uno en alguna tienda tipo Home Depot. Una vez reunidos los 250 o " +
+                "300 libros se clasifican y se arma la biblioteca. No diccionarios, no libros de texto " +
+                "y no libros de colorear. Se pueden organizar con la encargada del proyecto para " +
+                "clasificar libros e irla a entregar personalmente.",
+            telefono = "8180296174", whatsapp = "8180296174",
+            instagram = "https://www.instagram.com/familiaviva.mx/"),
         Proyecto("pr7", "Sendero - REGALANDO ESTRELLAS",
             "Pláticas y convivencia con mujeres en situación vulnerable donde les pueden enseñar, " +
                 "convivir y compartir aprendizajes.",
             beneficiarios = null, ciudad = "Monterrey", vigencia = null,
-            logo = "actividad_regalando_estrellas"),
+            logo = "actividad_regalando_estrellas",
+            resumen = "Pláticas y convivencia con mujeres de comunidad vulnerable.",
+            acercaDe = "Solo mujeres. Pláticas, manualidades y enseñanza a mujeres vulnerables. Último " +
+                "sábado del mes. 10:00 am a 12:00 pm.",
+            comoAyudar = "Hacer una visita en grupo a una comunidad donde hay muchas mujeres con quienes " +
+                "platicar, convivir y compartir aprendizajes.",
+            telefono = "8134021445", whatsapp = "8134021445"),
         Proyecto("pr8", "Escucha Corazón",
             "Una visita al mes al colegio Mano Amiga Monterrey en donde darás acompañamiento a " +
                 "alumnas de primaria y secundaria.",
             beneficiarios = null, ciudad = "Monterrey", vigencia = "Hasta 29 jun 2026",
-            logo = "proyecto_escucha_corazon")
+            logo = "proyecto_escucha_corazon",
+            resumen = "Acompañamiento a alumnas de primaria y secundaria.",
+            acercaDe = "Mínimo 4 visitas en el ciclo escolar. Tiempo aprox. 25 minutos con cada alumna. " +
+                "Pueden ser desde 2 a 4 alumnas en el ciclo escolar. Horario y días flexibles.",
+            comoAyudar = "Dar acompañamiento ayuda a las alumnas a ser escuchadas.",
+            telefono = "8110809089", whatsapp = "8110809078")
     )
 
-    /** Los centros verificados de familiasquesuman.com/directorio. */
+    /** Los centros verificados de familiasquesuman.com/directorio, con todo su detalle. */
     val centros = mutableListOf(
         CentroVisiteo("ce1", "Morada del Anciano Desvalido Cadereyta", "Asilos",
             "Asilo de ancianos donde se atienden 24 horas a 46 adultos mayores.",
             "Atención a adultos mayores en abandono, soledad y falta de apoyo familiar. Se les " +
-                "ofrece refugio, alimentación, atención integral y compañía.",
+                "proporciona una vida digna. Se les ofrece refugio, alimentación, atención integral " +
+                "y compañía.",
             listOf(
                 "Alimentos como: azúcar, leche, aceite, té, gelatina, mole en lata, saladitas, " +
                     "servilletas, ensure, jugos y frutas",
                 "Limpieza: trapeadores, cubetas, botes de basura, guantes, cloro, fabuloso, pino, " +
                     "jabón líquido, shampoo, desengrasantes, bolsas de basura"
             ),
-            "Blvd José María González #1000, Cadereyta", logo = "centro_amad"),
+            "Blvd José María González #1000, Cadereyta", logo = "centro_amad",
+            comoAyudar = "Aportación en especie. Visita a los ancianos para convivir y platicar.",
+            recomendaciones = "Hablar con anticipación para ver qué actividades se recomiendan y en qué horario.",
+            telefono = "8282844311", whatsapp = "3318290852"),
         CentroVisiteo("ce2", "Casa de la Misericordia", "Casas hogar",
             "Casa Hogar que ofrece albergue, alimento y atención a jóvenes y adultos con " +
                 "enfermedades irreversibles.",
             "Hogar de la Misericordia ofrece vida digna a personas con enfermedades irreversibles " +
-                "y/o terminales no contagiosas, en completo desamparo y sin recursos económicos.",
+                "y/o terminales no contagiosas, en completo desamparo y sin recursos económicos. Les " +
+                "brindan albergue, vestido, alimentación, medicamentos, terapias físicas, asistencia " +
+                "médica, dental y de enfermería.",
             listOf(
                 "Pañales de adulto tamaño mediano y grande",
                 "Alimentos como aceite, atún en lata, azúcar, sal, galletas maría, arroz, pasta, " +
@@ -399,10 +510,17 @@ internal object DatosDePrueba {
                 "Productos de limpieza como fabuloso, bolsas de basura jumbo, jabón líquido para " +
                     "manos, jabón para trastes, pinol y papel sanitario"
             ),
-            "Monterrey", logo = "centro_misericordia"),
+            "Monterrey", logo = "centro_misericordia", verificado = false,
+            comoAyudar = "Visitas a los pacientes.\nAportación de alimentos, de productos de limpieza y " +
+                "de higiene personal.\nAportación de ropa de jóvenes y adultos.",
+            recomendaciones = "Se aceptan visitas de niños y adultos con previo aviso y agenda.\n" +
+                "Se recomienda llevar alguna actividad planeada para convivir.\n" +
+                "No más de 15 personas en cada visita.\n" +
+                "Los pacientes disfrutan de actividades con colores, burbujas y música.",
+            telefono = "8183368767"),
         CentroVisiteo("ce3", "La Gran Familia", "Casas hogar",
             "Casa Hogar de niños, niñas y adolescentes que fueron retirados de sus familias por " +
-                "falta de cuidados parentales.",
+                "falta de cuidados parentales ubicados en el Municipio de Santiago, NL.",
             "La Gran Familia es una casa hogar que atiende a niños, niñas y adolescentes con " +
                 "situación familiar vulnerable desde hace 44 años. Ofrecen vivienda, alimentación, " +
                 "educación, salud mental y general.",
@@ -411,23 +529,51 @@ internal object DatosDePrueba {
                 "Alimentos, ropa, productos de limpieza e higiene personal, útiles escolares",
                 "Tenis blancos y zapato escolar"
             ),
-            "Villa de Santiago", logo = "centro_gran_familia"),
+            "Villa de Santiago", logo = "centro_gran_familia",
+            comoAyudar = "Visita a los niños, niñas y adolescentes con actividades que generen " +
+                "convivencia y socialización. Se pueden organizar dinámicas, juegos, manualidades, " +
+                "lectura de cuentos o talleres que ayuden a crear momentos de alegría, aprendizaje y " +
+                "compañía.",
+            recomendaciones = "Solo adultos para visitas internas.\n" +
+                "Se requiere organización previa con la institución para confirmar calendario.\n" +
+                "Se recomienda llevar una actividad para los niños y refrigerio para compartir.",
+            whatsapp = "8126240294",
+            instagram = "https://www.instagram.com/lagranfamiliaac"),
         CentroVisiteo("ce4", "Comedor Apadrina un Niño", "Comedores",
             "Comedor para apoyar a las familias de pacientes internados en la Clínica 25.",
             "Comedor que sirve aproximadamente 200 comidas de lunes a viernes de 1:00 a 3:00 pm.",
             listOf("Desechables", "Alimentos no perecederos"),
-            "Cuautla #208, Colonia 5 de Mayo, Monterrey", logo = "centro_apadrina"),
+            "Cuautla #208, Colonia 5 de Mayo, Monterrey", logo = "centro_apadrina",
+            comoAyudar = "Voluntarios bienvenidos a apoyar a servir comida todos los días de lunes a " +
+                "viernes. Puede ser por día.",
+            recomendaciones = "Adultos y niños bienvenidos.\nHablar antes para confirmar asistencia.",
+            telefono = "8131117884", whatsapp = "8131117884",
+            instagram = "https://www.instagram.com/apadrinaunnin/"),
         CentroVisiteo("ce5", "Apadrina un niño", "Casas hogar",
             "Albergue para niños con cáncer y comedor para sus familias.",
             "Apadrina un niño es un albergue donde pueden hospedarse niños que vengan a Monterrey a " +
-                "algún tratamiento médico. La casa recibe a 40 niños más un adulto que los acompañe.",
+                "algún tratamiento médico. La casa recibe a 40 niños más un adulto que los acompañe. " +
+                "El albergue sirve alrededor de 200 comidas diarias de lunes a viernes a todos los " +
+                "familiares que tengan algún paciente internado y hospeda los días que sean necesarios " +
+                "sin costo alguno.",
             listOf(
                 "Alimentos no perecederos",
                 "Productos de higiene personal",
                 "Ropa de niño y adulto",
-                "Productos de limpieza"
+                "Productos de limpieza",
+                "Ropa de cama tamaño individual",
+                "Pañales, toallas húmedas para bebé",
+                "Juguetes",
+                "Mobiliario en general",
+                "Voluntarios para el comedor"
             ),
-            "Cuautla 208, Col. 5 de Mayo, Monterrey", logo = "centro_apadrina")
+            "Cuautla 208, Col. 5 de Mayo, 64186 Monterrey, N.L.", logo = "centro_apadrina",
+            comoAyudar = "Se buscan voluntarios de lunes a viernes para servir comida de 1:00 a 3:00. " +
+                "Puede asistir por día.",
+            recomendaciones = "No es necesario llevar aportaciones para visitar.\n" +
+                "Se recomienda hablar antes de visitar para que sepan de su visita.",
+            telefono = "8131117884", whatsapp = "8131117884",
+            instagram = "https://www.instagram.com/apadrinaunnin/")
     )
 
     val proximasDeLaFamilia = listOf("act2")
