@@ -88,7 +88,7 @@ fun ApartadoConfirmadoScreen(
                 Icon(Icons.Default.Check, contentDescription = null, tint = ConfirmadoTexto, modifier = Modifier.size(40.dp))
             }
             Text(
-                "Apartaste ${hecho.cantidad} de «${hecho.articuloNombre}»",
+                "Te comprometiste a aportar ${hecho.cantidad} de «${hecho.articuloNombre}»",
                 style = MaterialTheme.typography.headlineMedium,
                 color = Tinta,
                 textAlign = TextAlign.Center
@@ -158,7 +158,7 @@ fun ApartadoConfirmadoScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = MarcaOro, contentColor = MarcaAzul)
             ) {
                 Icon(IconoMensaje, contentDescription = null, modifier = Modifier.size(20.dp))
-                Text("  Avisar que aparté", style = MaterialTheme.typography.labelLarge)
+                Text("  Avisar que me comprometí", style = MaterialTheme.typography.labelLarge)
             }
             OutlinedButton(
                 onClick = onRegresar,
@@ -167,7 +167,7 @@ fun ApartadoConfirmadoScreen(
                 shape = RoundedCornerShape(14.dp)
             ) {
                 Text(
-                    if (variosArticulos) "Apartar algo más" else "Regresar",
+                    if (variosArticulos) "Aportar algo más" else "Regresar",
                     style = MaterialTheme.typography.labelLarge,
                     color = MarcaAzul
                 )

@@ -91,7 +91,7 @@ fun TengoAlgoParaDonar(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Text("¿Qué quieres donar?", style = TextoWeb.Seccion.copy(fontSize = 16.sp), color = Web.Texto)
+            Text("¿Qué quieres aportar?", style = TextoWeb.Seccion.copy(fontSize = 16.sp), color = Web.Texto)
         }
         item {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -103,7 +103,7 @@ fun TengoAlgoParaDonar(
         if (visibles.isEmpty()) {
             item {
                 Text(
-                    "Todavía no hay asociaciones para este tipo de donación.",
+                    "Todavía no hay asociaciones para este tipo de aportación.",
                     style = TextoWeb.Cuerpo,
                     color = Web.TextoApagado,
                     modifier = Modifier.padding(vertical = 16.dp)

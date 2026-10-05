@@ -159,7 +159,7 @@ private fun DatoDeLaCampana(campana: Campana) {
                 ) {
                     Icon(IconoManoCorazon, null, tint = Web.Primario, modifier = Modifier.size(14.dp))
                     Text(
-                        if (n == 1) "1 opción de donación disponible" else "$n opciones de donación disponibles",
+                        if (n == 1) "1 opción para aportar" else "$n opciones para aportar",
                         style = TextoWeb.Chip,
                         color = Web.Primario
                     )

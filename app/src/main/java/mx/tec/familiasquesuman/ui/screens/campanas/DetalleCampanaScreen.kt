@@ -281,7 +281,7 @@ private fun TarjetaPrincipal(campana: Campana, completa: Boolean) {
 private fun TarjetaOpciones(opciones: List<OpcionDonacion>, onOpcion: (OpcionDonacion) -> Unit) {
     val fondos = listOf(Color(0xFFEFF6FF), Color(0xFFBFDBFE), Color(0xFF93C5FD))
     TarjetaWeb {
-        Text("Opciones de donación", style = Seccion)
+        Text("Opciones para aportar", style = Seccion)
         Text("Elige cómo quieres ayudar:", style = TextoWeb.Cuerpo.copy(color = Web.TextoApagado))
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             opciones.forEachIndexed { i, opcion ->
@@ -357,12 +357,12 @@ private fun BloqueMeta(campana: Campana) {
     }
 }
 
-/** RF-21: la lista de artículos con su "Apartar". Solo para campañas con meta de artículos. */
+/** RF-21: la lista de artículos con su "Aportar". Solo para campañas con meta de artículos. */
 @Composable
 private fun TarjetaApartar(campana: Campana, onApartar: (ArticuloMeta) -> Unit) {
     TarjetaWeb {
-        Text("Aparta lo que vayas a llevar", style = Seccion)
-        Text("Así no se juntan cosas repetidas.", style = TextoWeb.Cuerpo.copy(color = Web.TextoApagado))
+        Text("Comprométete a aportar", style = Seccion)
+        Text("Elige lo que vas a llevar para sumar a la meta. Así no se juntan cosas repetidas.", style = TextoWeb.Cuerpo.copy(color = Web.TextoApagado))
         Column {
             campana.articulos.forEachIndexed { i, articulo ->
                 if (i > 0) HorizontalDivider(color = Borde)

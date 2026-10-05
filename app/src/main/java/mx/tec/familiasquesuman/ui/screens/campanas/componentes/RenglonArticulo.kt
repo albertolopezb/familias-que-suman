@@ -43,7 +43,7 @@ fun RenglonArticulo(
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(articulo.nombre, style = MaterialTheme.typography.labelLarge, color = Tinta)
             Text(
-                "${articulo.apartados} de ${articulo.meta} apartados",
+                "${articulo.apartados} de ${articulo.meta} comprometidos",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TintaSuave
             )
@@ -61,7 +61,7 @@ fun RenglonArticulo(
             )
         ) {
             Text(
-                text = if (articulo.completo) "✓ Completo" else "Apartar",
+                text = if (articulo.completo) "✓ Completo" else "Aportar",
                 style = MaterialTheme.typography.labelMedium
             )
         }

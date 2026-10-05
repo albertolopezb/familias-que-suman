@@ -113,11 +113,11 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController, esAdmin: () -> Boolean = {
             onReintentar = vm::cargar,
             onAyudar = { campana -> contactarCampana(contexto, campana) },
             onNoEncontre = {
-                abrirWhatsApp(contexto, WhatsAppGeneral, "Hola, no encontré dónde donar lo que tengo. ¿Me ayudan?")
+                abrirWhatsApp(contexto, WhatsAppGeneral, "Hola, no encontré dónde aportar lo que tengo. ¿Me ayudan?")
             },
             onLlamar = { telefono -> abrir(contexto, Intent(Intent.ACTION_DIAL, Uri.parse("tel:$telefono"))) },
             onWhatsAppCentro = { numero ->
-                abrirWhatsApp(contexto, numero, "Hola, tengo algo para donar y me gustaría coordinar la entrega.")
+                abrirWhatsApp(contexto, numero, "Hola, tengo algo para aportar y me gustaría coordinar la entrega.")
             },
             onComoLlegar = { direccion -> abrirMapa(contexto, direccion) },
             onAbrirEnlace = { enlace -> abrir(contexto, Intent(Intent.ACTION_VIEW, Uri.parse(enlace))) },
@@ -273,7 +273,7 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController, esAdmin: () -> Boolean = {
                     val numero = campana.whatsapp ?: campana.telefono ?: WhatsAppGeneral
                     abrirWhatsApp(
                         contexto, numero,
-                        "Hola, aparté ${apartado.cantidad} de «${apartado.articuloNombre}» " +
+                        "Hola, me comprometí a aportar ${apartado.cantidad} de «${apartado.articuloNombre}» " +
                             "para la campaña ${campana.titulo}. ¿Cómo y cuándo te los entrego?"
                     )
                 },

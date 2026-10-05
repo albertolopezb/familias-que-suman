@@ -349,7 +349,7 @@ internal fun TarjetaNoEncontre(onClick: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         Text(
-            "¿No encontré dónde donarlo?",
+            "¿No encontraste dónde aportarlo?",
             style = MaterialTheme.typography.labelLarge,
             color = TintaSuave
         )

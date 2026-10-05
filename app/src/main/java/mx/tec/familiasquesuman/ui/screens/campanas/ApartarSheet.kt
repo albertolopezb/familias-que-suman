@@ -77,7 +77,7 @@ fun ApartarContenido(
                 color = Tinta
             )
             Text(
-                "Mientras elegías, otras familias apartaron ${hoja.otrasApartaron}. No se registró nada todavía.",
+                "Mientras elegías, otras familias se comprometieron a aportar ${hoja.otrasApartaron}. No se registró nada todavía.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = TintaSuave
             )
@@ -97,13 +97,13 @@ fun ApartarContenido(
         when (hoja.modo) {
             ModoApartar.Normal -> {
                 Aviso(
-                    "Vas a llevar ${hoja.cantidad} · después faltarán ${(articulo.faltan - hoja.cantidad).coerceAtLeast(0)}",
+                    "Te comprometes a aportar ${hoja.cantidad} · después faltarán ${(articulo.faltan - hoja.cantidad).coerceAtLeast(0)}",
                     fondo = ConfirmadoFondo, texto = ConfirmadoTexto
                 )
-                BotonPrincipal("Confirmar mi apoyo", onClick = onConfirmar)
+                BotonPrincipal("Me comprometo a aportar ${hoja.cantidad}", onClick = onConfirmar)
             }
             ModoApartar.Apartando -> {
-                BotonPrincipal("Apartando…", onClick = {}, habilitado = false)
+                BotonPrincipal("Registrando tu compromiso…", onClick = {}, habilitado = false)
             }
             ModoApartar.YaNoAlcanza -> {
                 Aviso(
@@ -111,7 +111,7 @@ fun ApartarContenido(
                     else "${articulo.faltan} es todo lo que falta de este artículo",
                     fondo = AcentoSuave, texto = AcentoTexto
                 )
-                BotonPrincipal("Apartar ${hoja.cantidad}", onClick = onConfirmar, habilitado = articulo.faltan > 0)
+                BotonPrincipal("Me comprometo a aportar ${hoja.cantidad}", onClick = onConfirmar, habilitado = articulo.faltan > 0)
                 OutlinedButton(
                     onClick = onOtrosArticulos,
                     modifier = Modifier.fillMaxWidth().height(52.dp),
@@ -149,7 +149,7 @@ private fun BotonPrincipal(texto: String, onClick: () -> Unit, habilitado: Boole
         colors = ButtonDefaults.buttonColors(
             containerColor = MarcaOro,
             contentColor = MarcaAzul,
-            // "Apartando…" se ve como el botón dorado apagado, no gris: sigue siendo parte del flujo.
+            // "Registrando tu compromiso…" se ve como el botón dorado apagado, no gris: sigue siendo parte del flujo.
             disabledContainerColor = Color(0xFFF2DDB0),
             disabledContentColor = AcentoTexto
         )

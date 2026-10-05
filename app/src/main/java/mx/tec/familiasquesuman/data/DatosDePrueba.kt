@@ -275,7 +275,7 @@ internal object DatosDePrueba {
                 "En el área Educativa: a través de 7 programas de educación fortalecemos las " +
                 "habilidades de personas con discapacidad visual para favorecer su superación y " +
                 "mejorar su calidad de vida.",
-            comoAyudar = "Dona herramientas para personas con discapacidad visual las cuales les " +
+            comoAyudar = "Aporta herramientas para personas con discapacidad visual las cuales les " +
                 "facilitan su desplazamiento y aprendizaje.",
             opcionesDonacion = listOf(
                 OpcionDonacion("Bastón para desplazamiento", "\$700"),
@@ -309,7 +309,7 @@ internal object DatosDePrueba {
                 "escobas, trapeador, bolsas de basura, cloro, fabuloso, pinol, esponjas, jabón " +
                 "liquido, desengrasante.",
             comoAyudar = "Recolecta entre familia y amigos alimentos y productos de limpieza. Existen " +
-                "3 puntos de entrega. Reúne entre tu comunidad y hagan una gran donación.",
+                "3 puntos de entrega. Reúne entre tu comunidad y hagan una gran aportación.",
             puntosEntrega = listOf(
                 PuntoEntrega("Calle Cóndor 1001", "Fraccionamiento Azhara"),
                 PuntoEntrega("Río Amazonas 327", "Del Valle, 66220 San Pedro Garza García"),
