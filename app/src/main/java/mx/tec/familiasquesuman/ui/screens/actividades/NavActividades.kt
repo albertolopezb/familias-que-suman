@@ -248,7 +248,8 @@ fun NavGraphBuilder.grafoActividades(
                 onCancelar = onCancelarInscripcion,
                 onResponderEncuesta = onResponderEncuesta,
                 onCompartirTestimonio = onCompartirTestimonio,
-                onVerActividades = { nav.navigate(RutasActividades.LISTA) }
+                onVerActividades = { nav.navigate(RutasActividades.LISTA) },
+                onRegresar = { nav.popBackStack() }
             )
         }
     }

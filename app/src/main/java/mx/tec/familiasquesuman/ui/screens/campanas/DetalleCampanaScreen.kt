@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.campanas
 
+import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -109,20 +110,8 @@ fun DetalleCampanaScreen(
     onAlternarFavorita: () -> Unit = {}
 ) {
     Column(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().background(Superficie).padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            BotonCircular(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = Tinta)
-            }
-            Text(
-                "Detalle de la campaña",
-                style = MaterialTheme.typography.labelLarge,
-                color = Tinta,
-                modifier = Modifier.weight(1f).padding(start = 12.dp)
-            )
-            BotonCircular(onClick = onAlternarFavorita) {
+        BarraSuperior("Detalle de la campaña", onRegresar = onBack) {
+            IconButton(onClick = onAlternarFavorita) {
                 Icon(
                     if (esFavorita) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                     contentDescription = if (esFavorita) "Quitar de favoritas" else "Agregar a favoritas",

@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
+import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -47,7 +48,7 @@ fun DetalleCentroScreen(
     onAbrirEnlace: (String) -> Unit = {}
 ) {
     Column(Modifier.fillMaxSize().background(Web.Fondo)) {
-        EncabezadoApp()
+        BarraSuperior("Centro", onRegresar = onIrADirectorio)
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -55,8 +56,6 @@ fun DetalleCentroScreen(
                 .padding(start = 16.dp, end = 16.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            MigasDePan(listOf("Inicio" to onIrAInicio, "Directorio" to onIrADirectorio), centro.nombre)
-
             TarjetaFicha {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Logo(centro.logo, centro.nombre, tamano = 72)

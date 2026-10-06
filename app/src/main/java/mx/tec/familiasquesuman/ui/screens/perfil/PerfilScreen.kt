@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.perfil
 
+import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -71,18 +72,11 @@ fun PerfilScreen(
     valoresMensuales: List<Int> = emptyList(),
     favoritosDisponibles: Boolean = accesosDisponibles,
     onSugerirClick: () -> Unit = {},
-    onSugerenciasClick: () -> Unit = {}
+    onSugerenciasClick: () -> Unit = {},
+    onRegresar: (() -> Unit)? = null
 ) {
     Column(modifier.fillMaxSize().background(Fondo)) {
-        EncabezadoApp()
-        Surface(color = Superficie) {
-            Text(
-                text = if (usuarioActual.esAdmin) "Perfil Admin" else "Mi Perfil",
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                style = MaterialTheme.typography.headlineMedium,
-                color = Tinta
-            )
-        }
+        BarraSuperior(if (usuarioActual.esAdmin) "Perfil Admin" else "Mi perfil", onRegresar = onRegresar)
         when (estado) {
             UiState.Cargando -> CargandoView()
             is UiState.Error -> ErrorView(estado.mensaje, onReintentar)

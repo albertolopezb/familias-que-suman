@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.perfil
 
+import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
@@ -56,15 +57,7 @@ fun AjustesScreen(
     modifier: Modifier = Modifier
 ) {
     Column(modifier.fillMaxSize().background(Fondo)) {
-        Surface(color = Superficie) {
-            Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onVolver) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver", tint = Tinta)
-                }
-                Text("Ajustes", style = MaterialTheme.typography.headlineMedium, color = Tinta)
-            }
-        }
+        BarraSuperior("Ajustes", onRegresar = onVolver)
         when (ciudad) {
             UiState.Cargando -> CargandoView()
             is UiState.Error -> ErrorView(ciudad.mensaje, onReintentar)

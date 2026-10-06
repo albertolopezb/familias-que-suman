@@ -30,4 +30,17 @@ class PerfilRepository {
 
     /** Lo que la familia ya hizo, de lo más reciente a lo más viejo (RF-11). */
     suspend fun getHistorial(): List<Participacion> = DatosDePrueba.historial
+
+    /** El folio de la solicitud de eliminación de datos de esta cuenta, si ya la mandó. */
+    suspend fun getSolicitudEliminacion(correo: String): String? = solicitudes[correo.trim().lowercase()]
+
+    /** Registra la solicitud de eliminación (HU-14). Con el backend será un POST; devuelve el folio. */
+    suspend fun solicitarEliminacion(correo: String): String {
+        val clave = correo.trim().lowercase()
+        return solicitudes.getOrPut(clave) { "ELIM-%04d".format(solicitudes.size + 1) }
+    }
+
+    private companion object {
+        val solicitudes = mutableMapOf<String, String>()
+    }
 }

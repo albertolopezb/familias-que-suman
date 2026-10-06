@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.actividades
 
+import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -61,14 +62,15 @@ fun MisActividadesScreen(
     onResponderEncuesta: (String) -> Unit,
     onCompartirTestimonio: (String) -> Unit,
     onVerActividades: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onRegresar: () -> Unit = {}
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(Web.Fondo)
     ) {
-        EncabezadoApp()
+        BarraSuperior("Mis actividades", onRegresar = onRegresar)
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),

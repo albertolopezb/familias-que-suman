@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.sugerencias
 
+import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -65,7 +66,7 @@ fun BandejaSugerenciasScreen(
         .filter { (it.estado == EstadoSugerencia.PENDIENTE) == verPendientes }
 
     Column(Modifier.fillMaxSize().background(Web.Fondo)) {
-        EncabezadoApp()
+        BarraSuperior("Sugerencias", onRegresar = onRegresar)
         if (!esAdmin) {
             Text(
                 "Solo el equipo de Familias que Suman puede ver las sugerencias.",
@@ -84,9 +85,7 @@ fun BandejaSugerenciasScreen(
                 val pendientes = sugerencias.count { it.estado == EstadoSugerencia.PENDIENTE }
                 TituloDePagina(
                     titulo = "Sugerencias recibidas",
-                    subtitulo = if (pendientes == 1) "1 sugerencia por revisar." else "$pendientes sugerencias por revisar.",
-                    migaAnterior = "Perfil",
-                    onMigaAnterior = onRegresar
+                    subtitulo = if (pendientes == 1) "1 sugerencia por revisar." else "$pendientes sugerencias por revisar."
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Chip("Pendientes", verPendientes) { verPendientes = true }

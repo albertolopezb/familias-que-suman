@@ -43,18 +43,7 @@ private val Redondeo = RoundedCornerShape(12.dp)
 /** Barra blanca con flecha de regreso y título, como "← Crear cuenta". */
 @Composable
 fun BarraConRegreso(titulo: String, onRegresar: () -> Unit, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(Superficie)
-            .padding(horizontal = 4.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onRegresar) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = Tinta)
-        }
-        Text(titulo, style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp), color = Tinta)
-    }
+    mx.tec.familiasquesuman.ui.components.BarraSuperior(titulo, onRegresar, modifier)
 }
 
 /** Botón oro de ancho completo. Con `cargando` muestra el texto de espera ("Reservando tus lugares…"). */

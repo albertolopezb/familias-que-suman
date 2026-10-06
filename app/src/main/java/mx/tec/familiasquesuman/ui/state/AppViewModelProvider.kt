@@ -37,7 +37,7 @@ object AppViewModelProvider {
 
     val Factory = viewModelFactory {
         initializer { AjustesViewModel(familiasApplication().container.perfilRepository) }
-        initializer { AvisoPrivacidadViewModel() }
+        initializer { AvisoPrivacidadViewModel(familiasApplication().container.perfilRepository) }
         initializer { EncuestaViewModel() }
         initializer {
             TestimonioViewModel(familiasApplication().container.perfilRepository,

@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.perfil
 
+import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,15 +36,7 @@ fun FavoritosScreen(
     onQuitar: (ItemFavorito) -> Unit = {}
 ) {
     Column(modifier.fillMaxSize().background(Fondo)) {
-        Surface(color = Superficie) {
-            Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onVolver) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver a Perfil", tint = Tinta)
-                }
-                Text("Mis favoritos", style = MaterialTheme.typography.headlineMedium, color = Tinta)
-            }
-        }
+        BarraSuperior("Mis favoritos", onRegresar = onVolver)
         when (estado) {
             UiState.Cargando -> CargandoView()
             is UiState.Error -> ErrorView(estado.mensaje, onReintentar)

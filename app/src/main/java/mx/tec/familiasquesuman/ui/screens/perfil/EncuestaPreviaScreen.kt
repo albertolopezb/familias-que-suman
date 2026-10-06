@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.perfil
 
+import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -28,15 +29,7 @@ fun EncuestaPreviaScreen(
     contextoActividad: String? = null
 ) {
     Column(modifier.fillMaxSize().background(Fondo)) {
-        Surface(color = Superficie) {
-            Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onVolver) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver", tint = Tinta)
-                }
-                Text("Antes de ir", style = MaterialTheme.typography.headlineMedium, color = Tinta)
-            }
-        }
+        BarraSuperior("Antes de ir", onRegresar = onVolver)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Surface(shape = RoundedCornerShape(16.dp), color = AcentoSuave) {

@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.campanas
 
+import androidx.compose.foundation.layout.WindowInsets
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -110,6 +111,8 @@ fun CampanasScreen(
     onSugerir: () -> Unit = {}
 ) {
     Scaffold(
+        // El Scaffold de FamiliasApp ya respeta barra de estado y de navegación: aquí no se duplica.
+        contentWindowInsets = WindowInsets(0),
         modifier = modifier.fillMaxSize(),
         floatingActionButton = {
             if (esAdmin) {
@@ -128,7 +131,12 @@ fun CampanasScreen(
     var modo by rememberSaveable { mutableStateOf(ModoDonar.CAMPANA) }
 
         EncabezadoApp()
-        BarraSuperior(onBack = onBack, esAdmin = esAdmin)
+        Text(
+            if (esAdmin) "Quiero Donar (Admin)" else "Quiero Donar",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MarcaAzul,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp)
+        )
         SelectorModoDonar(modo = modo, onElegir = { modo = it })
 
         if (modo == ModoDonar.TENGO_ALGO) {
@@ -185,24 +193,6 @@ fun CampanasScreen(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun BarraSuperior(onBack: () -> Unit, esAdmin: Boolean = false) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = MarcaAzul)
-        }
-        Text(
-            if (esAdmin) "Quiero Donar (Admin)" else "Quiero Donar",
-            style = MaterialTheme.typography.titleLarge,
-            color = MarcaAzul,
-            modifier = Modifier.weight(1f)
-        )
     }
 }
 

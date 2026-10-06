@@ -73,10 +73,16 @@ fun NavGraphBuilder.grafoPerfil(
     composable(RutasPerfil.AVISO_PRIVACIDAD) {
         val vm: AvisoPrivacidadViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val estado by vm.estado.collectAsStateWithLifecycle()
+        val sesion by cuentaViewModel().sesion.collectAsStateWithLifecycle()
+        val correo = sesion?.correo
+        LaunchedEffect(correo) { vm.cargar(correo) }
         AvisoPrivacidadScreen(
             estado = estado,
+            conSesion = correo != null,
             onVolver = { nav.popBackStack() },
-            onSolicitarEliminacion = vm::solicitarEliminacion
+            onSolicitarEliminacion = vm::pedirConfirmacion,
+            onConfirmarEliminacion = { if (correo != null) vm.confirmarEliminacion(correo) else vm.cancelarConfirmacion() },
+            onCancelarConfirmacion = vm::cancelarConfirmacion
         )
     }
     composable(RutasPerfil.ENCUESTA_FINAL) {
@@ -134,7 +140,8 @@ fun NavGraphBuilder.grafoPerfil(
             accesosDisponibles = true,
             favoritosDisponibles = true,
             onSugerirClick = { nav.sugerir(TipoSugerencia.ACTIVIDAD) },
-            onSugerenciasClick = { nav.navigate(RutasSugerencias.BANDEJA) { launchSingleTop = true } }
+            onSugerenciasClick = { nav.navigate(RutasSugerencias.BANDEJA) { launchSingleTop = true } },
+            onRegresar = { nav.popBackStack() }
         )
     }
     composable(RutasPerfil.FAVORITOS) {

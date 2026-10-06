@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -80,6 +81,8 @@ fun ProyectosScreen(
         .filter { busqueda.isBlank() || it.nombre.contains(busqueda.trim(), ignoreCase = true) }
 
     Scaffold(
+        // El Scaffold de FamiliasApp ya respeta barra de estado y de navegación: aquí no se duplica.
+        contentWindowInsets = WindowInsets(0),
         floatingActionButton = {
             if (esAdmin) {
                 FloatingActionButton(
@@ -108,8 +111,6 @@ fun ProyectosScreen(
                     TituloDePagina(
                         titulo = if (esAdmin) "Proyectos (Admin)" else "Proyectos",
                         subtitulo = "Proyectos con causas y objetivos específicos.",
-                        migaAnterior = "Inicio",
-                        onMigaAnterior = onIrAInicio
                     )
                     Row(modifier = Modifier.fillMaxWidth()) {
                         Pestana("Proyectos activos", verActivos, { verActivos = true }, Modifier.weight(1f))

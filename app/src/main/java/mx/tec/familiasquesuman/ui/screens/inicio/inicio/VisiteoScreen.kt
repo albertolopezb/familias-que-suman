@@ -85,8 +85,6 @@ fun VisiteoScreen(
                 TituloDePagina(
                     titulo = "Directorio de Visiteo",
                     subtitulo = "Centros y espacios verificados para visitar y ayudar en familia.",
-                    migaAnterior = "Inicio",
-                    onMigaAnterior = onIrAInicio
                 )
                 Buscador(valor = busqueda, onValor = { busqueda = it }, placeholder = "Buscar centro...")
             }

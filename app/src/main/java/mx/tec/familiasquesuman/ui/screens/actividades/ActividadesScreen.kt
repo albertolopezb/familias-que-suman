@@ -52,6 +52,8 @@ fun ActividadesScreen(
     onSugerir: () -> Unit = {}
 ) {
     Scaffold(
+        // El Scaffold de FamiliasApp ya respeta barra de estado y de navegación: aquí no se duplica.
+        contentWindowInsets = WindowInsets(0),
         modifier = modifier.fillMaxSize(),
         // Si es Admin, mostramos el FAB con el símbolo (+) abajo
         floatingActionButton = {
@@ -81,8 +83,6 @@ fun ActividadesScreen(
                     TituloDePagina(
                         titulo = if (esAdmin) "Actividades (Admin)" else "Actividades",
                         subtitulo = "Actividades en $ciudad",
-                        migaAnterior = "Inicio",
-                        onMigaAnterior = onIrAInicio,
                         modificadorTitulo = Modifier.pointerInput(Unit) {
                             detectTapGestures(onLongPress = { onForzarEstado() })
                         }

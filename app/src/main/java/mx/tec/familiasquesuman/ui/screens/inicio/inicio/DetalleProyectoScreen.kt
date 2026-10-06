@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
+import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -65,7 +66,7 @@ fun DetalleProyectoScreen(
     onAbrirEnlace: (String) -> Unit = {}
 ) {
     Column(Modifier.fillMaxSize().background(Web.Fondo)) {
-        EncabezadoApp()
+        BarraSuperior("Proyecto", onRegresar = onIrAProyectos)
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -73,8 +74,6 @@ fun DetalleProyectoScreen(
                 .padding(start = 16.dp, end = 16.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            MigasDePan(listOf("Inicio" to onIrAInicio, "Proyectos" to onIrAProyectos), proyecto.nombre)
-
             TarjetaFicha {
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Logo(proyecto.logo, proyecto.nombre, tamano = 72)

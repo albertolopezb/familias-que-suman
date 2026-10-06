@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.actividades.componentes
 
+import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -82,35 +83,9 @@ fun TituloDePagina(
     titulo: String,
     subtitulo: String,
     modifier: Modifier = Modifier,
-    migaAnterior: String? = null,
-    onMigaAnterior: () -> Unit = {},
     modificadorTitulo: Modifier = Modifier
 ) {
     Column(modifier = modifier.padding(top = 24.dp, bottom = 16.dp)) {
-        if (migaAnterior != null) {
-            Row(
-                modifier = Modifier.padding(bottom = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = migaAnterior,
-                    style = TextoWeb.Chico,
-                    modifier = Modifier.clickable(onClick = onMigaAnterior)
-                )
-                Icon(
-                    IconosWeb.FlechaDerecha,
-                    contentDescription = null,
-                    tint = Web.TextoApagado,
-                    modifier = Modifier.size(12.dp)
-                )
-                Text(
-                    text = titulo,
-                    style = TextoWeb.Chico.copy(fontWeight = FontWeight.Medium),
-                    color = Web.Texto
-                )
-            }
-        }
         Text(text = titulo, style = TextoWeb.Titulo, modifier = modificadorTitulo)
         Text(
             text = subtitulo,
@@ -132,37 +107,8 @@ fun BarraDeRegreso(
     modifier: Modifier = Modifier,
     acciones: @Composable () -> Unit = {}
 ) {
-    Column(modifier = modifier.fillMaxWidth().background(Web.Fondo)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .clickable(onClick = onRegresar)
-                    .padding(vertical = 4.dp, horizontal = 2.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    IconosWeb.FlechaIzquierda,
-                    contentDescription = "Regresar",
-                    tint = Web.Primario,
-                    modifier = Modifier.size(16.dp)
-                )
-                Text(
-                    text = texto,
-                    style = TextoWeb.Cuerpo.copy(fontWeight = FontWeight.Medium),
-                    color = Web.Primario
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { acciones() }
-        }
-        HorizontalDivider(color = Web.Borde, thickness = 1.dp)
+    mx.tec.familiasquesuman.ui.components.BarraSuperior(texto, onRegresar, modifier) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { acciones() }
     }
 }
 

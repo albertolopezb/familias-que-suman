@@ -1,6 +1,14 @@
 package mx.tec.familiasquesuman.ui.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.navigation.NavBackStackEntry
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,7 +37,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -90,10 +97,9 @@ fun FamiliasApp() {
             }
         }
     }
- // MAYBE QUITAR ESTO ------!!!!!!!!
-    val mostrarBarraInferior = rutaActual != RutasInicio.SPLASH && rutaActual != RutasInicio.CIUDAD &&
-            rutaActual != RutasPerfil.TESTIMONIO && rutaActual != RutasPerfil.ENCUESTA_FINAL &&
-            rutaActual != RutasPerfil.AVISO_PRIVACIDAD && rutaActual != RutasPerfil.ENCUESTA_PREVIA
+    // La barra de pestañas solo está en lo que se explora; los flujos (cuenta, inscripción,
+    // encuestas, sugerir) usan toda la pantalla, como en una app nativa.
+    val mostrarBarraInferior = rutaActual != null && rutasSinBarra.none { rutaActual == it || rutaActual.startsWith("$it/") }
 
     CompositionLocalProvider(
         LocalIrAPerfil provides { destino ->
@@ -129,7 +135,11 @@ fun FamiliasApp() {
             NavHost(
                 navController = nav,
                 startDestination = RutasInicio.SPLASH,
-                modifier = Modifier.padding(padding)
+                modifier = Modifier.padding(padding),
+                enterTransition = { entrada(initialState, targetState) },
+                exitTransition = { salida(initialState, targetState) },
+                popEnterTransition = { entradaAlRegresar(initialState, targetState) },
+                popExitTransition = { salidaAlRegresar(initialState, targetState) }
             ) {
                 // Pasamos usuarioActual y el handler para cambiar la cuenta desde el Perfil
                 // grafoPerfil en FamiliasApp.kt
@@ -179,6 +189,40 @@ fun FamiliasApp() {
     }
 }
 
+/** Pantallas completas, sin la barra de pestañas. */
+private val rutasSinBarra = listOf(
+    RutasInicio.SPLASH, RutasInicio.CIUDAD, RutasInicio.PERMISO_NOTIFICACIONES,
+    "inscribirse", "puerta_cuenta", RutasInscripcion.CREAR_CUENTA, RutasInscripcion.INICIAR_SESION,
+    RutasInscripcion.RECUPERAR, "acompanantes", "inscripcion_confirmada", "cancelar_inscripcion",
+    "cancelacion_confirmada", "sugerir", "perfil/testimonio", RutasPerfil.ENCUESTA_FINAL,
+    RutasPerfil.ENCUESTA_PREVIA, RutasPerfil.AVISO_PRIVACIDAD
+)
+
+private val rutasDePestana = pestanas.map { it.ruta }.toSet()
+
+private const val DuracionPantalla = 300
+private const val DuracionPestana = 180
+
+/** Entre pestañas la pantalla se desvanece; al entrar a un detalle o flujo se desliza desde la derecha. */
+private fun entreRaices(de: NavBackStackEntry, a: NavBackStackEntry) =
+    de.destination.route in rutasDePestana && a.destination.route in rutasDePestana
+
+private fun entrada(de: NavBackStackEntry, a: NavBackStackEntry): EnterTransition =
+    if (entreRaices(de, a)) fadeIn(tween(DuracionPestana))
+    else slideInHorizontally(tween(DuracionPantalla)) { it / 3 } + fadeIn(tween(DuracionPantalla))
+
+private fun salida(de: NavBackStackEntry, a: NavBackStackEntry): ExitTransition =
+    if (entreRaices(de, a)) fadeOut(tween(DuracionPestana))
+    else slideOutHorizontally(tween(DuracionPantalla)) { -it / 5 } + fadeOut(tween(DuracionPantalla))
+
+private fun entradaAlRegresar(de: NavBackStackEntry, a: NavBackStackEntry): EnterTransition =
+    if (entreRaices(de, a)) fadeIn(tween(DuracionPestana))
+    else slideInHorizontally(tween(DuracionPantalla)) { -it / 5 } + fadeIn(tween(DuracionPantalla))
+
+private fun salidaAlRegresar(de: NavBackStackEntry, a: NavBackStackEntry): ExitTransition =
+    if (entreRaices(de, a)) fadeOut(tween(DuracionPestana))
+    else slideOutHorizontally(tween(DuracionPantalla)) { it / 3 } + fadeOut(tween(DuracionPantalla))
+
 /** Pantallas que solo existen con sesión abierta. */
 private val rutasConSesion = setOf(
     Rutas.PERFIL, Rutas.MIS_ACTIVIDADES, RutasPerfil.AJUSTES, RutasPerfil.FAVORITOS, RutasPerfil.INSIGNIAS
@@ -187,7 +231,8 @@ private val rutasConSesion = setOf(
 /** Cambio de pestaña: una sola copia de cada pantalla y la pila limpia. */
 private fun NavController.irA(ruta: String) {
     navigate(ruta) {
-        popUpTo(graph.findStartDestination().id) {
+        // La pantalla de abajo de la pila es siempre el Inicio: "atrás" desde una pestaña regresa a él.
+        popUpTo(RutasInicio.INICIO) {
             saveState = false // Desactivar para actualizar los cambios de rol
         }
         launchSingleTop = true

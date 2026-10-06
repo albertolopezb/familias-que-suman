@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.campanas
 
+import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -63,15 +64,7 @@ val NecesidadesActuales = listOf(
 @Composable
 fun ComoDonarScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar", tint = MarcaAzul)
-            }
-            Text("Cómo donar", style = MaterialTheme.typography.titleLarge, color = MarcaAzul)
-        }
+        BarraSuperior("Cómo donar", onRegresar = onBack)
 
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
