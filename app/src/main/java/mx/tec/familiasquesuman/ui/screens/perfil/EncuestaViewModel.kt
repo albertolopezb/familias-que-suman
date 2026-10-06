@@ -1,8 +1,17 @@
 package mx.tec.familiasquesuman.ui.screens.perfil
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import mx.tec.familiasquesuman.data.EncuestaRepository
+import mx.tec.familiasquesuman.domain.MomentoEncuesta
+import mx.tec.familiasquesuman.domain.RespuestaEncuesta
+import mx.tec.familiasquesuman.domain.RespuestaPregunta
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /** Contratos de presentación reutilizables; no reemplazan modelos de domain ni un repositorio. */
 data class PreguntaEncuesta(val numero: Int, val texto: String, val opciones: List<String>)
@@ -16,31 +25,29 @@ data class DefinicionEncuesta(val totalPreguntas: Int, val preguntas: List<Pregu
     }
 }
 
-// Único contenido respaldado por P-22. Pendientes del equipo: preguntas 1, 3 y 4.
-val EncuestaFinalP22 = DefinicionEncuesta(4, listOf(PreguntaEncuesta(
-    numero = 2,
-    texto = "¿Qué aprendieron tus hijos en esta actividad?",
-    opciones = listOf(
-        "Entendieron mejor cómo viven otras familias",
-        "Aprendieron a trabajar en equipo",
-        "Se divirtieron, pero no hablamos del tema",
-        "Todavía no lo comentamos"
-    )
-)))
-
 data class EstadoEncuesta(
     val definicion: DefinicionEncuesta,
     val indiceActual: Int = 0,
     val respuestas: Map<Int, Int> = emptyMap(),
-    val mensaje: String? = null
+    val mensaje: String? = null,
+    val guardando: Boolean = false
 ) {
     val preguntaActual: PreguntaEncuesta get() = definicion.preguntas[indiceActual]
     val respuestaSeleccionada: Int? get() = respuestas[preguntaActual.numero]
     val puedeAvanzar: Boolean get() = respuestaSeleccionada in preguntaActual.opciones.indices
     val progreso: Float get() = preguntaActual.numero.toFloat() / definicion.totalPreguntas
+    val esUltima: Boolean get() = indiceActual == definicion.preguntas.lastIndex
 }
 
-class EncuestaViewModel(definicion: DefinicionEncuesta = EncuestaFinalP22) : ViewModel() {
+/**
+ * Una encuesta contestada de una pregunta a la vez (RF-13). [momento] dice si es la de antes
+ * o la de después; al terminar, las respuestas se guardan ligadas a la actividad.
+ */
+class EncuestaViewModel(
+    definicion: DefinicionEncuesta,
+    private val momento: MomentoEncuesta,
+    private val repositorio: EncuestaRepository
+) : ViewModel() {
     private val _estado = MutableStateFlow(EstadoEncuesta(definicion))
     val estado = _estado.asStateFlow()
 
@@ -74,7 +81,53 @@ class EncuestaViewModel(definicion: DefinicionEncuesta = EncuestaFinalP22) : Vie
         return completa
     }
 
-    fun indicarPrivacidadPendiente() {
-        _estado.value = _estado.value.copy(mensaje = "El aviso de privacidad todavía no está disponible.")
+    /** Regresa a la pregunta anterior; en la primera no hace nada y la pantalla cierra. */
+    fun retroceder(): Boolean {
+        val actual = _estado.value
+        if (actual.indiceActual == 0) return false
+        _estado.value = actual.copy(indiceActual = actual.indiceActual - 1, mensaje = null)
+        return true
+    }
+
+    /**
+     * Guarda lo contestado ligado a la actividad y avisa con [alTerminar]. Solo guarda si
+     * todas las preguntas están contestadas, y una sola vez aunque se toque el botón varias.
+     */
+    fun guardar(
+        actividadId: String,
+        actividadTitulo: String,
+        correo: String,
+        familia: String,
+        alTerminar: () -> Unit
+    ) {
+        val actual = _estado.value
+        if (actual.guardando) return
+        val contestadas = actual.definicion.preguntas.mapNotNull { pregunta ->
+            actual.respuestas[pregunta.numero]?.takeIf { it in pregunta.opciones.indices }?.let {
+                RespuestaPregunta(pregunta.numero, pregunta.texto, pregunta.opciones[it])
+            }
+        }
+        if (contestadas.size != actual.definicion.preguntas.size) return
+        _estado.value = actual.copy(guardando = true)
+        viewModelScope.launch {
+            repositorio.guardar(
+                RespuestaEncuesta(
+                    id = "e${System.currentTimeMillis()}",
+                    actividadId = actividadId,
+                    actividadTitulo = actividadTitulo,
+                    correo = correo,
+                    familia = familia,
+                    momento = momento,
+                    respuestas = contestadas,
+                    fecha = LocalDate.now().format(FormatoFecha)
+                )
+            )
+            _estado.value = _estado.value.copy(guardando = false)
+            alTerminar()
+        }
+    }
+
+    private companion object {
+        val FormatoFecha: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale("es", "MX"))
     }
 }

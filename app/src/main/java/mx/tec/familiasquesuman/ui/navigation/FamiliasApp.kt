@@ -60,7 +60,10 @@ import mx.tec.familiasquesuman.ui.screens.sugerencias.grafoSugerencias
 import mx.tec.familiasquesuman.ui.screens.inscripcion.RutasInscripcion
 import mx.tec.familiasquesuman.ui.screens.inscripcion.grafoInscripcion
 import mx.tec.familiasquesuman.ui.screens.perfil.RutasPerfil
+import mx.tec.familiasquesuman.ui.screens.perfil.compartirTestimonio
 import mx.tec.familiasquesuman.ui.screens.perfil.grafoPerfil
+import mx.tec.familiasquesuman.ui.screens.perfil.responderEncuestaFinal
+import mx.tec.familiasquesuman.ui.screens.perfil.responderEncuestaPrevia
 
 @Composable
 fun FamiliasApp() {
@@ -178,7 +181,10 @@ fun FamiliasApp() {
                     onInscribirme = { id -> nav.navigate(RutasInscripcion.inscribirse(id)) },
                     onInscribirmeConPrueba = { id, sinCupo -> nav.navigate(RutasInscripcion.inscribirse(id, sinCupo)) },
                     onCancelarInscripcion = { id -> nav.navigate(RutasInscripcion.cancelar(id)) },
-                    onResponderEncuesta = { nav.navigate(RutasPerfil.ENCUESTA_FINAL) }
+                    onResponderEncuesta = nav::responderEncuestaFinal,
+                    onCompartirTestimonio = nav::compartirTestimonio,
+                    onEncuestaPrevia = nav::responderEncuestaPrevia,
+                    onVerRespuestas = { id -> nav.navigate(RutasPerfil.respuestas(id)) { launchSingleTop = true } }
                 )
 
                 grafoCampanas(nav, esAdmin = { usuarioActual.esAdmin })
@@ -194,8 +200,8 @@ private val rutasSinBarra = listOf(
     RutasInicio.SPLASH, RutasInicio.CIUDAD, RutasInicio.PERMISO_NOTIFICACIONES,
     "inscribirse", "puerta_cuenta", RutasInscripcion.CREAR_CUENTA, RutasInscripcion.INICIAR_SESION,
     RutasInscripcion.RECUPERAR, "acompanantes", "inscripcion_confirmada", "cancelar_inscripcion",
-    "cancelacion_confirmada", "sugerir", "perfil/testimonio", RutasPerfil.ENCUESTA_FINAL,
-    RutasPerfil.ENCUESTA_PREVIA, RutasPerfil.AVISO_PRIVACIDAD
+    "cancelacion_confirmada", "sugerir", "perfil/testimonio", "perfil/encuesta_final",
+    "perfil/encuesta_previa", RutasPerfil.AVISO_PRIVACIDAD
 )
 
 private val rutasDePestana = pestanas.map { it.ruta }.toSet()

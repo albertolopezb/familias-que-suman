@@ -6,6 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -13,6 +15,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navDeepLink
 import mx.tec.familiasquesuman.domain.ActividadConAsociacion
+import mx.tec.familiasquesuman.domain.Participacion
 import mx.tec.familiasquesuman.notificaciones.Notificaciones
 import mx.tec.familiasquesuman.ui.components.CargandoView
 import mx.tec.familiasquesuman.ui.components.ErrorView
@@ -50,7 +53,8 @@ object RutasActividades {
  *
  * - onInscribirme: parte 3, puerta de cuenta (RF-18) y acompañantes (RF-06).
  * - onCancelarInscripcion: parte 3, cancelar (RF-19).
- * - onResponderEncuesta / onCompartirTestimonio: parte 5 (RF-13, RF-12).
+ * - onResponderEncuesta / onEncuestaPrevia / onVerRespuestas: encuestas de antes y después (RF-13).
+ * - onCompartirTestimonio: testimonio con fotografía (RF-12).
  * - onCambiarCiudad / onVerAsociaciones: parte 1.
  */
 fun NavGraphBuilder.grafoActividades(
@@ -62,8 +66,10 @@ fun NavGraphBuilder.grafoActividades(
     onInscribirme: (String) -> Unit = {},
     onInscribirmeConPrueba: (String, Boolean) -> Unit = { id, _ -> onInscribirme(id) },
     onCancelarInscripcion: (String) -> Unit = {},
-    onResponderEncuesta: (String) -> Unit = {},
-    onCompartirTestimonio: (String) -> Unit = {},
+    onResponderEncuesta: (Participacion) -> Unit = {},
+    onCompartirTestimonio: (Participacion) -> Unit = {},
+    onEncuestaPrevia: (ActividadConAsociacion) -> Unit = {},
+    onVerRespuestas: (String) -> Unit = {},
     onVerAsociaciones: () -> Unit = {}
 ) {
 
@@ -229,15 +235,20 @@ fun NavGraphBuilder.grafoActividades(
         val vm: MisActividadesViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val estado by vm.estado.collectAsStateWithLifecycle()
         // Solo las actividades a las que esta cuenta se inscribió.
-        val inscripciones by cuentaViewModel().inscripciones.collectAsStateWithLifecycle()
-        LaunchedEffect(inscripciones.keys) { vm.cargar(inscripciones.keys) }
+        val cuenta = cuentaViewModel()
+        val inscripciones by cuenta.inscripciones.collectAsStateWithLifecycle()
+        val sesion by cuenta.sesion.collectAsStateWithLifecycle()
+        val correo = sesion?.correo
+        LaunchedEffect(inscripciones.keys, correo) { vm.cargar(inscripciones.keys, correo) }
+        // Al volver de una encuesta o de un testimonio, los pendientes se leen otra vez.
+        LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.cargar(inscripciones.keys, correo) }
 
         when (val actual = estado) {
             is UiState.Cargando -> CargandoView()
 
             is UiState.Error -> ErrorView(
                 mensaje = actual.mensaje,
-                onReintentar = vm::cargar
+                onReintentar = { vm.cargar() }
             )
 
             is UiState.Exito -> MisActividadesScreen(
@@ -248,6 +259,8 @@ fun NavGraphBuilder.grafoActividades(
                 onCancelar = onCancelarInscripcion,
                 onResponderEncuesta = onResponderEncuesta,
                 onCompartirTestimonio = onCompartirTestimonio,
+                onEncuestaPrevia = onEncuestaPrevia,
+                onVerRespuestas = onVerRespuestas,
                 onVerActividades = { nav.navigate(RutasActividades.LISTA) },
                 onRegresar = { nav.popBackStack() }
             )

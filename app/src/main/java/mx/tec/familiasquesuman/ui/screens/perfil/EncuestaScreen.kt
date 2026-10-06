@@ -26,13 +26,15 @@ fun EncuestaScreen(
     onSeleccionarRespuesta: (Int) -> Unit,
     onSiguiente: () -> Unit,
     onResponderDespues: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contextoActividad: String? = null
 ) {
     Column(modifier.fillMaxSize().background(Fondo)) {
         BarraSuperior("Encuesta final", onRegresar = onVolver)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                contextoActividad?.let { Text(it, style = MaterialTheme.typography.bodyLarge, color = Tinta) }
                 Text("Pregunta ${estado.preguntaActual.numero} de ${estado.definicion.totalPreguntas}",
                     style = MaterialTheme.typography.bodyMedium, color = TintaSuave)
                 LinearProgressIndicator(progress = { estado.progreso }, modifier = Modifier.fillMaxWidth().height(6.dp),
@@ -48,10 +50,10 @@ fun EncuestaScreen(
         }
         Surface(color = Superficie, shadowElevation = 4.dp) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(onClick = onSiguiente, enabled = estado.puedeAvanzar,
+                Button(onClick = onSiguiente, enabled = estado.puedeAvanzar && !estado.guardando,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp), shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MarcaOro, contentColor = MarcaAzul)) {
-                    Text("Siguiente", style = MaterialTheme.typography.titleLarge)
+                    Text(if (estado.esUltima) "Enviar respuestas" else "Siguiente", style = MaterialTheme.typography.titleLarge)
                 }
                 OutlinedButton(onClick = onResponderDespues, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
                     shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, MarcaAzul)) {
@@ -66,6 +68,6 @@ fun EncuestaScreen(
 @Composable
 private fun EncuestaPreview() {
     FamiliasQueSumanTheme {
-        EncuestaScreen(EstadoEncuesta(EncuestaFinalP22, respuestas = mapOf(2 to 0)), {}, {}, {}, {})
+        EncuestaScreen(EstadoEncuesta(EncuestaFinal, respuestas = mapOf(1 to 0)), {}, {}, {}, {})
     }
 }

@@ -59,11 +59,13 @@ fun MisActividadesScreen(
     onCiudadClick: () -> Unit,
     onProximaClick: (String) -> Unit,
     onCancelar: (String) -> Unit,
-    onResponderEncuesta: (String) -> Unit,
-    onCompartirTestimonio: (String) -> Unit,
+    onResponderEncuesta: (Participacion) -> Unit,
+    onCompartirTestimonio: (Participacion) -> Unit,
     onVerActividades: () -> Unit,
     modifier: Modifier = Modifier,
-    onRegresar: () -> Unit = {}
+    onRegresar: () -> Unit = {},
+    onEncuestaPrevia: (ActividadConAsociacion) -> Unit = {},
+    onVerRespuestas: (String) -> Unit = {}
 ) {
     Column(
         modifier = modifier
@@ -91,10 +93,13 @@ fun MisActividadesScreen(
             if (datos.proximas.isNotEmpty()) {
                 item(key = "rotulo-proximas") { Rotulo("PRÓXIMAS") }
                 items(datos.proximas, key = { "prox-${it.actividad.id}" }) { item ->
+                    val id = item.actividad.id
                     TarjetaProxima(
                         item = item,
-                        onClick = { onProximaClick(item.actividad.id) },
-                        onCancelar = { onCancelar(item.actividad.id) }
+                        encuestaContestada = id in datos.conEncuestaPrevia,
+                        onClick = { onProximaClick(id) },
+                        onCancelar = { onCancelar(id) },
+                        onEncuesta = { if (id in datos.conEncuestaPrevia) onVerRespuestas(id) else onEncuestaPrevia(item) }
                     )
                 }
             }
@@ -111,8 +116,10 @@ fun MisActividadesScreen(
                     items(participaciones, key = { it.id }) { participacion ->
                         TarjetaParticipacion(
                             participacion = participacion,
-                            onResponderEncuesta = { onResponderEncuesta(participacion.id) },
-                            onCompartirTestimonio = { onCompartirTestimonio(participacion.id) }
+                            conRespuestas = participacion.id in datos.conRespuestas,
+                            onResponderEncuesta = { onResponderEncuesta(participacion) },
+                            onCompartirTestimonio = { onCompartirTestimonio(participacion) },
+                            onVerRespuestas = { onVerRespuestas(participacion.id) }
                         )
                     }
                 }
@@ -182,8 +189,10 @@ private fun TarjetaBase(
 @Composable
 private fun TarjetaProxima(
     item: ActividadConAsociacion,
+    encuestaContestada: Boolean,
     onClick: () -> Unit,
-    onCancelar: () -> Unit
+    onCancelar: () -> Unit,
+    onEncuesta: () -> Unit
 ) {
     val actividad = item.actividad
     TarjetaBase(onClick = onClick) {
@@ -217,6 +226,10 @@ private fun TarjetaProxima(
                 EnlaceAccion("Ver detalle", Web.Primario, onClick)
                 EnlaceAccion("Cancelar inscripción", Web.RojoTexto, onCancelar)
             }
+            EnlaceAccion(
+                if (encuestaContestada) "Ver mis respuestas de antes" else "Responder preguntas de antes",
+                Web.Primario, onEncuesta
+            )
         }
     }
 }
@@ -224,8 +237,10 @@ private fun TarjetaProxima(
 @Composable
 private fun TarjetaParticipacion(
     participacion: Participacion,
+    conRespuestas: Boolean,
     onResponderEncuesta: () -> Unit,
-    onCompartirTestimonio: () -> Unit
+    onCompartirTestimonio: () -> Unit,
+    onVerRespuestas: () -> Unit
 ) {
     TarjetaBase(onClick = null) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -260,11 +275,41 @@ private fun TarjetaParticipacion(
             }
 
             when (participacion.estado) {
-                EstadoParticipacion.TESTIMONIO_PUBLICADO ->
+                EstadoParticipacion.TESTIMONIO_PUBLICADO -> Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Etiqueta("Testimonio publicado", Web.VerdeFondo, Web.VerdeTexto)
+                    EnlaceAccion("Ver testimonio", Web.Primario, onCompartirTestimonio)
+                }
 
-                EstadoParticipacion.TESTIMONIO_EN_REVISION ->
+                EstadoParticipacion.TESTIMONIO_EN_REVISION -> Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Etiqueta("Testimonio en revisión", Web.MoradoFondo, Web.MoradoTexto)
+                    EnlaceAccion("Ver testimonio", Web.Primario, onCompartirTestimonio)
+                }
+
+                EstadoParticipacion.TESTIMONIO_POR_AJUSTAR -> Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Etiqueta("Pidieron un ajuste", Web.AmbarFondo, Web.AmbarTexto)
+                    EnlaceAccion("Ajustar testimonio", Web.Primario, onCompartirTestimonio)
+                }
+
+                EstadoParticipacion.TESTIMONIO_DESCARTADO -> Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Etiqueta("Testimonio no publicado", Web.RojoFondo, Web.RojoTexto)
+                    EnlaceAccion("Ver testimonio", Web.Primario, onCompartirTestimonio)
+                }
 
                 EstadoParticipacion.ENCUESTA_PENDIENTE -> Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -284,6 +329,7 @@ private fun TarjetaParticipacion(
                 EstadoParticipacion.SIN_PENDIENTES ->
                     EnlaceAccion("Compartir testimonio", Web.Primario, onCompartirTestimonio)
             }
+            if (conRespuestas) EnlaceAccion("Ver mis respuestas", Web.Primario, onVerRespuestas)
         }
     }
 }

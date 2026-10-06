@@ -17,7 +17,9 @@ import mx.tec.familiasquesuman.ui.screens.campanas.DetalleCampanaViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.PerfilViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.InsigniasViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.TestimonioViewModel
-import mx.tec.familiasquesuman.ui.screens.perfil.EncuestaViewModel
+import mx.tec.familiasquesuman.ui.screens.perfil.RespuestasEncuestasViewModel
+import mx.tec.familiasquesuman.ui.screens.perfil.RevisionTestimoniosViewModel
+import mx.tec.familiasquesuman.ui.screens.inicio.TestimoniosViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.AvisoPrivacidadViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.AjustesViewModel
 import mx.tec.familiasquesuman.ui.screens.inscripcion.AcompanantesViewModel
@@ -38,11 +40,18 @@ object AppViewModelProvider {
     val Factory = viewModelFactory {
         initializer { AjustesViewModel(familiasApplication().container.perfilRepository) }
         initializer { AvisoPrivacidadViewModel(familiasApplication().container.perfilRepository) }
-        initializer { EncuestaViewModel() }
         initializer {
-            TestimonioViewModel(familiasApplication().container.perfilRepository,
-                familiasApplication().contentResolver)
+            TestimonioViewModel(
+                familiasApplication().container.perfilRepository,
+                familiasApplication().container.testimonioRepository,
+                familiasApplication().contentResolver,
+                // Las fotos de los testimonios se guardan en el almacenamiento de la propia app.
+                java.io.File(familiasApplication().filesDir, "testimonios")
+            )
         }
+        initializer { RevisionTestimoniosViewModel(familiasApplication().container.testimonioRepository) }
+        initializer { RespuestasEncuestasViewModel(familiasApplication().container.encuestaRepository) }
+        initializer { TestimoniosViewModel(familiasApplication().container.testimonioRepository) }
         initializer {
             InsigniasViewModel(familiasApplication().container.perfilRepository)
         }
@@ -75,7 +84,9 @@ object AppViewModelProvider {
         initializer {
             MisActividadesViewModel(
                 familiasApplication().container.perfilRepository,
-                familiasApplication().container.actividadRepository
+                familiasApplication().container.actividadRepository,
+                familiasApplication().container.testimonioRepository,
+                familiasApplication().container.encuestaRepository
             )
         }
 

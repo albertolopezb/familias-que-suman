@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddCircle
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -73,7 +74,9 @@ fun PerfilScreen(
     favoritosDisponibles: Boolean = accesosDisponibles,
     onSugerirClick: () -> Unit = {},
     onSugerenciasClick: () -> Unit = {},
-    onRegresar: (() -> Unit)? = null
+    onRegresar: (() -> Unit)? = null,
+    onTestimoniosClick: () -> Unit = {},
+    onRespuestasClick: () -> Unit = {}
 ) {
     Column(modifier.fillMaxSize().background(Fondo)) {
         BarraSuperior(if (usuarioActual.esAdmin) "Perfil Admin" else "Mi perfil", onRegresar = onRegresar)
@@ -92,7 +95,9 @@ fun PerfilScreen(
                 onMisActividadesClick = onMisActividadesClick,
                 onSwitchCuenta = onSwitchCuenta,
                 onSugerirClick = onSugerirClick,
-                onSugerenciasClick = onSugerenciasClick
+                onSugerenciasClick = onSugerenciasClick,
+                onTestimoniosClick = onTestimoniosClick,
+                onRespuestasClick = onRespuestasClick
             )
         }
     }
@@ -111,7 +116,9 @@ private fun ContenidoPerfil(
     onMisActividadesClick: () -> Unit,
     onSwitchCuenta: (Boolean) -> Unit,
     onSugerirClick: () -> Unit,
-    onSugerenciasClick: () -> Unit
+    onSugerenciasClick: () -> Unit,
+    onTestimoniosClick: () -> Unit,
+    onRespuestasClick: () -> Unit
 ) {
     Column(
         Modifier
@@ -183,6 +190,16 @@ private fun ContenidoPerfil(
                 "Sugerencias recibidas", Icons.Outlined.Email, onSugerenciasClick,
                 true, Modifier.fillMaxWidth()
             )
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                AccesoPerfil(
+                    "Testimonios por revisar", Icons.Outlined.CheckCircle, onTestimoniosClick,
+                    true, Modifier.weight(1f)
+                )
+                AccesoPerfil(
+                    "Respuestas de encuestas", Icons.Outlined.DateRange, onRespuestasClick,
+                    true, Modifier.weight(1f)
+                )
+            }
         } else {
             // --- VISTA DETALLADA DE LA FAMILIA ---
             EtiquetaSeccion("TU IMPACTO")

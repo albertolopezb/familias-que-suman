@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -89,6 +90,9 @@ fun NavGraphBuilder.grafoInicio(
         val sesion by cuenta.sesion.collectAsStateWithLifecycle()
         val asociaciones by cuenta.asociaciones.collectAsStateWithLifecycle()
         val favoritas by cuenta.favoritas.collectAsStateWithLifecycle()
+        val testimoniosVm: TestimoniosViewModel = viewModel(factory = AppViewModelProvider.Factory)
+        val testimonios by testimoniosVm.testimonios.collectAsStateWithLifecycle()
+        LaunchedEffect(Unit) { testimoniosVm.cargar() }
 
         InicioScreen(
             ciudad = vm.ciudadElegida,
@@ -107,7 +111,9 @@ fun NavGraphBuilder.grafoInicio(
             onActividadesClick = onNavegarAActividades,
             onDonarClick = onNavegarACampanas,
             onProyectosClick = { nav.navigate(RutasInicio.PROYECTOS) },
-            onVisiteoClick = { nav.navigate(RutasInicio.VISITEO) }
+            onVisiteoClick = { nav.navigate(RutasInicio.VISITEO) },
+            testimonios = testimonios.take(2),
+            onVerTestimonios = { nav.navigate(RutasInicio.TESTIMONIOS) { launchSingleTop = true } }
         )
     }
 
@@ -325,6 +331,9 @@ fun NavGraphBuilder.grafoInicio(
     }
 
     composable(RutasInicio.TESTIMONIOS) {
-        TestimoniosScreen()
+        val vm: TestimoniosViewModel = viewModel(factory = AppViewModelProvider.Factory)
+        val testimonios by vm.testimonios.collectAsStateWithLifecycle()
+        LaunchedEffect(Unit) { vm.cargar() }
+        TestimoniosScreen(testimonios, onRegresar = { nav.popBackStack() })
     }
 }

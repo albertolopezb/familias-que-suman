@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.R
 import mx.tec.familiasquesuman.domain.Asociacion
+import mx.tec.familiasquesuman.domain.Testimonio
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
 import mx.tec.familiasquesuman.ui.screens.inicio.componentes.*
 import mx.tec.familiasquesuman.ui.theme.*
@@ -43,7 +44,9 @@ fun InicioScreen(
     onActividadesClick: () -> Unit,
     onDonarClick: () -> Unit,
     onProyectosClick: () -> Unit,
-    onVisiteoClick: () -> Unit
+    onVisiteoClick: () -> Unit,
+    testimonios: List<Testimonio> = emptyList(),
+    onVerTestimonios: () -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
     // La barra de arriba (logo, ciudad y perfil) queda fija, igual que en las demás pantallas.
@@ -239,6 +242,29 @@ fun InicioScreen(
             }
 
             Spacer(modifier = Modifier.height(28.dp))
+
+            // Solo testimonios aprobados por Familias que Suman (RF-12).
+            if (testimonios.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Lo que cuentan las familias",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = AzulBannerFondo
+                    )
+                    TextButton(onClick = onVerTestimonios) {
+                        Text("Ver todos", color = AmbarAcento)
+                    }
+                }
+                testimonios.forEachIndexed { i, testimonio ->
+                    if (i > 0) Spacer(modifier = Modifier.height(12.dp))
+                    TarjetaTestimonioPublico(testimonio)
+                }
+                Spacer(modifier = Modifier.height(28.dp))
+            }
 
             if (nombreFamilia != null) {
                 // Sección Tu Próxima Actividad

@@ -581,7 +581,8 @@ internal object DatosDePrueba {
 
     /**
      * Historial de participación de la familia (RF-11), de lo más reciente a lo
-     * más viejo. Son las actividades pasadas del sitio.
+     * más viejo. Son las actividades pasadas del sitio. El estado de la encuesta y del
+     * testimonio se calcula con lo que la cuenta haya enviado (ver MisActividadesViewModel).
      */
     val historial = listOf(
         Participacion(
@@ -590,7 +591,8 @@ internal object DatosDePrueba {
             nombreAsociacion = "Cíclica",
             fecha = "sábado, 26 de septiembre",
             mes = "SEPTIEMBRE",
-            estado = EstadoParticipacion.SIN_PENDIENTES
+            // Falta la encuesta de después: al contestarla se abre "Compartir testimonio".
+            estado = EstadoParticipacion.ENCUESTA_PENDIENTE
         ),
         Participacion(
             id = "p2",
@@ -598,7 +600,7 @@ internal object DatosDePrueba {
             nombreAsociacion = "Familias que Suman",
             fecha = "sábado, 5 de septiembre",
             mes = "SEPTIEMBRE",
-            estado = EstadoParticipacion.TESTIMONIO_EN_REVISION
+            estado = EstadoParticipacion.SIN_PENDIENTES
         ),
         Participacion(
             id = "p3",
@@ -606,7 +608,7 @@ internal object DatosDePrueba {
             nombreAsociacion = "Regalando Estrellas",
             fecha = "sábado, 1 de agosto",
             mes = "AGOSTO",
-            estado = EstadoParticipacion.TESTIMONIO_PUBLICADO
+            estado = EstadoParticipacion.SIN_PENDIENTES
         ),
         Participacion(
             id = "p4",

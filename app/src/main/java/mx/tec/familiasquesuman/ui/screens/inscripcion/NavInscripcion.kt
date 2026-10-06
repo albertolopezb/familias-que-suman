@@ -7,6 +7,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import mx.tec.familiasquesuman.FamiliasApplication
+import mx.tec.familiasquesuman.domain.MomentoEncuesta
+import mx.tec.familiasquesuman.ui.screens.perfil.responderEncuestaPrevia
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.DialogProperties
@@ -318,12 +327,24 @@ fun NavGraphBuilder.grafoInscripcion(nav: NavController) {
         }
         val contexto = LocalContext.current
         val nombreAsociacion = asociaciones.firstOrNull { it.id == actividad.asociacionId }?.nombre ?: "La asociación"
+        // Se vuelve a leer al regresar de la encuesta para que la tarjeta cambie a "ya respondieron".
+        val encuestas = (contexto.applicationContext as FamiliasApplication).container.encuestaRepository
+        var encuestaContestada by remember { mutableStateOf(false) }
+        var refrescar by remember { mutableIntStateOf(0) }
+        LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { refrescar++ }
+        LaunchedEffect(refrescar, sesion?.correo) {
+            encuestaContestada = sesion?.correo?.let { correo ->
+                encuestas.getDeFamilia(correo).any { it.actividadId == actividadId && it.momento == MomentoEncuesta.ANTES }
+            } ?: false
+        }
         ConfirmacionScreen(
             actividad = actividad,
             asociacion = nombreAsociacion,
             asistentes = listOf(titular) + (inscripciones[actividadId] ?: emptyList()),
             onAgregarAlCalendario = { agregarActividadAlCalendario(contexto, actividad, nombreAsociacion) },
-            onVerMisActividades = { nav.irAMisActividades() }
+            onVerMisActividades = { nav.irAMisActividades() },
+            encuestaContestada = encuestaContestada,
+            onResponderEncuesta = { nav.responderEncuestaPrevia(actividad.id, actividad.titulo) }
         )
     }
 

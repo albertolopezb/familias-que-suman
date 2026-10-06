@@ -56,7 +56,9 @@ fun ConfirmacionScreen(
     asociacion: String,
     asistentes: List<Acompanante>,
     onAgregarAlCalendario: () -> Unit,
-    onVerMisActividades: () -> Unit
+    onVerMisActividades: () -> Unit,
+    encuestaContestada: Boolean = false,
+    onResponderEncuesta: () -> Unit = {}
 ) {
     Column(Modifier.fillMaxSize().background(Fondo)) {
         Column(
@@ -92,6 +94,21 @@ fun ConfirmacionScreen(
                         style = MaterialTheme.typography.bodyLarge.copy(fontSize = 13.sp),
                         color = Tinta
                     )
+                }
+            }
+            // RF-13: unas preguntas breves antes de la actividad.
+            TarjetaBlanca {
+                Text("ANTES DE IR", style = MaterialTheme.typography.labelSmall, color = TintaSuave)
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    if (encuestaContestada) "Ya respondieron las preguntas de antes. ¡Gracias!"
+                    else "Respondan unas preguntas breves para ayudar a preparar la actividad.",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 13.sp),
+                    color = Tinta
+                )
+                if (!encuestaContestada) {
+                    Spacer(Modifier.height(10.dp))
+                    BotonSecundario("Responder preguntas", onResponderEncuesta)
                 }
             }
             Text(
