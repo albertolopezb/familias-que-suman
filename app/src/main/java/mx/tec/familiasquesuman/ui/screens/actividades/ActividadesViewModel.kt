@@ -133,6 +133,30 @@ class ActividadesViewModel(
         }
     }
 
+    fun duplicarActividad(id: String) {
+        viewModelScope.launch {
+            val estadoActual = _estado.value
+            if (estadoActual is UiState.Exito) {
+                val elementoOriginal = estadoActual.datos.find { it.actividad.id == id }
+
+                elementoOriginal?.let { item ->
+                    val actividadOriginal = item.actividad
+                    val actividadDuplicada = actividadOriginal.copy(
+                        id = System.currentTimeMillis().toString(), // Genera un ID único basado en el timestamp
+                        titulo = "${actividadOriginal.titulo} (Copia)",
+                        lugaresDisponibles = actividadOriginal.cupoTotal // Reinicia los lugares disponibles al cupo total
+                    )
+
+                    val nuevoItem = item.copy(actividad = actividadDuplicada)
+                    val listaActualizada = estadoActual.datos + nuevoItem
+
+                    _estado.value = UiState.Exito(listaActualizada)
+                    _guardadas.value = listaActualizada
+                }
+            }
+        }
+    }
+
     fun editarActividad(
         id: String,
         nuevoTitulo: String,

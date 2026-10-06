@@ -73,10 +73,13 @@ fun NavGraphBuilder.grafoActividades(
         val contexto = LocalContext.current
 
         // Estados locales para controlar los diálogos de Admin
-        var mostrandoCrear by remember { mutableStateOf<Boolean>(false) }
+        // Dentro de composable(RutasActividades.LISTA) en NavActividades.kt
+
+        var mostrandoCrear by remember { mutableStateOf(false) }
         var actividadAEditar by remember { mutableStateOf<ActividadConAsociacion?>(null) }
-        // NUEVO: Estado para la actividad que se quiere confirmar borrar
         var actividadABorrar by remember { mutableStateOf<ActividadConAsociacion?>(null) }
+// NUEVO: Estado para confirmar duplicación
+        var actividadADuplicar by remember { mutableStateOf<ActividadConAsociacion?>(null) }
 
         ActividadesScreen(
             estado = estado,
@@ -92,18 +95,20 @@ fun NavGraphBuilder.grafoActividades(
             onVerAsociaciones = onVerAsociaciones,
             onForzarEstado = vm::siguienteModoDePrueba,
             onSugerir = { nav.sugerir(TipoSugerencia.ACTIVIDAD) },
-            onBorrarActividad = { id: String ->
-                // En lugar de borrar directo, guardamos el elemento a borrar para abrir la alerta
+            onCrearActividad = { mostrandoCrear = true },
+            onEditarActividad = { id ->
+                if (estado is UiState.Exito) {
+                    actividadAEditar = (estado as UiState.Exito).datos.find { it.actividad.id == id }
+                }
+            },
+            onBorrarActividad = { id ->
                 if (estado is UiState.Exito) {
                     actividadABorrar = (estado as UiState.Exito).datos.find { it.actividad.id == id }
                 }
             },
-            onCrearActividad = {
-                mostrandoCrear = true
-            },
-            onEditarActividad = { id: String ->
+            onDuplicarActividad = { id ->
                 if (estado is UiState.Exito) {
-                    actividadAEditar = (estado as UiState.Exito).datos.find { it.actividad.id == id }
+                    actividadADuplicar = (estado as UiState.Exito).datos.find { it.actividad.id == id }
                 }
             }
         )
@@ -130,7 +135,6 @@ fun NavGraphBuilder.grafoActividades(
         }
 
         // Diálogo para Editar
-        // Diálogo para Editar
         actividadAEditar?.let { item ->
             DialogoFormularioActividad(
                 tituloDialogo = "Editar Actividad",
@@ -150,6 +154,32 @@ fun NavGraphBuilder.grafoActividades(
                     actividadAEditar = null
                 },
                 onDescartar = { actividadAEditar = null }
+            )
+        }
+
+// Diálogo de Confirmación para Duplicar
+        actividadADuplicar?.let { item ->
+            AlertDialog(
+                onDismissRequest = { actividadADuplicar = null },
+                title = { Text("Duplicar Actividad") },
+                text = {
+                    Text("¿Deseas crear una copia de \"${item.actividad.titulo}\"?")
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            vm.duplicarActividad(item.actividad.id)
+                            actividadADuplicar = null
+                        }
+                    ) {
+                        Text("Duplicar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { actividadADuplicar = null }) {
+                        Text("Cancelar")
+                    }
+                }
             )
         }
 
