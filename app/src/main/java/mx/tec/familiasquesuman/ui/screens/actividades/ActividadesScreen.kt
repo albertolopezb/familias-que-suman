@@ -8,8 +8,8 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -47,6 +47,7 @@ fun ActividadesScreen(
     onForzarEstado: () -> Unit = {},
     // callbacks de administración:
     onCrearActividad: () -> Unit = {},
+    onDuplicarActividad: (String) -> Unit = {},
     onEditarActividad: (String) -> Unit = {},
     onBorrarActividad: (String) -> Unit = {},
     onSugerir: () -> Unit = {}
@@ -103,8 +104,9 @@ fun ActividadesScreen(
                             onActividadClick = onActividadClick,
                             onUnirme = onUnirme,
                             onCompartir = onCompartir,
-                            onEditar = onEditarActividad,
-                            onBorrar = onBorrarActividad
+                            onDuplicarActividad = onDuplicarActividad,
+                            onEditarActividad = onEditarActividad,
+                            onBorrarActividad = onBorrarActividad
                         )
 
                         if (pasadas.isNotEmpty()) {
@@ -121,8 +123,9 @@ fun ActividadesScreen(
                                 onActividadClick = onActividadClick,
                                 onUnirme = onUnirme,
                                 onCompartir = onCompartir,
-                                onEditar = onEditarActividad,
-                                onBorrar = onBorrarActividad,
+                                onDuplicarActividad = onDuplicarActividad,
+                                onEditarActividad = onEditarActividad,
+                                onBorrarActividad = onBorrarActividad,
                                 separacion = 12,
                                 opacidad = 0.6f
                             )
@@ -151,7 +154,8 @@ fun DialogoFormularioActividad(
         lugaresDisponibles: Int,
         edadMinima: Int?
     ) -> Unit,
-    onDescartar: () -> Unit
+    onDescartar: () -> Unit,
+    onDuplicar: (() -> Unit)? = null
 ) {
     var titulo by remember { mutableStateOf(actividadInicial?.titulo.orEmpty()) }
     var descripcion by remember { mutableStateOf(actividadInicial?.descripcion.orEmpty()) }
@@ -250,8 +254,18 @@ fun DialogoFormularioActividad(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDescartar) {
-                Text("Cancelar")
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (onDuplicar != null) {
+                    TextButton(onClick = onDuplicar) {
+                        Text("Duplicar")
+                    }
+                }
+                TextButton(onClick = onDescartar) {
+                    Text("Cancelar")
+                }
             }
         }
     )
@@ -263,8 +277,9 @@ private fun LazyListScope.tarjetasAdmin(
     onActividadClick: (String) -> Unit,
     onUnirme: (String) -> Unit,
     onCompartir: (ActividadConAsociacion) -> Unit,
-    onEditar: (String) -> Unit,
-    onBorrar: (String) -> Unit,
+    onDuplicarActividad: (String) -> Unit,
+    onEditarActividad: (String) -> Unit,
+    onBorrarActividad: (String) -> Unit,
     separacion: Int = 16,
     opacidad: Float = 1f
 ) {
@@ -279,19 +294,38 @@ private fun LazyListScope.tarjetasAdmin(
             )
 
             // Si la cuenta es Admin, agregamos la barra de acciones debajo de cada tarjeta
+            // En la tarjeta de la actividad dentro de ActividadesScreen.kt
             if (esAdmin) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = { onEditar(item.actividad.id) }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Web.Primario)
+                    // Ícono de Duplicar (al lado del lápiz)
+                    IconButton(onClick = { onDuplicarActividad(item.actividad.id) }) {
+                        Icon(
+                            imageVector = IconosWeb.Copiar,
+                            contentDescription = "Duplicar Actividad",
+                            tint = Web.Primario // O el color primario de tu paleta
+                        )
                     }
-                    IconButton(onClick = { onBorrar(item.actividad.id) }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = Web.RojoTexto)
+
+                    // Ícono de Editar (Lápiz)
+                    IconButton(onClick = { onEditarActividad(item.actividad.id) }) {
+                        Icon(
+                            imageVector = Icons.Outlined.Edit,
+                            contentDescription = "Editar Actividad",
+                            tint = Web.Primario
+                        )
+                    }
+
+                    // Ícono de Eliminar (Bote de basura)
+                    IconButton(onClick = { onBorrarActividad(item.actividad.id) }) {
+                        Icon(
+                            imageVector = Icons.Outlined.Delete,
+                            contentDescription = "Eliminar Actividad",
+                            tint = MaterialTheme.colorScheme.error
+                        )
                     }
                 }
             }

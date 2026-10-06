@@ -121,6 +121,17 @@ object IconosWeb {
         )
     }
 
+    /** lucide: copy */
+    val Copiar: ImageVector by lazy {
+        lucide(
+            "Copiar",
+            "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z",
+            "M14 2v6h6",
+            "M12 11v6",
+            "M9 14h6"
+        )
+    }
+
     /** lucide: info */
     val Informacion: ImageVector by lazy {
         lucide(
@@ -371,15 +382,6 @@ object IconosWeb {
             "Lapiz",
             "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
             "m15 5 4 4"
-        )
-    }
-
-    /** lucide: copy */
-    val Copiar: ImageVector by lazy {
-        lucide(
-            "Copiar",
-            "M10 8h10a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2z",
-            "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
         )
     }
 
