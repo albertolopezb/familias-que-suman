@@ -12,24 +12,43 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.domain.Testimonio
+import mx.tec.familiasquesuman.domain.puedeEliminarlo
 import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import mx.tec.familiasquesuman.ui.components.FotoUsuario
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TextoWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Web
 import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
 
-/** Los testimonios publicados: solo los que Familias que Suman aprobó (RF-12). */
+/**
+ * Los testimonios publicados (RF-12). Cada cuenta ve "Eliminar" en los suyos y el admin en
+ * todos, para quitar lo que haga falta.
+ *
+ * @param correoDeLaSesion la cuenta con sesión abierta, o null si no hay.
+ */
 @Composable
-fun TestimoniosScreen(testimonios: List<Testimonio>, onRegresar: () -> Unit) {
+fun TestimoniosScreen(
+    testimonios: List<Testimonio>,
+    correoDeLaSesion: String?,
+    esAdmin: Boolean,
+    onEliminar: (Testimonio) -> Unit,
+    onRegresar: () -> Unit
+) {
+    var porEliminar by remember { mutableStateOf<Testimonio?>(null) }
     Column(Modifier.fillMaxSize().background(Web.Fondo)) {
         BarraSuperior("Testimonios", onRegresar = onRegresar)
         LazyColumn(
@@ -45,13 +64,37 @@ fun TestimoniosScreen(testimonios: List<Testimonio>, onRegresar: () -> Unit) {
                     )
                 }
             }
-            items(testimonios, key = { it.id }) { TarjetaTestimonioPublico(it) }
+            items(testimonios, key = { it.id }) { t ->
+                TarjetaTestimonioPublico(
+                    t,
+                    onEliminar = if (t.puedeEliminarlo(correoDeLaSesion, esAdmin)) ({ porEliminar = t }) else null
+                )
+            }
         }
+    }
+
+    porEliminar?.let { t ->
+        val esPropio = !esAdmin || t.correo.equals(correoDeLaSesion, ignoreCase = true)
+        AlertDialog(
+            onDismissRequest = { porEliminar = null },
+            title = { Text(if (esPropio) "¿Eliminar tu testimonio?" else "¿Eliminar este testimonio?") },
+            text = {
+                Text(
+                    if (esPropio) "Dejará de aparecer en la sección de testimonios. Después podrás compartir otro."
+                    else "Se quitará de la sección de testimonios para todos. ${t.familia} podrá compartir otro."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { onEliminar(t); porEliminar = null }) { Text("Sí, eliminar", color = Web.RojoTexto) }
+            },
+            dismissButton = { TextButton(onClick = { porEliminar = null }) { Text("Cancelar") } }
+        )
     }
 }
 
+/** Un testimonio publicado; con [onEliminar] muestra el enlace para quitarlo. */
 @Composable
-fun TarjetaTestimonioPublico(t: Testimonio, modifier: Modifier = Modifier) {
+fun TarjetaTestimonioPublico(t: Testimonio, modifier: Modifier = Modifier, onEliminar: (() -> Unit)? = null) {
     Surface(
         shape = RoundedCornerShape(16.dp), color = Web.Tarjeta,
         border = BorderStroke(1.dp, Web.Borde), modifier = modifier.fillMaxWidth()
@@ -62,6 +105,11 @@ fun TarjetaTestimonioPublico(t: Testimonio, modifier: Modifier = Modifier) {
                 Text("“${t.experiencia}”", style = TextoWeb.Cuerpo)
                 Text("${t.familia} · ${t.fecha}", style = TextoWeb.Chip, color = Web.Primario)
                 Text(t.actividadTitulo, style = TextoWeb.Chico)
+                if (onEliminar != null) {
+                    TextButton(onClick = onEliminar, modifier = Modifier.align(Alignment.End)) {
+                        Text("Eliminar", style = TextoWeb.Chip, color = Web.RojoTexto)
+                    }
+                }
             }
         }
     }
@@ -77,7 +125,8 @@ private fun TestimoniosPreview() {
                     "t1", "p3", "Regalando Estrellas", "Familia Rodríguez", "ana@correo.com",
                     "Fue la mejor tarde en familia que hemos tenido.", null, "3 ago 2026"
                 )
-            ), {}
+            ),
+            correoDeLaSesion = "ana@correo.com", esAdmin = false, onEliminar = {}, onRegresar = {}
         )
     }
 }

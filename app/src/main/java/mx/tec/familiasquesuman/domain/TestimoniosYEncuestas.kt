@@ -2,20 +2,10 @@ package mx.tec.familiasquesuman.domain
 
 // Kotlin puro, como Modelos.kt. Aquí viven RF-12 (testimonio con fotografía) y RF-13 (encuesta antes y después).
 
-/**
- * Dónde va un testimonio en la revisión de Familias que Suman (RF-12).
- * Solo [APROBADO] se publica: ninguno de los otros estados sale de la revisión.
- */
-enum class EstadoTestimonio(val etiqueta: String) {
-    EN_REVISION("En revisión"),
-    AJUSTAR("Pidió ajustes"),
-    APROBADO("Aprobado"),
-    DESCARTADO("Descartado")
-}
-
+/** Un testimonio publicado (RF-12): la foto y la experiencia de una familia sobre una actividad. */
 data class Testimonio(
     val id: String,
-    /** La participación (RF-11) de la que habla; una familia manda un testimonio por participación. */
+    /** La participación (RF-11) de la que habla; una familia publica un testimonio por participación. */
     val participacionId: String,
     val actividadTitulo: String,
     val familia: String,
@@ -23,13 +13,15 @@ data class Testimonio(
     val experiencia: String,
     /** Ruta del archivo de la foto en el almacenamiento de la app; null si no trae. */
     val foto: String?,
-    val fecha: String,
-    val estado: EstadoTestimonio = EstadoTestimonio.EN_REVISION,
-    /** Lo que pidió ajustar quien revisó; solo tiene sentido con [EstadoTestimonio.AJUSTAR]. */
-    val nota: String = ""
-) {
-    val publicado: Boolean get() = estado == EstadoTestimonio.APROBADO
-}
+    val fecha: String
+)
+
+/**
+ * Quién puede eliminar un testimonio: el admin (moderación) y la cuenta que lo escribió.
+ * Ninguna otra cuenta, ni sin sesión.
+ */
+fun Testimonio.puedeEliminarlo(correoDeQuienPide: String?, esAdmin: Boolean): Boolean =
+    esAdmin || (correoDeQuienPide != null && correoDeQuienPide.equals(correo, ignoreCase = true))
 
 enum class MomentoEncuesta(val etiqueta: String) {
     ANTES("Antes de la actividad"),

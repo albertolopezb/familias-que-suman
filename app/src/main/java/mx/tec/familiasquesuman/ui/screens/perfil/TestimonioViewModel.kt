@@ -14,7 +14,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import mx.tec.familiasquesuman.data.PerfilRepository
 import mx.tec.familiasquesuman.data.TestimonioRepository
-import mx.tec.familiasquesuman.domain.EstadoTestimonio
 import mx.tec.familiasquesuman.domain.Participacion
 import mx.tec.familiasquesuman.domain.Testimonio
 import mx.tec.familiasquesuman.ui.state.UiState
@@ -30,23 +29,19 @@ private const val MAX_BYTES_FOTO = 5_000_000L
 
 data class FormularioTestimonio(
     val experiencia: String = "",
-    /** La foto recién elegida en el selector. */
     val foto: Uri? = null,
-    /** La foto que ya tenía el testimonio, cuando se edita uno que pidió ajustes. */
-    val fotoGuardada: String? = null,
     val revisandoFoto: Boolean = false,
     val enviando: Boolean = false,
     val enviado: Boolean = false,
     val mensaje: String? = null
 ) {
-    val tieneFoto: Boolean get() = foto != null || fotoGuardada != null
     val experienciaValida: Boolean get() = experiencia.trim().length in MIN_LETRAS_TESTIMONIO..MAX_LETRAS_TESTIMONIO
-    val puedeEnviar: Boolean get() = experienciaValida && tieneFoto && !revisandoFoto && !enviando
+    val puedeEnviar: Boolean get() = experienciaValida && foto != null && !revisandoFoto && !enviando
 }
 
 /**
  * El formulario "Compartir testimonio" (RF-12): una foto y una experiencia breve de una participación.
- * Lo que se envía queda en revisión; Familias que Suman decide si se publica.
+ * Se publica en cuanto se envía; quien lo escribió puede eliminarlo después.
  */
 class TestimonioViewModel(
     private val perfilRepository: PerfilRepository,
@@ -59,7 +54,7 @@ class TestimonioViewModel(
     private val _formulario = MutableStateFlow(FormularioTestimonio())
     val formulario = _formulario.asStateFlow()
 
-    /** El testimonio que esta cuenta ya mandó de esta participación, si lo hay. */
+    /** El testimonio que esta cuenta ya publicó de esta participación, si lo hay. */
     private val _existente = MutableStateFlow<Testimonio?>(null)
     val existente = _existente.asStateFlow()
 
@@ -72,13 +67,8 @@ class TestimonioViewModel(
             _participacion.value = UiState.Cargando
             try {
                 val encontrada = perfilRepository.getHistorial().firstOrNull { it.id == participacionId }
-                val previo = correo?.let { c ->
+                _existente.value = correo?.let { c ->
                     testimonioRepository.getDeFamilia(c).firstOrNull { it.participacionId == participacionId }
-                }
-                _existente.value = previo
-                // Si pidieron ajustes, el formulario arranca con lo que ya se había escrito.
-                if (previo?.estado == EstadoTestimonio.AJUSTAR) {
-                    _formulario.update { it.copy(experiencia = previo.experiencia, fotoGuardada = previo.foto) }
                 }
                 _participacion.value = if (encontrada != null) UiState.Exito(encontrada)
                     else UiState.Error("Esta actividad no aparece en tu historial.")
@@ -128,16 +118,17 @@ class TestimonioViewModel(
     }
 
     /**
-     * Manda el testimonio a revisión. La foto se copia al almacenamiento de la app (el permiso del
-     * selector es temporal) y el testimonio queda en revisión: no se publica hasta que se apruebe.
+     * Publica el testimonio. La foto se copia al almacenamiento de la app porque el permiso
+     * del selector es temporal.
      */
-    fun enviarARevision(participacionId: String, correo: String, familia: String) {
+    fun publicar(participacionId: String, correo: String, familia: String) {
         val actual = _formulario.value
         val actividad = (_participacion.value as? UiState.Exito)?.datos ?: return
         if (actual.enviando) return
-        if (!actual.puedeEnviar) {
+        val foto = actual.foto
+        if (!actual.puedeEnviar || foto == null) {
             _formulario.update { it.copy(mensaje = when {
-                !actual.tieneFoto -> "Agrega una foto de la actividad."
+                actual.foto == null -> "Agrega una foto de la actividad."
                 actual.experiencia.trim().length < MIN_LETRAS_TESTIMONIO ->
                     "Cuéntanos un poco más (mínimo $MIN_LETRAS_TESTIMONIO letras)."
                 else -> null
@@ -147,10 +138,8 @@ class TestimonioViewModel(
         viewModelScope.launch {
             _formulario.update { it.copy(enviando = true, mensaje = null) }
             try {
-                val foto = withContext(Dispatchers.IO) {
-                    actual.foto?.let { copiarFoto(it) } ?: actual.fotoGuardada
-                }
-                testimonioRepository.enviar(
+                val ruta = withContext(Dispatchers.IO) { copiarFoto(foto) }
+                testimonioRepository.publicar(
                     Testimonio(
                         id = "t${System.currentTimeMillis()}",
                         participacionId = participacionId,
@@ -158,7 +147,7 @@ class TestimonioViewModel(
                         familia = familia,
                         correo = correo,
                         experiencia = actual.experiencia.trim(),
-                        foto = foto,
+                        foto = ruta,
                         fecha = LocalDate.now().format(FormatoFecha)
                     )
                 )
@@ -166,7 +155,20 @@ class TestimonioViewModel(
             } catch (cancelacion: CancellationException) {
                 throw cancelacion
             } catch (_: Exception) {
-                _formulario.update { it.copy(enviando = false, mensaje = "No se pudo enviar. Tu testimonio se conserva; intenta de nuevo.") }
+                _formulario.update { it.copy(enviando = false, mensaje = "No se pudo publicar. Tu testimonio se conserva; intenta de nuevo.") }
+            }
+        }
+    }
+
+    /** Elimina el testimonio de esta cuenta (el repositorio solo deja a su autora o autor). */
+    fun eliminar(correo: String, alTerminar: () -> Unit) {
+        val testimonio = _existente.value ?: return
+        viewModelScope.launch {
+            if (testimonioRepository.eliminar(testimonio.id, correo, esAdmin = false)) {
+                _existente.value = null
+                alTerminar()
+            } else {
+                _formulario.update { it.copy(mensaje = "No se pudo eliminar. Intenta de nuevo.") }
             }
         }
     }

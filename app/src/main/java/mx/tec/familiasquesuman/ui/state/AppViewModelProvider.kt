@@ -18,7 +18,6 @@ import mx.tec.familiasquesuman.ui.screens.perfil.PerfilViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.InsigniasViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.TestimonioViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.RespuestasEncuestasViewModel
-import mx.tec.familiasquesuman.ui.screens.perfil.RevisionTestimoniosViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.TestimoniosViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.AvisoPrivacidadViewModel
 import mx.tec.familiasquesuman.ui.screens.perfil.AjustesViewModel
@@ -49,7 +48,6 @@ object AppViewModelProvider {
                 java.io.File(familiasApplication().filesDir, "testimonios")
             )
         }
-        initializer { RevisionTestimoniosViewModel(familiasApplication().container.testimonioRepository) }
         initializer { RespuestasEncuestasViewModel(familiasApplication().container.encuestaRepository) }
         initializer { TestimoniosViewModel(familiasApplication().container.testimonioRepository) }
         initializer {

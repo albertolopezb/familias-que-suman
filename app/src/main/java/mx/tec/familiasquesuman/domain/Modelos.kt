@@ -154,10 +154,7 @@ data class ActividadConAsociacion(
 enum class EstadoParticipacion {
     SIN_PENDIENTES,
     ENCUESTA_PENDIENTE,
-    TESTIMONIO_EN_REVISION,
-    TESTIMONIO_POR_AJUSTAR,
-    TESTIMONIO_PUBLICADO,
-    TESTIMONIO_DESCARTADO
+    TESTIMONIO_PUBLICADO
 }
 
 /**

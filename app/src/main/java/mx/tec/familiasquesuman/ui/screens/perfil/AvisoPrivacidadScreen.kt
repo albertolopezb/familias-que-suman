@@ -85,7 +85,7 @@ fun AvisoPrivacidadScreen(
                 "Solo Familias que Suman y la asociación de la actividad en la que te inscribes. No se vende ni se comparte con nadie más.",
                 IconoVisibilidadPrivacidad)
             TarjetaPrivacidad("Las fotos",
-                "Las fotos de los testimonios se guardan en nuestra propia infraestructura y solo se publican si tú las envías y nosotros las aprobamos.",
+                "Las fotos de los testimonios se guardan en nuestra propia infraestructura y solo se publican si tú las envías. Puedes eliminar tu testimonio cuando quieras.",
                 IconoFotosPrivacidad)
             TarjetaPrivacidad("Tus derechos",
                 "Puedes pedir que eliminemos tus datos cuando quieras. Al solicitarlo se eliminan tu cuenta, tus acompañantes y tus inscripciones.",

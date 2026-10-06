@@ -192,7 +192,7 @@ private fun ContenidoPerfil(
             )
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 AccesoPerfil(
-                    "Testimonios por revisar", Icons.Outlined.CheckCircle, onTestimoniosClick,
+                    "Testimonios", Icons.Outlined.CheckCircle, onTestimoniosClick,
                     true, Modifier.weight(1f)
                 )
                 AccesoPerfil(

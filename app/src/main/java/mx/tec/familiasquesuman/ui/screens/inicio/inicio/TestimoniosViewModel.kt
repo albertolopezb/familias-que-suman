@@ -9,13 +9,20 @@ import kotlinx.coroutines.launch
 import mx.tec.familiasquesuman.data.TestimonioRepository
 import mx.tec.familiasquesuman.domain.Testimonio
 
-/** Los testimonios que ve el público: solo los aprobados. */
+/** Los testimonios publicados, y su moderación: el admin elimina cualquiera y cada cuenta los suyos. */
 class TestimoniosViewModel(private val repositorio: TestimonioRepository) : ViewModel() {
 
     private val _testimonios = MutableStateFlow<List<Testimonio>>(emptyList())
     val testimonios: StateFlow<List<Testimonio>> = _testimonios.asStateFlow()
 
     fun cargar() {
-        viewModelScope.launch { _testimonios.value = repositorio.getPublicados() }
+        viewModelScope.launch { _testimonios.value = repositorio.getTodos() }
+    }
+
+    fun eliminar(id: String, correo: String?, esAdmin: Boolean) {
+        viewModelScope.launch {
+            repositorio.eliminar(id, correo, esAdmin)
+            _testimonios.value = repositorio.getTodos()
+        }
     }
 }

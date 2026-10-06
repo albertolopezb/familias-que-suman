@@ -281,34 +281,7 @@ private fun TarjetaParticipacion(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Etiqueta("Testimonio publicado", Web.VerdeFondo, Web.VerdeTexto)
-                    EnlaceAccion("Ver testimonio", Web.Primario, onCompartirTestimonio)
-                }
-
-                EstadoParticipacion.TESTIMONIO_EN_REVISION -> Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Etiqueta("Testimonio en revisión", Web.MoradoFondo, Web.MoradoTexto)
-                    EnlaceAccion("Ver testimonio", Web.Primario, onCompartirTestimonio)
-                }
-
-                EstadoParticipacion.TESTIMONIO_POR_AJUSTAR -> Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Etiqueta("Pidieron un ajuste", Web.AmbarFondo, Web.AmbarTexto)
-                    EnlaceAccion("Ajustar testimonio", Web.Primario, onCompartirTestimonio)
-                }
-
-                EstadoParticipacion.TESTIMONIO_DESCARTADO -> Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Etiqueta("Testimonio no publicado", Web.RojoFondo, Web.RojoTexto)
-                    EnlaceAccion("Ver testimonio", Web.Primario, onCompartirTestimonio)
+                    EnlaceAccion("Ver o eliminar", Web.Primario, onCompartirTestimonio)
                 }
 
                 EstadoParticipacion.ENCUESTA_PENDIENTE -> Row(

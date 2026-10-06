@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.perfil
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -10,6 +11,10 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,7 +29,6 @@ import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import mx.tec.familiasquesuman.domain.EstadoTestimonio
 import mx.tec.familiasquesuman.domain.Participacion
 import mx.tec.familiasquesuman.domain.Testimonio
 import mx.tec.familiasquesuman.ui.components.BarraSuperior
@@ -43,11 +47,11 @@ private val IconoFoto = ImageVector.Builder("Foto", 24.dp, 24.dp, 24f, 24f).appl
 }.build()
 
 /**
- * RF-12: compartir una foto y un testimonio breve de una actividad. Lo que se envía queda en
- * revisión y no se publica hasta que Familias que Suman lo apruebe.
+ * RF-12: compartir una foto y un testimonio breve de una actividad. Se publica en cuanto se
+ * envía y quien lo escribió puede eliminarlo cuando quiera.
  *
- * Según el caso muestra el formulario (primera vez, o cuando pidieron ajustes), el aviso de
- * "enviado" o el estado de un testimonio que ya se mandó.
+ * Según el caso muestra el formulario (primera vez), el aviso de "publicado" o el testimonio
+ * que la cuenta ya publicó, con la opción de eliminarlo.
  */
 @Composable
 fun TestimonioScreen(
@@ -59,6 +63,7 @@ fun TestimonioScreen(
     onExperienciaChange: (String) -> Unit,
     onAgregarFoto: () -> Unit,
     onEnviar: () -> Unit,
+    onEliminar: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier.fillMaxSize().imePadding().background(Fondo)) {
@@ -68,11 +73,9 @@ fun TestimonioScreen(
             is UiState.Error -> ErrorView(actividad.mensaje, onReintentar)
             is UiState.Exito -> when {
                 formulario.enviado -> TestimonioEnviado(onListo = onVolver)
-                existente != null && existente.estado != EstadoTestimonio.AJUSTAR ->
-                    TestimonioYaEnviado(existente, onListo = onVolver)
+                existente != null -> TestimonioPublicado(existente, formulario.mensaje, onEliminar, onListo = onVolver)
                 else -> FormularioDeTestimonio(
-                    actividad.datos, formulario, existente?.nota.orEmpty(),
-                    onExperienciaChange, onAgregarFoto, onEnviar
+                    actividad.datos, formulario, onExperienciaChange, onAgregarFoto, onEnviar
                 )
             }
         }
@@ -83,7 +86,6 @@ fun TestimonioScreen(
 private fun ColumnScope.FormularioDeTestimonio(
     actividad: Participacion,
     formulario: FormularioTestimonio,
-    notaDeRevision: String,
     onExperienciaChange: (String) -> Unit,
     onAgregarFoto: () -> Unit,
     onEnviar: () -> Unit
@@ -92,15 +94,7 @@ private fun ColumnScope.FormularioDeTestimonio(
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("${actividad.tituloActividad} · ${actividad.fecha}",
             style = MaterialTheme.typography.bodyLarge, color = TintaSuave)
-        if (notaDeRevision.isNotBlank()) {
-            Surface(shape = RoundedCornerShape(16.dp), color = AcentoSuave) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("Familias que Suman te pide un ajuste", style = MaterialTheme.typography.titleMedium, color = AcentoTexto)
-                    Text(notaDeRevision, style = MaterialTheme.typography.bodyLarge, color = AcentoTexto)
-                }
-            }
-        }
-        val fotoParaMostrar = formulario.foto?.toString() ?: formulario.fotoGuardada
+        val fotoParaMostrar = formulario.foto?.toString()
         Surface(onClick = onAgregarFoto, enabled = !formulario.revisandoFoto,
             shape = RoundedCornerShape(16.dp), color = Superficie,
             modifier = Modifier.fillMaxWidth().drawWithContent {
@@ -145,7 +139,7 @@ private fun ColumnScope.FormularioDeTestimonio(
         Surface(shape = RoundedCornerShape(16.dp), color = AcentoSuave) {
             Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Icon(Icons.Outlined.Info, contentDescription = null, tint = AcentoTexto, modifier = Modifier.size(18.dp))
-                Text("Familias que Suman revisa cada testimonio antes de publicarlo. Nada aparece sin su aprobación.",
+                Text("Tu testimonio se publica en cuanto lo envíes, con el nombre de tu familia. Puedes eliminarlo cuando quieras.",
                     style = MaterialTheme.typography.bodyMedium, color = AcentoTexto)
             }
         }
@@ -163,7 +157,7 @@ private fun ColumnScope.FormularioDeTestimonio(
                 Spacer(Modifier.width(10.dp))
                 Text("Enviando…", style = MaterialTheme.typography.titleLarge)
             } else {
-                Text("Enviar a revisión", style = MaterialTheme.typography.titleLarge)
+                Text("Publicar testimonio", style = MaterialTheme.typography.titleLarge)
             }
         }
     }
@@ -176,9 +170,8 @@ private fun ColumnScope.TestimonioEnviado(onListo: () -> Unit) {
         Box(Modifier.size(64.dp).clip(RoundedCornerShape(50)).background(ConfirmadoFondo), contentAlignment = Alignment.Center) {
             Icon(Icons.Filled.Check, contentDescription = null, tint = Confirmado, modifier = Modifier.size(32.dp))
         }
-        Text("Recibimos tu testimonio", style = MaterialTheme.typography.headlineMedium, color = Tinta, textAlign = TextAlign.Center)
-        Text("Está en revisión. Si lo aprobamos, aparecerá en la sección de testimonios; " +
-            "si necesita un ajuste te lo diremos en Mis actividades.",
+        Text("Tu testimonio ya está publicado", style = MaterialTheme.typography.headlineMedium, color = Tinta, textAlign = TextAlign.Center)
+        Text("Ya aparece en la sección de testimonios. Puedes eliminarlo cuando quieras desde Mis actividades.",
             style = MaterialTheme.typography.bodyLarge, color = TintaSuave, textAlign = TextAlign.Center)
     }
     Surface(color = Superficie, shadowElevation = 4.dp) {
@@ -190,28 +183,48 @@ private fun ColumnScope.TestimonioEnviado(onListo: () -> Unit) {
     }
 }
 
-/** Lo que se ve de un testimonio que ya se mandó: no se vuelve a enviar, solo se consulta su estado. */
+/** El testimonio que la cuenta ya publicó: se puede consultar y eliminar (después podrá compartir otro). */
 @Composable
-private fun ColumnScope.TestimonioYaEnviado(testimonio: Testimonio, onListo: () -> Unit) {
+private fun ColumnScope.TestimonioPublicado(
+    testimonio: Testimonio,
+    mensaje: String?,
+    onEliminar: () -> Unit,
+    onListo: () -> Unit
+) {
+    var confirmando by remember { mutableStateOf(false) }
     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("${testimonio.actividadTitulo} · ${testimonio.fecha}", style = MaterialTheme.typography.bodyLarge, color = TintaSuave)
-        val (fondo, texto, aviso) = when (testimonio.estado) {
-            EstadoTestimonio.APROBADO -> Triple(ConfirmadoFondo, ConfirmadoTexto, "Aprobado: ya aparece en la sección de testimonios.")
-            EstadoTestimonio.DESCARTADO -> Triple(ErrorFondo, ErrorTexto, "No se publicó. Si tienes dudas, escribe a Familias que Suman.")
-            else -> Triple(AcentoSuave, AcentoTexto, "En revisión: nada se publica sin la aprobación de Familias que Suman.")
-        }
-        Surface(shape = RoundedCornerShape(16.dp), color = fondo) {
-            Text(aviso, style = MaterialTheme.typography.bodyLarge, color = texto, modifier = Modifier.padding(16.dp))
+        Surface(shape = RoundedCornerShape(16.dp), color = ConfirmadoFondo) {
+            Text("Publicado: ya aparece en la sección de testimonios.",
+                style = MaterialTheme.typography.bodyLarge, color = ConfirmadoTexto, modifier = Modifier.padding(16.dp))
         }
         testimonio.foto?.let { FotoUsuario(it, "Foto del testimonio", Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(16.dp))) }
         Text(testimonio.experiencia, style = MaterialTheme.typography.bodyLarge, color = Tinta)
+        mensaje?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = ErrorTexto) }
     }
     Surface(color = Superficie, shadowElevation = 4.dp) {
-        OutlinedButton(onClick = onListo, modifier = Modifier.fillMaxWidth().padding(14.dp).heightIn(min = 56.dp),
-            shape = RoundedCornerShape(14.dp)) {
-            Text("Volver", style = MaterialTheme.typography.titleLarge, color = MarcaAzul)
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            OutlinedButton(onClick = { confirmando = true }, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, ErrorRojo)) {
+                Text("Eliminar mi testimonio", style = MaterialTheme.typography.titleMedium, color = ErrorRojo)
+            }
+            OutlinedButton(onClick = onListo, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+                shape = RoundedCornerShape(14.dp)) {
+                Text("Volver", style = MaterialTheme.typography.titleMedium, color = MarcaAzul)
+            }
         }
+    }
+    if (confirmando) {
+        AlertDialog(
+            onDismissRequest = { confirmando = false },
+            title = { Text("¿Eliminar tu testimonio?") },
+            text = { Text("Dejará de aparecer en la sección de testimonios. Después podrás compartir otro de esta actividad.") },
+            confirmButton = {
+                TextButton(onClick = { confirmando = false; onEliminar() }) { Text("Sí, eliminar", color = ErrorRojo) }
+            },
+            dismissButton = { TextButton(onClick = { confirmando = false }) { Text("Cancelar") } }
+        )
     }
 }
 
@@ -219,6 +232,6 @@ private fun ColumnScope.TestimonioYaEnviado(testimonio: Testimonio, onListo: () 
 @Composable
 private fun TestimonioErrorPreview() {
     FamiliasQueSumanTheme {
-        TestimonioScreen(UiState.Error("La actividad no está disponible."), FormularioTestimonio(), null, {}, {}, {}, {}, {})
+        TestimonioScreen(UiState.Error("La actividad no está disponible."), FormularioTestimonio(), null, {}, {}, {}, {}, {}, {})
     }
 }

@@ -47,7 +47,6 @@ object RutasPerfil {
     /** Encuesta de antes (RF-13): el argumento es el id de la actividad a la que se inscribió la familia. */
     const val ENCUESTA_PREVIA = "perfil/encuesta_previa/{actividadId}?titulo={titulo}"
     const val RESPUESTAS = "perfil/respuestas?actividadId={actividadId}"
-    const val REVISION_TESTIMONIOS = "perfil/revision_testimonios"
     const val AVISO_PRIVACIDAD = "perfil/aviso_privacidad"
     const val AJUSTES = "perfil/ajustes"
     fun testimonio(participacionId: String) = "perfil/testimonio/${Uri.encode(participacionId)}"
@@ -181,16 +180,8 @@ fun NavGraphBuilder.grafoPerfil(
             onVolver = { nav.popBackStack() }, onReintentar = { vm.cargar(id, correo) },
             onExperienciaChange = vm::cambiarExperiencia,
             onAgregarFoto = { selector.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-            onEnviar = { sesion?.let { vm.enviarARevision(id, it.correo, it.familia) } }
-        )
-    }
-    composable(RutasPerfil.REVISION_TESTIMONIOS) {
-        val vm: RevisionTestimoniosViewModel = viewModel(factory = AppViewModelProvider.Factory)
-        val testimonios by vm.testimonios.collectAsStateWithLifecycle()
-        LaunchedEffect(Unit) { vm.cargar() }
-        RevisionTestimoniosScreen(
-            testimonios = testimonios, esAdmin = usuarioActual().esAdmin,
-            onResolver = vm::resolver, onRegresar = { nav.popBackStack() }
+            onEnviar = { sesion?.let { vm.publicar(id, it.correo, it.familia) } },
+            onEliminar = { sesion?.let { s -> vm.eliminar(s.correo) { nav.popBackStack() } } }
         )
     }
     composable(
@@ -231,7 +222,7 @@ fun NavGraphBuilder.grafoPerfil(
             favoritosDisponibles = true,
             onSugerirClick = { nav.sugerir(TipoSugerencia.ACTIVIDAD) },
             onSugerenciasClick = { nav.navigate(RutasSugerencias.BANDEJA) { launchSingleTop = true } },
-            onTestimoniosClick = { nav.navigate(RutasPerfil.REVISION_TESTIMONIOS) { launchSingleTop = true } },
+            onTestimoniosClick = { nav.navigate(RutasInicio.TESTIMONIOS) { launchSingleTop = true } },
             onRespuestasClick = { nav.navigate(RutasPerfil.respuestas()) { launchSingleTop = true } },
             onRegresar = { nav.popBackStack() }
         )

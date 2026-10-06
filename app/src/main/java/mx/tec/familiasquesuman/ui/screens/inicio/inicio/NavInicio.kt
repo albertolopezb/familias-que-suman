@@ -6,6 +6,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -92,7 +94,8 @@ fun NavGraphBuilder.grafoInicio(
         val favoritas by cuenta.favoritas.collectAsStateWithLifecycle()
         val testimoniosVm: TestimoniosViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val testimonios by testimoniosVm.testimonios.collectAsStateWithLifecycle()
-        LaunchedEffect(Unit) { testimoniosVm.cargar() }
+        // Al volver de la lista (donde se puede eliminar) se leen otra vez.
+        LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { testimoniosVm.cargar() }
 
         InicioScreen(
             ciudad = vm.ciudadElegida,
@@ -333,7 +336,14 @@ fun NavGraphBuilder.grafoInicio(
     composable(RutasInicio.TESTIMONIOS) {
         val vm: TestimoniosViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val testimonios by vm.testimonios.collectAsStateWithLifecycle()
+        val sesion by cuentaViewModel().sesion.collectAsStateWithLifecycle()
         LaunchedEffect(Unit) { vm.cargar() }
-        TestimoniosScreen(testimonios, onRegresar = { nav.popBackStack() })
+        TestimoniosScreen(
+            testimonios = testimonios,
+            correoDeLaSesion = sesion?.correo,
+            esAdmin = esAdmin(),
+            onEliminar = { vm.eliminar(it.id, sesion?.correo, esAdmin()) },
+            onRegresar = { nav.popBackStack() }
+        )
     }
 }
