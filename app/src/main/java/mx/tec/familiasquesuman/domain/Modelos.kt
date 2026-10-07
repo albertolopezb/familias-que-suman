@@ -1,5 +1,7 @@
 package mx.tec.familiasquesuman.domain
 
+import java.time.LocalDate
+
 // Kotlin puro: ningún import de Android, Retrofit ni Room en este archivo.
 // Si falta un campo, se agrega aquí en un PR aparte; nadie define su propia versión.
 // Las fechas son texto mientras todo está en memoria; con el backend pasan a LocalDate.
@@ -25,12 +27,37 @@ data class Actividad(
     val edadMinima: Int?,          // null = sin restricción de edad
     val descripcion: String,
     val cupoTotal: Int,
-    val lugaresDisponibles: Int
+    val lugaresDisponibles: Int,
+    // Parte 2: lo que muestra familiasquesuman.com/actividades. Todo lleva valor
+    // por defecto para que nadie que ya construya una Actividad tenga que cambiar.
+    val municipio: String = "",
+    val tema: TemaActividad = TemaActividad.GENERAL,
+    val aportacion: Aportacion = Aportacion.Ninguna,
+    val puntoDeEncuentro: String = "",
+    val acercaDelProyecto: String = "",
+    val queHaremos: String = "",
+    val queIncluye: String = "",
+    val queLlevar: String = "",
+    val recomendaciones: String = "",
+    val foto: String? = null,       // nombre del drawable, sin extensión
+    val yaPaso: Boolean = false
 ) {
     val ocupados: Int get() = cupoTotal - lugaresDisponibles
     val sinLugares: Boolean get() = lugaresDisponibles <= 0
     // Menos del 20 % libre: se pinta en ámbar
     val quedanPocos: Boolean get() = lugaresDisponibles in 1..(cupoTotal / 5).coerceAtLeast(1)
+    // Algunas actividades del sitio no publican cupo; en esas no hay barra.
+    val tieneCupo: Boolean get() = cupoTotal > 0
+}
+
+/** De qué va la actividad. Decide el ícono y su color, como en el sitio. */
+enum class TemaActividad { SALUD, CELEBRACION, MEDIO_AMBIENTE, GENERAL }
+
+/** Lo que cada familia lleva o paga para participar. */
+sealed interface Aportacion {
+    data object Ninguna : Aportacion
+    data class EnEspecie(val detalle: String = "") : Aportacion
+    data class Monetaria(val monto: String, val detalle: String = "") : Aportacion
 }
 
 data class ArticuloMeta(
@@ -43,25 +70,55 @@ data class ArticuloMeta(
     val completo: Boolean get() = apartados >= meta
 }
 
+/** Una opción de donación con su precio (Destellos de Luz). Solo informa: la app no cobra. */
+data class OpcionDonacion(
+    val nombre: String,
+    val precio: String             // "$700"
+)
+
+/** Un punto donde se entrega lo recolectado (Suma a su Mesa). */
+data class PuntoEntrega(
+    val direccion: String,         // "Calle Cóndor 1001"
+    val colonia: String            // "Fraccionamiento Azhara"
+)
+
 data class Campana(
     val id: String,
     val titulo: String,
     val asociacionId: String,
     val categoria: String,
-    val cierra: String,
+    val cierra: String,            // "30 de diciembre"; vacío si la campaña no tiene fecha límite
     val urgente: Boolean,
     val descripcion: String,
     val unidadMeta: String,        // "kits", "despensas", "prendas"
     val metaTotal: Int,
     val completados: Int,
-    val articulos: List<ArticuloMeta>
+    val articulos: List<ArticuloMeta>,
+    // --- Lo que trae cada campaña en familiasquesuman.com/donar. Todo opcional. ---
+    val imagen: String? = null,               // nombre del drawable, sin extensión
+    val ciudad: String = "Monterrey",
+    val textoBoton: String = "Quiero ayudar", // "Quiero juntar" en Tapitas
+    val telefono: String? = null,             // solo dígitos
+    val whatsapp: String? = null,             // solo dígitos; sin WhatsApp, el botón llama
+    val contactoNombre: String? = null,
+    val metaTexto: String? = null,            // "250-300 cuentos"
+    val descripcionLarga: String = "",
+    val comoAyudar: String = "",
+    val opcionesDonacion: List<OpcionDonacion> = emptyList(),
+    val puntosEntrega: List<PuntoEntrega> = emptyList(),
+    val instagram: String? = null             // enlace completo
 ) {
     val progreso: Float get() = if (metaTotal == 0) 0f else completados.toFloat() / metaTotal
+
+    /** Solo las campañas con una meta de artículos se pueden apartar (RF-21). */
+    val sePuedeApartar: Boolean get() = articulos.isNotEmpty()
 }
 
 data class Acompanante(
     val nombre: String,
-    val edad: Int
+    val edad: Int,
+    // Se elige en el calendario al inscribir; la edad se calcula con ella.
+    val fechaNacimiento: LocalDate? = null
 )
 
 data class Familia(
@@ -75,4 +132,128 @@ data class Impacto(
     val actividadesRealizadas: Int,
     val horasDeServicio: Int,
     val campanasApoyadas: Int
+)
+
+// ---------------------------------------------------------------------------
+// Parte 2 · Actividades
+// ---------------------------------------------------------------------------
+
+/**
+ * Una actividad junto con la asociación que la organiza, tal como se muestra
+ * en la lista y en el detalle.
+ *
+ * Vive en el dominio y no en ui/: si viviera en ui/, la capa de datos tendría
+ * que importar de la capa de arriba para poder devolverlo.
+ */
+data class ActividadConAsociacion(
+    val actividad: Actividad,
+    val asociacion: Asociacion
+)
+
+/** El pendiente que le queda a la familia después de participar. */
+enum class EstadoParticipacion {
+    SIN_PENDIENTES,
+    ENCUESTA_PENDIENTE,
+    TESTIMONIO_PUBLICADO
+}
+
+/**
+ * Una actividad en la que la familia ya participó (RF-11).
+ * El historial se construye con asistencias registradas por la asociación,
+ * no con lo que la familia declare por su cuenta.
+ */
+data class Participacion(
+    val id: String,
+    val tituloActividad: String,
+    val nombreAsociacion: String,
+    val fecha: String,
+    val mes: String,
+    val estado: EstadoParticipacion
+)
+
+// ---------------------------------------------------------------------------
+// Proyectos y Directorio de Visiteo, como en familiasquesuman.com
+// ---------------------------------------------------------------------------
+
+/** Un proyecto con causa y objetivo específicos (RF-09). */
+data class Proyecto(
+    val id: String,
+    val nombre: String,
+    val descripcion: String,
+    val beneficiarios: String?,     // "25 Mujeres", "200 adultos mayores"
+    val ciudad: String,
+    val vigencia: String?,          // "Hasta 29 jun 2026"
+    val logo: String?,              // nombre del drawable, sin extensión
+    val activo: Boolean = true,
+    // --- Lo que trae el detalle en familiasquesuman.com/proyectos/{id}. Todo opcional. ---
+    val resumen: String = "",                         // la frase corta bajo el título
+    val acercaDe: String = "",                        // "Acerca del proyecto"
+    val formasDeApoyo: List<FormaDeApoyo> = emptyList(), // "Elige tu forma de apoyar"
+    val comoAyudar: String = "",                      // si no hay formas, un solo "¿Cómo ayudar?"
+    val telefono: String? = null,                     // solo dígitos
+    val whatsapp: String? = null,                     // solo dígitos
+    val instagram: String? = null                     // enlace completo
+)
+
+/** Una de las tarjetas de "Elige tu forma de apoyar". Tocarla abre WhatsApp con su título. */
+data class FormaDeApoyo(
+    val titulo: String,
+    val detalle: String,
+    val icono: IconoApoyo = IconoApoyo.CORAZON
+)
+
+/** El ícono de cada forma de apoyo, como en el sitio. */
+enum class IconoApoyo { CORAZON, LIBRO, DINERO }
+
+/** Un centro verificado que se puede visitar en familia (RF-03). */
+data class CentroVisiteo(
+    val id: String,
+    val nombre: String,
+    val tipo: String,               // "Asilos", "Casas hogar", "Comedores"
+    val resumen: String,
+    val informacion: String,
+    val necesidades: List<String>,
+    val direccion: String,
+    val logo: String?,
+    val verificado: Boolean = true,
+    // --- Lo que trae el detalle en familiasquesuman.com/directorio/{id}. Todo opcional. ---
+    val comoAyudar: String = "",
+    val recomendaciones: String = "",
+    val telefono: String? = null,   // solo dígitos
+    val whatsapp: String? = null,   // solo dígitos
+    val instagram: String? = null   // enlace completo
+)
+
+// ---------------------------------------------------------------------------
+// Sugerencias: cualquier persona propone algo para publicar; el admin lo revisa.
+// ---------------------------------------------------------------------------
+
+/** Qué se sugiere. Cada tipo trae sus textos para no repetirlos en cada pantalla. */
+enum class TipoSugerencia(
+    val etiqueta: String,       // "Actividad"
+    val articulo: String,       // "una actividad"
+    val campoExtra: String,     // la pregunta que cambia según el tipo
+    val ejemploExtra: String
+) {
+    ACTIVIDAD("Actividad", "una actividad", "¿Cuándo y dónde sería?", "Ej. sábados en la mañana, Parque Fundidora"),
+    CAMPANA("Campaña para aportar", "una campaña", "¿Qué se necesita juntar?", "Ej. 200 despensas, útiles escolares"),
+    PROYECTO("Proyecto", "un proyecto", "¿A quién beneficia?", "Ej. 40 niños de la colonia Independencia"),
+    CENTRO("Centro para el directorio", "un centro", "Dirección del centro", "Ej. Cuautla 208, Col. 5 de Mayo, Monterrey")
+}
+
+enum class EstadoSugerencia { PENDIENTE, APROBADA, DESCARTADA }
+
+data class Sugerencia(
+    val id: String,
+    val tipo: TipoSugerencia,
+    val nombre: String,
+    val descripcion: String,
+    val detalleExtra: String,       // la respuesta a TipoSugerencia.campoExtra
+    val ciudad: String,
+    val organizacion: String,       // quién la organiza; puede ir vacío
+    val contactoCausa: String,      // teléfono, WhatsApp o enlace de la causa; puede ir vacío
+    val sugeridaPor: String,        // nombre de quien sugiere
+    val contactoDeQuienSugiere: String,
+    val fecha: String,              // "4 oct 2026"
+    val estado: EstadoSugerencia = EstadoSugerencia.PENDIENTE
 )

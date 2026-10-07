@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.perfil
 
+import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -59,15 +60,7 @@ fun InsigniasScreen(
     modifier: Modifier = Modifier
 ) {
     Column(modifier.fillMaxSize().background(Fondo)) {
-        Surface(color = Superficie) {
-            Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onVolver) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver a Perfil", tint = Tinta)
-                }
-                Text("Reconocimiento", style = MaterialTheme.typography.headlineMedium, color = Tinta)
-            }
-        }
+        BarraSuperior("Reconocimiento", onRegresar = onVolver)
         when (estado) {
             UiState.Cargando -> CargandoView()
             is UiState.Error -> ErrorView(estado.mensaje, onReintentar)
@@ -86,14 +79,9 @@ private fun ContenidoInsignias(datos: DatosInsignias) {
                 Text("Nivel no disponible", style = MaterialTheme.typography.headlineMedium, color = Color.White)
                 Text("${datos.impacto.actividadesRealizadas} actividades completadas",
                     style = MaterialTheme.typography.bodyLarge, color = Color(0xFFBED0EA))
-                // Sin umbrales ni nivel del repositorio, no se presenta una barra de progreso ficticia.
-                Text("Progreso pendiente de datos", style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFFBED0EA))
             }
         }
         Text("TUS INSIGNIAS", style = MaterialTheme.typography.labelSmall, color = TintaSuave)
-        Text("Criterios del diseño; obtención pendiente de datos.",
-            style = MaterialTheme.typography.bodyMedium, color = TintaSuave)
         datos.referencias.chunked(2).forEach { fila ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 fila.forEach { referencia ->

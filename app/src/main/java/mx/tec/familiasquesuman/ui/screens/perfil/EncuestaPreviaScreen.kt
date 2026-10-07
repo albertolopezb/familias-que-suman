@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.perfil
 
+import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -28,24 +29,15 @@ fun EncuestaPreviaScreen(
     contextoActividad: String? = null
 ) {
     Column(modifier.fillMaxSize().background(Fondo)) {
-        Surface(color = Superficie) {
-            Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onVolver) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver", tint = Tinta)
-                }
-                Text("Antes de ir", style = MaterialTheme.typography.headlineMedium, color = Tinta)
-            }
-        }
+        BarraSuperior("Antes de ir", onRegresar = onVolver)
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)) {
             Surface(shape = RoundedCornerShape(16.dp), color = AcentoSuave) {
                 Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Icon(Icons.Outlined.DateRange, contentDescription = null, tint = AcentoTexto, modifier = Modifier.size(18.dp))
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        // Pendiente: actividad de entrada y fecha/hora relativa. No se afirma "mañana" sin datos.
                         contextoActividad?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = AcentoTexto) }
-                        Text("Responde estas 3 preguntas antes de ir.", style = MaterialTheme.typography.bodyMedium, color = AcentoTexto)
+                        Text("Responde estas ${estado.definicion.totalPreguntas} preguntas antes de ir.", style = MaterialTheme.typography.bodyMedium, color = AcentoTexto)
                     }
                 }
             }
@@ -64,11 +56,11 @@ fun EncuestaPreviaScreen(
             estado.mensaje?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = TintaSuave) }
         }
         Surface(color = Superficie, shadowElevation = 4.dp) {
-            Button(onClick = onSiguiente, enabled = estado.puedeAvanzar,
+            Button(onClick = onSiguiente, enabled = estado.puedeAvanzar && !estado.guardando,
                 modifier = Modifier.fillMaxWidth().padding(18.dp).heightIn(min = 56.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MarcaOro, contentColor = MarcaAzul)) {
-                Text("Siguiente", style = MaterialTheme.typography.titleLarge)
+                Text(if (estado.esUltima) "Enviar respuestas" else "Siguiente", style = MaterialTheme.typography.titleLarge)
             }
         }
     }
@@ -78,8 +70,7 @@ fun EncuestaPreviaScreen(
 @Composable
 private fun EncuestaPreviaPreview() {
     FamiliasQueSumanTheme {
-        // Texto de referencia exclusivo del preview; no indica una actividad real programada mañana.
-        EncuestaPreviaScreen(EstadoEncuesta(EncuestaPreviaP33, respuestas = mapOf(1 to 0)), {}, {}, {},
-            contextoActividad = "Preparar despensas · mañana a las 9:00.")
+        EncuestaPreviaScreen(EstadoEncuesta(EncuestaPrevia, respuestas = mapOf(1 to 0)), {}, {}, {},
+            contextoActividad = "Preparar despensas · sábado 9:00")
     }
 }

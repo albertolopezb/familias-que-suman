@@ -2,6 +2,7 @@ package mx.tec.familiasquesuman.ui.screens.perfil.componentes
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -17,7 +18,13 @@ import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.ui.theme.*
 
 @Composable
-fun TarjetaFavorita(nombre: String, categoria: String, modifier: Modifier = Modifier) {
+fun TarjetaFavorita(
+    nombre: String,
+    categoria: String,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    onQuitar: (() -> Unit)? = null
+) {
     // Colores de presentación, no reglas de negocio ni datos de asociaciones nuevos.
     val (fondoCategoria, textoCategoria) = when (categoria) {
         "Alimentación" -> AcentoSuave to AcentoTexto
@@ -25,7 +32,8 @@ fun TarjetaFavorita(nombre: String, categoria: String, modifier: Modifier = Modi
         "Ropa y abrigo" -> ConfirmadoFondo to ConfirmadoTexto
         else -> Borde to TintaSuave
     }
-    Surface(modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp), color = Superficie,
+    val tarjeta = if (onClick != null) modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).clickable(onClick = onClick) else modifier.fillMaxWidth()
+    Surface(tarjeta, shape = RoundedCornerShape(18.dp), color = Superficie,
         border = BorderStroke(1.dp, Borde), shadowElevation = 2.dp) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -37,9 +45,11 @@ fun TarjetaFavorita(nombre: String, categoria: String, modifier: Modifier = Modi
                         style = MaterialTheme.typography.bodyMedium, color = textoCategoria)
                 }
             }
-            // Indicador de favorita, no botón: PerfilRepository no ofrece quitar favoritas.
-            Icon(Icons.Filled.Favorite, contentDescription = "Asociación favorita",
-                tint = MarcaOro, modifier = Modifier.size(20.dp))
+            // El corazón lo quita de favoritos.
+            IconButton(onClick = { onQuitar?.invoke() }, enabled = onQuitar != null) {
+                Icon(Icons.Filled.Favorite, contentDescription = "Quitar de favoritos",
+                    tint = MarcaOro, modifier = Modifier.size(22.dp))
+            }
         }
         // getFavoritas() no proporciona avisos de actividades nuevas ni campañas urgentes.
     }

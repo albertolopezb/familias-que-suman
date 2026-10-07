@@ -39,9 +39,35 @@ class ExplorarViewModel(
         cargar()
     }
 
-    private fun cargar() {
+    fun cargar() {
         viewModelScope.launch {
             _todasAsociaciones.value = actividadRepository.getAsociaciones()
+        }
+    }
+
+    fun guardarAsociacion(id: String?, v: List<String>, onListo: () -> Unit = {}) {
+        viewModelScope.launch {
+            val asociacion = Asociacion(
+                id = id ?: "a${System.currentTimeMillis()}",
+                nombre = v[0].trim(),
+                categoria = v[1].trim(),
+                descripcion = v[2].trim(),
+                direccion = v[3].trim(),
+                telefono = v[4].trim(),
+                whatsapp = v[5].trim(),
+                correo = v[6].trim()
+            )
+            if (id == null) actividadRepository.agregarAsociacion(asociacion) else actividadRepository.editarAsociacion(asociacion)
+            cargar()
+            onListo()
+        }
+    }
+
+    fun borrarAsociacion(id: String, onListo: () -> Unit = {}) {
+        viewModelScope.launch {
+            actividadRepository.borrarAsociacion(id)
+            cargar()
+            onListo()
         }
     }
 

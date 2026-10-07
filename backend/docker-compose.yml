@@ -1,5 +1,11 @@
 # Servidor de Familias que Suman. Gradle ignora esta carpeta.
-# Levantar desde backend/:   docker compose --env-file .env up -d
+# Guía para el equipo: backend/README.md
+#
+# Levantar desde backend/ (la primera vez copia .env.example a .env):
+#   docker compose up -d
+
+# Nombre propio para que no se mezcle con los contenedores de otros proyectos.
+name: familias-que-suman
 
 services:
 
@@ -12,9 +18,48 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
     # Solo accesible desde la propia máquina. Nunca se expone a internet.
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+
+  # Aplica las migraciones de db/migrations y termina. Se vuelve a correr solo con
+  # `docker compose up -d`, y solo aplica las que falten.
+  migrar:
+    image: flyway/flyway:11
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      FLYWAY_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      FLYWAY_USER: ${POSTGRES_USER}
+      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
+      FLYWAY_LOCATIONS: filesystem:/flyway/sql
+      FLYWAY_CONNECT_RETRIES: "10"
+    command: migrate
+    volumes:
+      - ./db/migrations:/flyway/sql:ro
+
+  # Datos de prueba, solo para desarrollo y solo cuando se pide:
+  #   docker compose --profile seed run --rm seed
+  seed:
+    image: postgres:16
+    profiles: ["seed"]
+    depends_on:
+      migrar:
+        condition: service_completed_successfully
+    environment:
+      PGHOST: db
+      PGDATABASE: ${POSTGRES_DB}
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    command: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/seed/dev.sql"]
+    volumes:
+      - ./db/seed:/seed:ro
 
   almacenamiento:
     # Fotos de testimonios (RF-12), protocolo S3.
@@ -30,8 +75,8 @@ services:
     volumes:
       - storage-data:/data
     ports:
-      - "127.0.0.1:9000:9000"   # API S3
-      - "127.0.0.1:9001:9001"   # consola web, solo para el equipo
+      - "127.0.0.1:${STORAGE_API_PORT:-9000}:9000"        # API S3
+      - "127.0.0.1:${STORAGE_CONSOLE_PORT:-9001}:9001"    # consola web, solo para el equipo
 
   # api:           PENDIENTE — ¿API propia o BFF sobre el backend existente?
   # cloudflared:   se agrega cuando exista una API que exponer.

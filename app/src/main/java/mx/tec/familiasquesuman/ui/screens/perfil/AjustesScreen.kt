@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.perfil
 
+import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
@@ -56,15 +57,7 @@ fun AjustesScreen(
     modifier: Modifier = Modifier
 ) {
     Column(modifier.fillMaxSize().background(Fondo)) {
-        Surface(color = Superficie) {
-            Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onVolver) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, "Volver", tint = Tinta)
-                }
-                Text("Ajustes", style = MaterialTheme.typography.headlineMedium, color = Tinta)
-            }
-        }
+        BarraSuperior("Ajustes", onRegresar = onVolver)
         when (ciudad) {
             UiState.Cargando -> CargandoView()
             is UiState.Error -> ErrorView(ciudad.mensaje, onReintentar)
@@ -83,11 +76,11 @@ fun AjustesScreen(
                 }
                 Text("NOTIFICACIONES", style = MaterialTheme.typography.labelSmall, color = TintaSuave)
                 TarjetaAjustes {
-                    FilaAjuste("Recordatorio de actividades", "24 horas antes de cada inscripción (RF-16)",
+                    FilaAjuste("Recordatorio de actividades", "24 horas antes de cada inscripción",
                         preferencias.recordatorioActividades, onRecordatorioChange)
-                    FilaAjuste("Avisos de tus favoritos", "Cuando publican algo nuevo (RF-17, RF-22)",
+                    FilaAjuste("Avisos de tus favoritos", "Cuando publican algo nuevo",
                         preferencias.avisosFavoritos, onAvisosFavoritosChange)
-                    FilaAjuste("Urgencias de tu ciudad", "Cuando faltan voluntarios (RF-22)",
+                    FilaAjuste("Urgencias de tu ciudad", "Cuando faltan voluntarios",
                         preferencias.urgenciasCiudad, onUrgenciasCiudadChange)
                 }
                 Text("CUENTA", style = MaterialTheme.typography.labelSmall, color = TintaSuave)
