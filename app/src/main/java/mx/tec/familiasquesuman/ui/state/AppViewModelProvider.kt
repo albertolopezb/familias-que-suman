@@ -37,6 +37,7 @@ import mx.tec.familiasquesuman.ui.screens.sugerencias.SugerenciasViewModel
 object AppViewModelProvider {
 
     val Factory = viewModelFactory {
+        initializer { mx.tec.familiasquesuman.ui.screens.campanas.TengoAlgoParaDonarViewModel() }
         initializer { AjustesViewModel(familiasApplication().container.perfilRepository) }
         initializer { AvisoPrivacidadViewModel(familiasApplication().container.perfilRepository) }
         initializer {
