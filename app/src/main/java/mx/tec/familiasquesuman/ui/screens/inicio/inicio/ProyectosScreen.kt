@@ -2,20 +2,22 @@ package mx.tec.familiasquesuman.ui.screens.inicio
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -25,7 +27,6 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,23 +45,34 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import mx.tec.familiasquesuman.domain.Proyecto
 import mx.tec.familiasquesuman.domain.TipoSugerencia
 import mx.tec.familiasquesuman.ui.components.TarjetaSugerir
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
-import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Etiqueta
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.FilaDato
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TextoWeb
-import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TituloDePagina
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Web
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.fotoDeActividad
+import mx.tec.familiasquesuman.ui.theme.AzulCategoriaFondo
 import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
+import mx.tec.familiasquesuman.ui.theme.MarcaAzul
 
-/**
- * Proyectos (P-29, RF-09), calcado de familiasquesuman.com/proyectos:
- * pestañas activos / anteriores, buscador y tarjetas con logo.
- */
+private val ColoresTarjetasAzul = listOf(
+    Color(0xFFE0F2FE), // Azul cielo suave
+    Color(0xFFD3E2FE), // Azul periwinkle / lavanda
+    Color(0xFFBAE6FD), // Azul agua
+    Color(0xFFC7D2FE)  // Azul índigo pastel
+)
+
+private val ColoresTextoAzul = listOf(
+    Color(0xFF0369A1),
+    Color(0xFF1E40AF),
+    Color(0xFF0284C7),
+    Color(0xFF3730A3)
+)
+
 @Composable
 fun ProyectosScreen(
     proyectos: List<Proyecto> = emptyList(),
@@ -84,7 +96,7 @@ fun ProyectosScreen(
             if (esAdmin) {
                 FloatingActionButton(
                     onClick = onCrearProyecto,
-                    containerColor = Web.Primario,
+                    containerColor = MarcaAzul,
                     contentColor = Color.White
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Crear Proyecto")
@@ -102,23 +114,43 @@ fun ProyectosScreen(
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 80.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.Top
             ) {
                 item(key = "titulo") {
-                    TituloDePagina(
-                        titulo = if (esAdmin) "Proyectos (Admin)" else "Proyectos",
-                        subtitulo = "Proyectos con causas y objetivos específicos.",
-                        migaAnterior = "Inicio",
-                        onMigaAnterior = onIrAInicio
-                    )
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        Pestana("Proyectos activos", verActivos, { verActivos = true }, Modifier.weight(1f))
-                        Pestana("Proyectos anteriores", !verActivos, { verActivos = false }, Modifier.weight(1f))
+                    Column(modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) {
+                        Text(
+                            text = if (esAdmin) "Proyectos (Admin)" else "Proyectos",
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MarcaAzul
+                        )
                     }
                 }
-                item(key = "buscar") {
-                    Buscador(valor = busqueda, onValor = { busqueda = it }, placeholder = "Buscar proyectos...")
+
+                item(key = "pestanas") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(Color(0xFFEEF2F6))
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        PestanaPill("Activos (${proyectos.count { it.activo }})", verActivos, { verActivos = true }, Modifier.weight(1f))
+                        PestanaPill("Anteriores (${proyectos.count { !it.activo }})", !verActivos, { verActivos = false }, Modifier.weight(1f))
+                    }
                 }
+
+                item(key = "buscar") {
+                    BuscadorEstiloMinimal(
+                        valor = busqueda,
+                        onValor = { busqueda = it },
+                        placeholder = "Buscar proyectos..."
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
                 if (visibles.isEmpty()) {
                     item(key = "vacio") {
                         Text(
@@ -126,88 +158,129 @@ fun ProyectosScreen(
                             style = TextoWeb.Cuerpo,
                             color = Web.TextoApagado,
                             textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp)
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp)
                         )
                     }
                 }
-                items(visibles, key = { it.id }) { proyecto ->
-                    TarjetaProyecto(
-                        proyecto = proyecto,
-                        onClick = { onProyectoClick(proyecto.id) },
-                        esAdmin = esAdmin,
-                        onEditar = { onEditarProyecto(proyecto.id) },
-                        onBorrar = { onBorrarProyecto(proyecto.id) }
-                    )
+
+                //(Stacked Cards)
+                itemsIndexed(visibles, key = { _, item -> item.id }) { indice, proyecto ->
+                    val colorFondo = ColoresTarjetasAzul[indice % ColoresTarjetasAzul.size]
+                    val colorTexto = ColoresTextoAzul[indice % ColoresTextoAzul.size]
+
+                    // Solapamiento negativo (las tarjetas se enciman levemente excepto la primera)
+                    val offsetY = if (indice > 0) (-20 * indice).dp else 0.dp
+
+                    Box(
+                        modifier = Modifier
+                            .offset(y = offsetY)
+                    ) {
+                        TarjetaProyectoStacked(
+                            proyecto = proyecto,
+                            colorFondo = colorFondo,
+                            colorTexto = colorTexto,
+                            onClick = { onProyectoClick(proyecto.id) },
+                            esAdmin = esAdmin,
+                            onEditar = { onEditarProyecto(proyecto.id) },
+                            onBorrar = { onBorrarProyecto(proyecto.id) }
+                        )
+                    }
                 }
-                item(key = "sugerir") { TarjetaSugerir(TipoSugerencia.PROYECTO, onSugerir) }
+
+                item(key = "sugerir") {
+                    val offsetY = if (visibles.isNotEmpty()) (-20 * visibles.size).dp else 0.dp
+                    Box(modifier = Modifier.offset(y = offsetY).padding(top = 24.dp)) {
+                        TarjetaSugerir(TipoSugerencia.PROYECTO, onSugerir)
+                    }
+                }
             }
         }
     }
 }
 
+/** Tarjeta con estilo redondeado gigante, bloques de color pastel e ícono flotante circular */
 @Composable
-private fun TarjetaProyecto(
+private fun TarjetaProyectoStacked(
     proyecto: Proyecto,
+    colorFondo: Color,
+    colorTexto: Color,
     onClick: () -> Unit,
     esAdmin: Boolean = false,
     onEditar: () -> Unit = {},
     onBorrar: () -> Unit = {}
 ) {
-    val forma = RoundedCornerShape(16.dp)
-    Column(modifier = Modifier.fillMaxWidth()) {
+    val formaTarjeta = RoundedCornerShape(28.dp)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(formaTarjeta)
+            .background(colorFondo)
+            .clickable(onClick = onClick)
+            .padding(20.dp)
+    ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(forma)
-                .background(Web.Tarjeta)
-                .border(1.dp, Web.Borde, forma)
-                .clickable(onClick = onClick)
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Logo(proyecto.logo, proyecto.nombre)
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Row(verticalAlignment = Alignment.Top) {
-                    Text(
-                        proyecto.nombre,
-                        style = TextoWeb.TituloTarjeta.copy(color = Web.Primario),
-                        modifier = Modifier.weight(1f).padding(end = 8.dp)
-                    )
-                    Etiqueta(
-                        if (proyecto.activo) "Activo" else "Terminado",
-                        if (proyecto.activo) Web.VerdeFondo else Web.Secundario,
-                        if (proyecto.activo) Web.VerdeTexto else Web.TextoApagado
-                    )
-                }
+            // Logo circular limpio
+            LogoCircular(proyecto.logo, proyecto.nombre)
+
+            // Chip indicador simple
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.6f))
+                    .padding(horizontal = 12.dp, vertical = 6.dp)
+            ) {
                 Text(
-                    proyecto.descripcion,
-                    style = TextoWeb.Chico.copy(color = Web.Texto.copy(alpha = 0.75f)),
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+                    text = if (proyecto.activo) "Activo" else "Finalizado",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colorTexto
                 )
-                proyecto.vigencia?.let { FilaDato(IconosWeb.Calendario, it) }
-                proyecto.beneficiarios?.let { FilaDato(IconosWeb.Personas, it) }
-                FilaDato(IconosWeb.Ubicacion, proyecto.ciudad)
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
-                    Text("Ver detalles", style = TextoWeb.Chip, color = Web.Primario)
-                    Icon(IconosWeb.FlechaDerecha, contentDescription = null, tint = Web.Primario, modifier = Modifier.size(14.dp))
-                }
             }
         }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(
+            text = proyecto.nombre,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold,
+            color = MarcaAzul,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = proyecto.descripcion,
+            fontSize = 13.sp,
+            color = MarcaAzul.copy(alpha = 0.75f),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            proyecto.vigencia?.let { FilaDato(IconosWeb.Calendario, it) }
+            proyecto.beneficiarios?.let { FilaDato(IconosWeb.Personas, it) }
+            FilaDato(IconosWeb.Ubicacion, proyecto.ciudad)
+        }
+
         if (esAdmin) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 4.dp),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.End
             ) {
                 IconButton(onClick = onEditar) {
-                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Web.Primario)
+                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = MarcaAzul)
                 }
                 IconButton(onClick = onBorrar) {
                     Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = Web.RojoTexto)
@@ -217,12 +290,16 @@ private fun TarjetaProyecto(
     }
 }
 
-/** El logo cuadrado de un proyecto o centro, sin recortar, como en el sitio. */
+/** Logo circular dentro de una burbuja blanca */
 @Composable
-internal fun Logo(nombreDrawable: String?, descripcion: String, tamano: Int = 56) {
+internal fun LogoCircular(nombreDrawable: String?, descripcion: String) {
     val recurso = fotoDeActividad(nombreDrawable)
     Box(
-        modifier = Modifier.size(tamano.dp).clip(RoundedCornerShape(12.dp)).background(Web.Tarjeta),
+        modifier = Modifier
+            .size(52.dp)
+            .clip(CircleShape)
+            .background(Color.White)
+            .padding(6.dp),
         contentAlignment = Alignment.Center
     ) {
         if (recurso != null) {
@@ -233,72 +310,34 @@ internal fun Logo(nombreDrawable: String?, descripcion: String, tamano: Int = 56
                 modifier = Modifier.fillMaxSize()
             )
         } else {
-            Box(Modifier.fillMaxSize().background(Web.Secundario))
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape)
+                    .background(AzulCategoriaFondo)
+            )
         }
     }
 }
 
+/** Pestañas tipo pastilla moderna */
 @Composable
-private fun Pestana(texto: String, activa: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.clickable(onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally
+private fun PestanaPill(texto: String, activa: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val forma = RoundedCornerShape(16.dp)
+    Box(
+        modifier = modifier
+            .clip(forma)
+            .background(if (activa) MarcaAzul else Color.Transparent)
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        contentAlignment = Alignment.Center
     ) {
         Text(
-            texto,
-            style = TextoWeb.Cuerpo.copy(fontWeight = if (activa) FontWeight.SemiBold else FontWeight.Medium),
-            color = if (activa) Web.Primario else Web.TextoApagado,
-            modifier = Modifier.padding(vertical = 10.dp)
-        )
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(if (activa) 2.dp else 1.dp)
-                .background(if (activa) Web.Primario else Web.Borde)
+            text = texto,
+            fontSize = 14.sp,
+            fontWeight = if (activa) FontWeight.Bold else FontWeight.Medium,
+            color = if (activa) Color.White else Web.TextoApagado
         )
     }
 }
 
-/** La caja de búsqueda del sitio: borde gris, lupa y texto gris. */
-@Composable
-internal fun Buscador(valor: String, onValor: (String) -> Unit, placeholder: String) {
-    val forma = RoundedCornerShape(12.dp)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(forma)
-            .background(Web.Tarjeta)
-            .border(1.dp, Web.Borde, forma)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(IconosWeb.Buscar, contentDescription = null, tint = Web.TextoApagado, modifier = Modifier.size(16.dp))
-        Box(modifier = Modifier.weight(1f)) {
-            if (valor.isEmpty()) Text(placeholder, style = TextoWeb.Cuerpo, color = Web.TextoApagado)
-            BasicTextField(
-                value = valor,
-                onValueChange = onValor,
-                singleLine = true,
-                textStyle = TextoWeb.Cuerpo,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true, heightDp = 1200)
-@Composable
-private fun ProyectosPreview() {
-    FamiliasQueSumanTheme {
-        ProyectosScreen(
-            proyectos = listOf(
-                Proyecto("pr1", "Trazo... Escribiendo una nueva historia",
-                    "Somos un grupo de mujeres voluntarias que realizamos visitas quincenales.",
-                    "25 Mujeres", "Monterrey", null, null),
-                Proyecto("pr8", "Escucha Corazón", "Una visita al mes al colegio Mano Amiga.",
-                    null, "Monterrey", "Hasta 29 jun 2026", null)
-            )
-        )
-    }
-}

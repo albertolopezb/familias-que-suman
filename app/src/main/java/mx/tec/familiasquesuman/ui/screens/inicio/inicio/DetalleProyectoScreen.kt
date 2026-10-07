@@ -2,11 +2,13 @@ package mx.tec.familiasquesuman.ui.screens.inicio
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,7 +19,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,23 +42,18 @@ import mx.tec.familiasquesuman.domain.FormaDeApoyo
 import mx.tec.familiasquesuman.domain.IconoApoyo
 import mx.tec.familiasquesuman.domain.Proyecto
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
-import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Etiqueta
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.FilaDato
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TextoWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Web
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoMensaje
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoTelefono
+import mx.tec.familiasquesuman.ui.theme.AzulCategoriaFondo
+import mx.tec.familiasquesuman.ui.theme.AzulCategoriaTexto
+import mx.tec.familiasquesuman.ui.theme.AzulTarjetaFondo
 import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
+import mx.tec.familiasquesuman.ui.theme.MarcaAzul
 
-/**
- * Detalle de un proyecto (RF-09), calcado de familiasquesuman.com/proyectos/{id}:
- * logo y datos, "Acerca del proyecto", descripción, "Elige tu forma de apoyar" (o un solo
- * "¿Cómo ayudar?"), Instagram y los botones de WhatsApp y llamar.
- *
- * Tocar una forma de apoyo abre WhatsApp con "Quiero ayudar: <título>", igual que el sitio.
- * Pantalla "tonta": WhatsApp, llamadas y enlaces los resuelve el grafo.
- */
 @Composable
 fun DetalleProyectoScreen(
     proyecto: Proyecto,
@@ -64,52 +64,93 @@ fun DetalleProyectoScreen(
     onLlamar: (String) -> Unit = {},
     onAbrirEnlace: (String) -> Unit = {}
 ) {
-    Column(Modifier.fillMaxSize().background(Web.Fondo)) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(Web.Fondo)
+    ) {
         EncabezadoApp()
+
+        // Barra superior con botón para regresar a Proyectos
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .border(1.dp, Color(0xFFE2E8F0), CircleShape)
+                    .clickable(onClick = onIrAProyectos),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Volver a Proyectos",
+                    tint = MarcaAzul,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Text(
+                text = "Volver a Proyectos",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = MarcaAzul,
+                modifier = Modifier.clickable(onClick = onIrAProyectos)
+            )
+        }
+
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, bottom = 32.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            MigasDePan(listOf("Inicio" to onIrAInicio, "Proyectos" to onIrAProyectos), proyecto.nombre)
+            // Tarjeta Principal Hero del Proyecto
+            TarjetaHeroProyecto(proyecto)
 
-            TarjetaFicha {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Logo(proyecto.logo, proyecto.nombre, tamano = 72)
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Etiqueta(
-                            if (proyecto.activo) "Activo" else "Terminado",
-                            if (proyecto.activo) Web.VerdeFondo else Web.Secundario,
-                            if (proyecto.activo) Web.VerdeTexto else Web.TextoApagado
-                        )
-                        Text(proyecto.nombre, style = TextoWeb.Titulo.copy(fontSize = 20.sp, lineHeight = 26.sp))
-                        FilaDato(IconosWeb.Ubicacion, proyecto.ciudad)
-                        proyecto.vigencia?.let { FilaDato(IconosWeb.Calendario, it) }
-                    }
-                }
-                proyecto.beneficiarios?.let { FilaDato(IconosWeb.Personas, it) }
-                val resumen = proyecto.resumen.ifBlank { proyecto.descripcion }
-                Text(resumen, style = TextoWeb.Cuerpo.copy(color = Web.TextoApagado))
+            // Secciones de Información detallada
+            if (proyecto.acercaDe.isNotBlank()) {
+                TarjetaContenido(
+                    titulo = "Acerca del proyecto",
+                    contenido = proyecto.acercaDe
+                )
             }
 
-            if (proyecto.acercaDe.isNotBlank()) SeccionFicha("Acerca del proyecto", proyecto.acercaDe)
-            // Sin resumen, la descripción ya salió arriba; no se repite.
-            if (proyecto.resumen.isNotBlank()) SeccionFicha("Descripción", proyecto.descripcion)
-
-            if (proyecto.formasDeApoyo.isNotEmpty()) {
-                Text(
-                    buildAnnotatedString {
-                        withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = Web.Primario)) {
-                            append("Elige tu forma de apoyar")
-                        }
-                        append(" y que más se adapte a ti.")
-                    },
-                    style = TextoWeb.Cuerpo
+            if (proyecto.resumen.isNotBlank()) {
+                TarjetaContenido(
+                    titulo = "Descripción",
+                    contenido = proyecto.descripcion
                 )
-                proyecto.formasDeApoyo.forEachIndexed { i, forma ->
-                    TarjetaFormaDeApoyo(forma, ColoresApoyo[i % ColoresApoyo.size], onClick = { onFormaDeApoyo(forma) })
+            }
+
+            // Opciones para apoyar
+            if (proyecto.formasDeApoyo.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        buildAnnotatedString {
+                            withStyle(SpanStyle(fontWeight = FontWeight.Bold, color = MarcaAzul)) {
+                                append("Elige tu forma de apoyar")
+                            }
+                            append(" y que más se adapte a ti.")
+                        },
+                        fontSize = 16.sp,
+                        color = Web.Texto.copy(alpha = 0.8f),
+                        modifier = Modifier.padding(start = 4.dp, top = 8.dp)
+                    )
+                    proyecto.formasDeApoyo.forEachIndexed { i, forma ->
+                        TarjetaFormaDeApoyo(
+                            forma = forma,
+                            color = ColoresApoyo[i % ColoresApoyo.size],
+                            onClick = { onFormaDeApoyo(forma) }
+                        )
+                    }
                 }
             } else if (proyecto.comoAyudar.isNotBlank()) {
                 SeccionComoAyudar(proyecto.comoAyudar)
@@ -117,7 +158,11 @@ fun DetalleProyectoScreen(
 
             proyecto.instagram?.let { enlace -> SiguenosEnInstagram(onClick = { onAbrirEnlace(enlace) }) }
 
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            // Botones de Contacto Directo
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
                 if (proyecto.whatsapp != null) {
                     BotonFicha("Escribir por WhatsApp", IconoMensaje, Web.WhatsApp, onClick = onWhatsApp)
                 }
@@ -126,8 +171,11 @@ fun DetalleProyectoScreen(
                 }
             }
 
+            // Pie de confianza
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -135,7 +183,7 @@ fun DetalleProyectoScreen(
                 Text(
                     buildAnnotatedString {
                         append("Proyecto curado por ")
-                        withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = Web.Primario)) {
+                        withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = MarcaAzul)) {
                             append("Familias que Suman")
                         }
                     },
@@ -146,7 +194,94 @@ fun DetalleProyectoScreen(
     }
 }
 
-/** El tono de cada tarjeta de apoyo, en el orden del sitio: ámbar, azul y verde. */
+/** Tarjeta Hero del Proyecto con esquinas suavizadas y estética de la app */
+@Composable
+private fun TarjetaHeroProyecto(proyecto: Proyecto) {
+    val forma = RoundedCornerShape(28.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(forma)
+            .background(AzulTarjetaFondo)
+            .border(1.dp, AzulCategoriaFondo, forma)
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            LogoCircular(proyecto.logo, proyecto.nombre)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.7f))
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = if (proyecto.activo) "Activo" else "Terminado",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AzulCategoriaTexto
+                    )
+                }
+                Text(
+                    text = proyecto.nombre,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MarcaAzul,
+                    lineHeight = 28.sp
+                )
+            }
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            FilaDato(IconosWeb.Ubicacion, proyecto.ciudad)
+            proyecto.vigencia?.let { FilaDato(IconosWeb.Calendario, it) }
+            proyecto.beneficiarios?.let { FilaDato(IconosWeb.Personas, it) }
+        }
+
+        val resumen = proyecto.resumen.ifBlank { proyecto.descripcion }
+        if (resumen.isNotBlank()) {
+            Text(
+                text = resumen,
+                fontSize = 14.sp,
+                color = MarcaAzul.copy(alpha = 0.85f),
+                lineHeight = 20.sp
+            )
+        }
+    }
+}
+
+/** Tarjeta blanca estilizada para secciones de texto largo */
+@Composable
+private fun TarjetaContenido(titulo: String, contenido: String) {
+    val forma = RoundedCornerShape(20.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(forma)
+            .background(Color.White)
+            .border(1.dp, Color(0xFFE2E8F0), forma)
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = titulo,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold,
+            color = MarcaAzul
+        )
+        Text(
+            text = contenido,
+            fontSize = 14.sp,
+            color = Web.Texto.copy(alpha = 0.8f),
+            lineHeight = 20.sp
+        )
+    }
+}
+
 private data class ColorApoyo(val acento: Color, val borde: Color, val fondoIcono: Color)
 
 private val ColoresApoyo = listOf(
@@ -161,14 +296,18 @@ private fun iconoDe(icono: IconoApoyo): ImageVector = when (icono) {
     IconoApoyo.DINERO -> IconosWeb.Tarjeta
 }
 
-/** Una tarjeta de "Elige tu forma de apoyar": ícono, barra de color, texto y flecha. */
+/** Tarjeta de forma de apoyo estilizada con esquinas redondeadas */
 @Composable
 private fun TarjetaFormaDeApoyo(forma: FormaDeApoyo, color: ColorApoyo, onClick: () -> Unit) {
+    val formaTarjeta = RoundedCornerShape(20.dp)
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = Web.Tarjeta,
+        shape = formaTarjeta,
+        color = Color.White,
         border = BorderStroke(1.5.dp, color.borde),
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).clickable(onClick = onClick)
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(formaTarjeta)
+            .clickable(onClick = onClick)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -176,40 +315,31 @@ private fun TarjetaFormaDeApoyo(forma: FormaDeApoyo, color: ColorApoyo, onClick:
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                Modifier.size(48.dp).clip(CircleShape).background(color.fondoIcono),
+                Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(color.fondoIcono),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(iconoDe(forma.icono), null, tint = color.acento, modifier = Modifier.size(24.dp))
             }
-            Box(Modifier.width(3.dp).height(40.dp).clip(RoundedCornerShape(50)).background(color.acento))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(forma.titulo, style = TextoWeb.Cuerpo.copy(fontWeight = FontWeight.Bold), color = Web.Primario)
-                Text(forma.detalle, style = TextoWeb.Chico)
-            }
-            Icon(IconosWeb.FlechaDerecha, contentDescription = "Quiero ayudar", tint = color.acento, modifier = Modifier.size(16.dp))
-        }
-    }
-}
-
-@Preview(showBackground = true, heightDp = 1600)
-@Composable
-private fun DetalleProyectoPreview() {
-    FamiliasQueSumanTheme {
-        DetalleProyectoScreen(
-            Proyecto(
-                "pr3", "Cocinando de Corazón a Corazón",
-                "Comedor comunitario diocesano que lleva alimento y esperanza a personas y familias.",
-                null, "Monterrey", null, null,
-                resumen = "Comedor comunitario de alimentos preparados por una red de amas de casa.",
-                acercaDe = "Desde hace 6 años un conjunto de amas de casa comenzaron a apoyar cocinando.",
-                formasDeApoyo = listOf(
-                    FormaDeApoyo("Cocinando desde casa", "Elige un día fijo a la semana y cocina 20 platillos."),
-                    FormaDeApoyo("Apoya al equipo del comedor", "Sirviendo y emplatando comidas."),
-                    FormaDeApoyo("Aporta alimentos", "Cualquier tipo de alimento.")
-                ),
-                telefono = "8184596229", whatsapp = "8184596229",
-                instagram = "https://www.instagram.com/cocinando_de_corazon/"
+            Box(
+                Modifier
+                    .width(3.dp)
+                    .height(40.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(color.acento)
             )
-        )
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(forma.titulo, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MarcaAzul)
+                Text(forma.detalle, fontSize = 13.sp, color = Web.TextoApagado)
+            }
+            Icon(
+                IconosWeb.FlechaDerecha,
+                contentDescription = "Quiero ayudar",
+                tint = color.acento,
+                modifier = Modifier.size(16.dp)
+            )
+        }
     }
 }
