@@ -117,6 +117,7 @@ fun NavGraphBuilder.grafoPerfil(
         // 1. Obtenemos la sesión activa de CuentaViewModel
         val cuentaVm = cuentaViewModel()
         val sesionActual by cuentaVm.sesion.collectAsStateWithLifecycle()
+        val familiares by cuentaVm.acompanantes.collectAsStateWithLifecycle()
 
         // 2. Determinamos si es Admin o Usuario Normal según el correo en sesión
         val base = UsuariosHardcodeados.obtenerPorCorreo(sesionActual?.correo)
@@ -134,7 +135,10 @@ fun NavGraphBuilder.grafoPerfil(
             accesosDisponibles = true,
             favoritosDisponibles = true,
             onSugerirClick = { nav.sugerir(TipoSugerencia.ACTIVIDAD) },
-            onSugerenciasClick = { nav.navigate(RutasSugerencias.BANDEJA) { launchSingleTop = true } }
+            onSugerenciasClick = { nav.navigate(RutasSugerencias.BANDEJA) { launchSingleTop = true } },
+            familiares = familiares,
+            onAgregarFamiliar = cuentaVm::agregarFamiliar,
+            onQuitarFamiliar = cuentaVm::quitarFamiliar
         )
     }
     composable(RutasPerfil.FAVORITOS) {

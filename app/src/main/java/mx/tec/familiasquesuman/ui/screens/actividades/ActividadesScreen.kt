@@ -27,6 +27,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import mx.tec.familiasquesuman.domain.MapaCercano
+import mx.tec.familiasquesuman.domain.PuntoEnMapa
 import mx.tec.familiasquesuman.domain.TipoSugerencia
 import mx.tec.familiasquesuman.ui.components.TarjetaSugerir
 
@@ -49,13 +57,24 @@ fun ActividadesScreen(
     onCrearActividad: () -> Unit = {},
     onEditarActividad: (String) -> Unit = {},
     onBorrarActividad: (String) -> Unit = {},
-    onSugerir: () -> Unit = {}
+    onSugerir: () -> Unit = {},
+    // la pestaña "Mapa": lo que hay cerca de la familia
+    mapa: UiState<MapaCercano> = UiState.Cargando,
+    onAbrirPunto: (PuntoEnMapa) -> Unit = {},
+    onReintentarMapa: () -> Unit = {}
 ) {
+    // Lista o mapa. Se conserva al ir a un detalle y regresar.
+    var enMapa by rememberSaveable { mutableStateOf(false) }
+    val titulo = if (esAdmin) "Actividades (Admin)" else "Actividades"
+    val modificadorTitulo = Modifier.pointerInput(Unit) {
+        detectTapGestures(onLongPress = { onForzarEstado() })
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        // Si es Admin, mostramos el FAB con el símbolo (+) abajo
+        // Si es Admin, mostramos el FAB con el símbolo (+) abajo. En el mapa estorba.
         floatingActionButton = {
-            if (esAdmin) {
+            if (esAdmin && !enMapa) {
                 FloatingActionButton(
                     onClick = onCrearActividad,
                     containerColor = Web.Primario,
@@ -73,19 +92,48 @@ fun ActividadesScreen(
                 .background(Web.Fondo)
         ) {
             EncabezadoApp()
-            LazyColumn(
+            if (enMapa) {
+                // El mapa no se desplaza con la página: ocupa lo que quede de pantalla.
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+                ) {
+                    TituloDePagina(
+                        titulo = titulo,
+                        subtitulo = "Cerca de ti en $ciudad",
+                        migaAnterior = "Inicio",
+                        onMigaAnterior = onIrAInicio,
+                        modificadorTitulo = modificadorTitulo
+                    )
+                    SelectorDeVista(enMapa = true, onCambiar = { enMapa = it })
+                    MapaCercaDeTi(
+                        estado = mapa,
+                        onAbrir = onAbrirPunto,
+                        onReintentar = onReintentarMapa,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(top = 12.dp)
+                    )
+                }
+            } else LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 80.dp)
             ) {
                 item(key = "titulo") {
                     TituloDePagina(
-                        titulo = if (esAdmin) "Actividades (Admin)" else "Actividades",
+                        titulo = titulo,
                         subtitulo = "Actividades en $ciudad",
                         migaAnterior = "Inicio",
                         onMigaAnterior = onIrAInicio,
-                        modificadorTitulo = Modifier.pointerInput(Unit) {
-                            detectTapGestures(onLongPress = { onForzarEstado() })
-                        }
+                        modificadorTitulo = modificadorTitulo
+                    )
+                }
+                item(key = "vistas") {
+                    SelectorDeVista(
+                        enMapa = false,
+                        onCambiar = { enMapa = it },
+                        modifier = Modifier.padding(bottom = 16.dp)
                     )
                 }
 
@@ -134,6 +182,53 @@ fun ActividadesScreen(
                 }
             }
         }
+    }
+}
+
+/** Las dos pestañas de la pantalla: la lista de siempre y el mapa de lo que hay cerca. */
+@Composable
+private fun SelectorDeVista(
+    enMapa: Boolean,
+    onCambiar: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Web.Secundario)
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        PestanaDeVista("Lista", IconosWeb.Menu, activa = !enMapa, onClick = { onCambiar(false) }, modifier = Modifier.weight(1f))
+        PestanaDeVista("Mapa", IconosWeb.Ubicacion, activa = enMapa, onClick = { onCambiar(true) }, modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun PestanaDeVista(
+    texto: String,
+    icono: ImageVector,
+    activa: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val color = if (activa) Web.Primario else Web.TextoApagado
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(9.dp))
+            .background(if (activa) Web.Tarjeta else Web.Secundario)
+            .clickable(onClick = onClick)
+            .padding(vertical = 9.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icono, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
+        Text(
+            text = texto,
+            style = TextoWeb.Chip.copy(fontWeight = if (activa) FontWeight.SemiBold else FontWeight.Medium),
+            color = color
+        )
     }
 }
 

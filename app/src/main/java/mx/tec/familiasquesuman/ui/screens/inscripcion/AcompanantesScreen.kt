@@ -68,6 +68,13 @@ fun AcompanantesScreen(
                 color = TintaSuave
             )
             FilaAcompanante("${ui.titular.nombre} (tú)", edadParaMostrar(ui.titular, esTitular = true))
+            if (ui.filas.any { !it.nueva }) {
+                Text(
+                    "Tu familia ya viene anotada. Quita con ✕ a quien no vaya a asistir.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TintaSuave
+                )
+            }
             ui.filas.forEach { fila ->
                 if (fila.nueva) {
                     FilaAcompananteNueva(

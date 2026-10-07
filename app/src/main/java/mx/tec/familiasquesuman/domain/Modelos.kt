@@ -114,11 +114,21 @@ data class Campana(
     val sePuedeApartar: Boolean get() = articulos.isNotEmpty()
 }
 
+/** Sexo de una persona de la familia, como se pide al registrarla en Mi Perfil. */
+enum class Sexo(val etiqueta: String) {
+    MASCULINO("Masculino"),
+    FEMENINO("Femenino"),
+    OTRO("Otro"),
+    NO_ESPECIFICA("Prefiero no especificar")
+}
+
 data class Acompanante(
     val nombre: String,
     val edad: Int,
     // Se elige en el calendario al inscribir; la edad se calcula con ella.
-    val fechaNacimiento: LocalDate? = null
+    val fechaNacimiento: LocalDate? = null,
+    // Se pide al registrar a la familia en Mi Perfil; los acompañantes sueltos no lo traen.
+    val sexo: Sexo? = null
 )
 
 data class Familia(

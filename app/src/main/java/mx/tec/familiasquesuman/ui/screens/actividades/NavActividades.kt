@@ -19,6 +19,7 @@ import mx.tec.familiasquesuman.ui.components.ErrorView
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.compartirActividad
 import mx.tec.familiasquesuman.ui.screens.inscripcion.alternarFavorita
 import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
+import mx.tec.familiasquesuman.domain.TipoDePunto
 import mx.tec.familiasquesuman.domain.TipoSugerencia
 import mx.tec.familiasquesuman.ui.screens.sugerencias.sugerir
 import mx.tec.familiasquesuman.ui.state.AppViewModelProvider
@@ -52,6 +53,8 @@ object RutasActividades {
  * - onCancelarInscripcion: parte 3, cancelar (RF-19).
  * - onResponderEncuesta / onCompartirTestimonio: parte 5 (RF-13, RF-12).
  * - onCambiarCiudad / onVerAsociaciones: parte 1.
+ * - onVerProyecto / onVerCampana: el mini menú del mapa abre el detalle de un
+ *   proyecto (parte 1) o de una campaña de donación (parte 4).
  */
 fun NavGraphBuilder.grafoActividades(
     nav: NavController,
@@ -64,13 +67,21 @@ fun NavGraphBuilder.grafoActividades(
     onCancelarInscripcion: (String) -> Unit = {},
     onResponderEncuesta: (String) -> Unit = {},
     onCompartirTestimonio: (String) -> Unit = {},
-    onVerAsociaciones: () -> Unit = {}
+    onVerAsociaciones: () -> Unit = {},
+    onVerProyecto: (String) -> Unit = {},
+    onVerCampana: (String) -> Unit = {}
 ) {
 
     composable(RutasActividades.LISTA) {
         val vm: ActividadesViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val estado by vm.estado.collectAsStateWithLifecycle()
         val contexto = LocalContext.current
+
+        // La pestaña "Mapa". Se vuelve a cargar cada vez que la pantalla regresa,
+        // para que refleje lo que se haya creado o borrado en otra sección.
+        val mapaVm: MapaViewModel = viewModel(factory = AppViewModelProvider.Factory)
+        val mapa by mapaVm.estado.collectAsStateWithLifecycle()
+        LaunchedEffect(Unit) { mapaVm.cargar() }
 
         // Estados locales para controlar los diálogos de Admin
         var mostrandoCrear by remember { mutableStateOf<Boolean>(false) }
@@ -92,6 +103,15 @@ fun NavGraphBuilder.grafoActividades(
             onVerAsociaciones = onVerAsociaciones,
             onForzarEstado = vm::siguienteModoDePrueba,
             onSugerir = { nav.sugerir(TipoSugerencia.ACTIVIDAD) },
+            mapa = mapa,
+            onReintentarMapa = mapaVm::cargar,
+            onAbrirPunto = { punto ->
+                when (punto.tipo) {
+                    TipoDePunto.ACTIVIDAD -> nav.navigate(RutasActividades.detalle(punto.id))
+                    TipoDePunto.PROYECTO -> onVerProyecto(punto.id)
+                    TipoDePunto.DONACION -> onVerCampana(punto.id)
+                }
+            },
             onBorrarActividad = { id: String ->
                 // En lugar de borrar directo, guardamos el elemento a borrar para abrir la alerta
                 if (estado is UiState.Exito) {

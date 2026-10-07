@@ -3,6 +3,7 @@ package mx.tec.familiasquesuman
 import android.app.Application
 import mx.tec.familiasquesuman.data.ActividadRepository
 import mx.tec.familiasquesuman.data.CampanaRepository
+import mx.tec.familiasquesuman.data.MapaRepository
 import mx.tec.familiasquesuman.data.PerfilRepository
 import mx.tec.familiasquesuman.data.SugerenciaRepository
 
@@ -16,6 +17,7 @@ class AppContainer {
     val campanaRepository: CampanaRepository by lazy { CampanaRepository() }
     val perfilRepository: PerfilRepository by lazy { PerfilRepository() }
     val sugerenciaRepository: SugerenciaRepository by lazy { SugerenciaRepository() }
+    val mapaRepository: MapaRepository by lazy { MapaRepository(actividadRepository, campanaRepository) }
 }
 
 /** Vive tanto como el proceso. Declarada en el manifiesto con `android:name`. */

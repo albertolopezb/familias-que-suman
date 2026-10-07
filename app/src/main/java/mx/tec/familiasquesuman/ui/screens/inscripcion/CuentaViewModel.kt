@@ -328,6 +328,25 @@ class CuentaViewModel(
         }
     }
 
+    // ── Mi Perfil · Mi familia ──
+
+    /**
+     * Registra a una persona de la familia. Desde ese momento aparece sola en P-06 al inscribirse
+     * a cualquier actividad, y ahí se puede quitar a quien no va.
+     */
+    fun agregarFamiliar(persona: Acompanante) {
+        _acompanantes.update { actuales ->
+            val nombre = persona.nombre.trim()
+            // Mismo nombre = misma persona: se reemplaza para no duplicarla.
+            actuales.filterNot { it.nombre.trim().equals(nombre, ignoreCase = true) } + persona.copy(nombre = nombre)
+        }
+    }
+
+    /** Lo quita de la familia registrada. Las inscripciones que ya hizo no cambian. */
+    fun quitarFamiliar(persona: Acompanante) {
+        _acompanantes.update { it - persona }
+    }
+
     // ── P-07 · Inscripciones ──
 
     fun registrarInscripcion(actividadId: String, acompanantes: List<Acompanante>) {
@@ -335,7 +354,10 @@ class CuentaViewModel(
         // Si ya estaban inscritos, sus lugares viejos se devuelven antes de tomar los nuevos.
         val cambio = -(1 + acompanantes.size) + (anteriores?.let { 1 + it.size } ?: 0)
         _inscripciones.update { it + (actividadId to acompanantes) }
-        _acompanantes.update { guardados -> (guardados + acompanantes).distinct() }
+        // Mismo nombre = misma persona, aunque su edad ya haya cambiado desde que se registró.
+        _acompanantes.update { guardados ->
+            guardados + acompanantes.filter { nuevo -> guardados.none { it.nombre.trim().equals(nuevo.nombre.trim(), ignoreCase = true) } }
+        }
         _ajusteLugares.update { it + (actividadId to (it[actividadId] ?: 0) + cambio) }
     }
 

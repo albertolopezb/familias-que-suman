@@ -169,7 +169,7 @@ private val FormatoFecha = DateTimeFormatter.ofPattern("d 'de' MMMM 'de' yyyy", 
 
 /** Se ve como un campo de texto, pero al tocarlo abre el calendario. */
 @Composable
-private fun CampoFechaNacimiento(
+internal fun CampoFechaNacimiento(
     fecha: LocalDate?,
     onClick: () -> Unit,
     error: String?,
@@ -213,7 +213,7 @@ private fun CampoFechaNacimiento(
  * español (meses, días y encabezado), aunque el teléfono esté en otro idioma.
  */
 @Composable
-private fun CalendarioNacimiento(
+internal fun CalendarioNacimiento(
     fecha: LocalDate?,
     onElegir: (LocalDate) -> Unit,
     onCerrar: () -> Unit

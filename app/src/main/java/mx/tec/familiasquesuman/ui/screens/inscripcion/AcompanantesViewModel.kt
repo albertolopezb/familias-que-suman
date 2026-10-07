@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import mx.tec.familiasquesuman.data.ActividadRepository
 import mx.tec.familiasquesuman.domain.Acompanante
 import mx.tec.familiasquesuman.domain.Actividad
+import mx.tec.familiasquesuman.domain.Sexo
 import mx.tec.familiasquesuman.ui.state.UiState
 import java.time.LocalDate
 import java.time.Period
@@ -24,7 +25,8 @@ data class FilaUi(
     val nombre: String,
     val fechaNacimiento: LocalDate?,
     val nueva: Boolean,
-    val edadGuardada: Int? = null
+    val edadGuardada: Int? = null,
+    val sexo: Sexo? = null
 ) {
     val edad: Int? get() = fechaNacimiento?.let { edadEnAnios(it) } ?: edadGuardada
 }
@@ -71,7 +73,7 @@ data class AcompanantesUi(
             filas.all { filaValida(it) } && (!hayMenores || consentimiento)
 
     val acompanantes: List<Acompanante>
-        get() = filas.map { Acompanante(it.nombre.trim(), it.edad ?: 0, it.fechaNacimiento) }
+        get() = filas.map { Acompanante(it.nombre.trim(), it.edad ?: 0, it.fechaNacimiento, it.sexo) }
 }
 
 /**
@@ -107,7 +109,7 @@ class AcompanantesViewModel(private val actividadRepository: ActividadRepository
                         actividad = actividadRepository.getActividad(actividadId),
                         titular = titular,
                         filas = guardados.map {
-                            FilaUi(siguienteId++, it.nombre, it.fechaNacimiento, nueva = false, edadGuardada = it.edad)
+                            FilaUi(siguienteId++, it.nombre, it.fechaNacimiento, nueva = false, edadGuardada = it.edad, sexo = it.sexo)
                         },
                         lugaresDisponibles = lugaresDisponibles
                     )
