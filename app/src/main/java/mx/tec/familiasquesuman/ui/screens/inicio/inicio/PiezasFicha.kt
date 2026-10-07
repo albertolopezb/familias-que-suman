@@ -1,6 +1,7 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -25,6 +27,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -32,7 +36,9 @@ import androidx.compose.ui.unit.sp
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TextoWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Web
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.fotoDeActividad
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoInstagram
+import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoImagen
 
 // Piezas del detalle de un centro (familiasquesuman.com/directorio/{id}) y de un
 // proyecto (familiasquesuman.com/proyectos/{id}). Las dos fichas se arman igual.
@@ -149,6 +155,73 @@ internal fun SiguenosEnInstagram(onClick: () -> Unit) {
             contentAlignment = Alignment.Center
         ) {
             Icon(IconoInstagram, contentDescription = "Instagram", tint = Color.White, modifier = Modifier.size(22.dp))
+        }
+    }
+}
+
+/** Logo de un centro o proyecto: imagen cuadrada con esquinas redondeadas, borde fino y fondo blanco. */
+@Composable
+internal fun Logo(
+    nombreDrawable: String?,
+    descripcion: String,
+    tamano: Int = 56
+) {
+    val recurso = fotoDeActividad(nombreDrawable)
+    Box(
+        modifier = Modifier
+            .size(tamano.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Web.Tarjeta)
+            .border(1.dp, Web.Borde, RoundedCornerShape(12.dp))
+            .padding(1.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        if (recurso != null) {
+            Image(
+                painter = painterResource(recurso),
+                contentDescription = descripcion,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.size((tamano - 8).dp)
+            )
+        } else {
+            Icon(
+                IconoImagen,
+                contentDescription = null,
+                tint = Web.TextoApagado,
+                modifier = Modifier.size((tamano / 2).dp)
+            )
+        }
+    }
+}
+
+@Composable
+internal fun Buscador(valor: String, onValor: (String) -> Unit, placeholder: String) {
+    BuscadorEstiloMinimal(valor, onValor, placeholder)
+}
+
+/** Buscador estilo minimalista y curvo */
+@Composable
+internal fun BuscadorEstiloMinimal(valor: String, onValor: (String) -> Unit, placeholder: String) {
+    val forma = RoundedCornerShape(20.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(forma)
+            .background(Color(0xFFF1F5F9))
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(IconosWeb.Buscar, contentDescription = null, tint = Web.TextoApagado, modifier = Modifier.size(18.dp))
+        Box(modifier = Modifier.weight(1f)) {
+            if (valor.isEmpty()) Text(placeholder, fontSize = 14.sp, color = Web.TextoApagado)
+            BasicTextField(
+                value = valor,
+                onValueChange = onValor,
+                singleLine = true,
+                textStyle = TextoWeb.Cuerpo,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
     }
 }
