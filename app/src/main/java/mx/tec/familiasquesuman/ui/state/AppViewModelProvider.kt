@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import mx.tec.familiasquesuman.FamiliasApplication
 import mx.tec.familiasquesuman.ui.screens.actividades.ActividadesViewModel
 import mx.tec.familiasquesuman.ui.screens.actividades.DetalleActividadViewModel
+import mx.tec.familiasquesuman.ui.screens.actividades.MapaViewModel
 import mx.tec.familiasquesuman.ui.screens.actividades.MisActividadesViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.AsociacionViewModel
 import mx.tec.familiasquesuman.ui.screens.inicio.DirectorioViewModel
@@ -87,6 +88,9 @@ object AppViewModelProvider {
                 familiasApplication().container.encuestaRepository
             )
         }
+
+        // La pestaña "Mapa" de Actividades: lo que hay cerca de la familia
+        initializer { MapaViewModel(familiasApplication().container.mapaRepository) }
 
         // Parte 4 · Campañas
         initializer {

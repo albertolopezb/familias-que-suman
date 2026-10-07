@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import mx.tec.familiasquesuman.domain.Acompanante
 import mx.tec.familiasquesuman.domain.Familia
 import mx.tec.familiasquesuman.domain.Impacto
 import mx.tec.familiasquesuman.domain.Usuario
@@ -43,6 +44,7 @@ import mx.tec.familiasquesuman.ui.components.CargandoView
 import mx.tec.familiasquesuman.ui.components.ErrorView
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
 import mx.tec.familiasquesuman.ui.screens.perfil.componentes.GraficaBarras
+import mx.tec.familiasquesuman.ui.screens.perfil.componentes.SeccionFamilia
 import mx.tec.familiasquesuman.ui.screens.perfil.componentes.TarjetaMetrica
 import mx.tec.familiasquesuman.ui.state.UiState
 import mx.tec.familiasquesuman.ui.theme.*
@@ -76,7 +78,10 @@ fun PerfilScreen(
     onSugerenciasClick: () -> Unit = {},
     onRegresar: (() -> Unit)? = null,
     onTestimoniosClick: () -> Unit = {},
-    onRespuestasClick: () -> Unit = {}
+    onRespuestasClick: () -> Unit = {},
+    familiares: List<Acompanante> = emptyList(),
+    onAgregarFamiliar: (Acompanante) -> Unit = {},
+    onQuitarFamiliar: (Acompanante) -> Unit = {}
 ) {
     Column(modifier.fillMaxSize().background(Fondo)) {
         BarraSuperior(if (usuarioActual.esAdmin) "Perfil Admin" else "Mi perfil", onRegresar = onRegresar)
@@ -97,7 +102,10 @@ fun PerfilScreen(
                 onSugerirClick = onSugerirClick,
                 onSugerenciasClick = onSugerenciasClick,
                 onTestimoniosClick = onTestimoniosClick,
-                onRespuestasClick = onRespuestasClick
+                onRespuestasClick = onRespuestasClick,
+                familiares = familiares,
+                onAgregarFamiliar = onAgregarFamiliar,
+                onQuitarFamiliar = onQuitarFamiliar
             )
         }
     }
@@ -118,7 +126,10 @@ private fun ContenidoPerfil(
     onSugerirClick: () -> Unit,
     onSugerenciasClick: () -> Unit,
     onTestimoniosClick: () -> Unit,
-    onRespuestasClick: () -> Unit
+    onRespuestasClick: () -> Unit,
+    familiares: List<Acompanante>,
+    onAgregarFamiliar: (Acompanante) -> Unit,
+    onQuitarFamiliar: (Acompanante) -> Unit
 ) {
     Column(
         Modifier
@@ -214,6 +225,9 @@ private fun ContenidoPerfil(
                 Spacer(Modifier.height(12.dp))
                 GraficaBarras(etiquetasMensuales, valoresMensuales)
             }
+
+            EtiquetaSeccion("MI FAMILIA")
+            SeccionFamilia(familiares, onAgregarFamiliar, onQuitarFamiliar)
 
             EtiquetaSeccion("PRÓXIMAS")
             datos.proximas.forEach { actividad ->

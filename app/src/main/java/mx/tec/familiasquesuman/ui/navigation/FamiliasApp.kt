@@ -178,6 +178,9 @@ fun FamiliasApp() {
                         }
                     },
                     onVerAsociaciones = { nav.navigate(RutasInicio.EXPLORAR) },
+                    // El mini menú del mapa lleva al detalle de lo que se tocó.
+                    onVerProyecto = { id -> nav.navigate(RutasInicio.proyecto(id)) },
+                    onVerCampana = { id -> nav.navigate(RutasCampanas.detalle(id)) },
                     onInscribirme = { id -> nav.navigate(RutasInscripcion.inscribirse(id)) },
                     onInscribirmeConPrueba = { id, sinCupo -> nav.navigate(RutasInscripcion.inscribirse(id, sinCupo)) },
                     onCancelarInscripcion = { id -> nav.navigate(RutasInscripcion.cancelar(id)) },

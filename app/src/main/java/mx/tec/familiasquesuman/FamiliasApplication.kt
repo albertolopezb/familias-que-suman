@@ -4,6 +4,7 @@ import android.app.Application
 import mx.tec.familiasquesuman.data.ActividadRepository
 import mx.tec.familiasquesuman.data.CampanaRepository
 import mx.tec.familiasquesuman.data.EncuestaRepository
+import mx.tec.familiasquesuman.data.MapaRepository
 import mx.tec.familiasquesuman.data.PerfilRepository
 import mx.tec.familiasquesuman.data.SugerenciaRepository
 import mx.tec.familiasquesuman.data.TestimonioRepository
@@ -20,6 +21,7 @@ class AppContainer {
     val sugerenciaRepository: SugerenciaRepository by lazy { SugerenciaRepository() }
     val testimonioRepository: TestimonioRepository by lazy { TestimonioRepository() }
     val encuestaRepository: EncuestaRepository by lazy { EncuestaRepository() }
+    val mapaRepository: MapaRepository by lazy { MapaRepository(actividadRepository, campanaRepository) }
 }
 
 /** Vive tanto como el proceso. Declarada en el manifiesto con `android:name`. */
