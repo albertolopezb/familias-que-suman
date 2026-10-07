@@ -85,6 +85,8 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController, esAdmin: () -> Boolean = {
     // P-09 / 09b / 09c / 09d + hoja de filtros P-10
     composable(RutasCampanas.LISTA) {
         val vm: CampanasViewModel = viewModel(factory = AppViewModelProvider.Factory)
+        val centrosVm: TengoAlgoParaDonarViewModel = viewModel(factory = AppViewModelProvider.Factory)
+        val estadoCentros by centrosVm.estado.collectAsStateWithLifecycle()
         val estado by vm.campanas.collectAsStateWithLifecycle()
         val aplicados by vm.aplicados.collectAsStateWithLifecycle()
         val chip by vm.chipElegido.collectAsStateWithLifecycle()
@@ -100,6 +102,10 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController, esAdmin: () -> Boolean = {
         val lista = (estado as? UiState.Exito)?.datos.orEmpty()
 
         CampanasScreen(
+            estadoCentros = estadoCentros,
+            onTipoCentro = centrosVm::seleccionarTipo,
+            onSeleccionarCentro = centrosVm::seleccionarCentro,
+            onReintentarCentros = centrosVm::cargar,
             estado = estado,
             filtros = aplicados,
             chipElegido = chip,

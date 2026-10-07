@@ -25,11 +25,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,15 +38,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TextoWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Web
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.fotoDeActividad
-import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoCaja
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoChevron
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoEscudo
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoImagen
@@ -56,14 +54,19 @@ import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoMensaje
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoNavegacion
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoReloj
 import mx.tec.familiasquesuman.ui.screens.campanas.componentes.IconoTelefono
-import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
+import mx.tec.familiasquesuman.ui.theme.*
+import mx.tec.familiasquesuman.ui.state.UiState
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.stateDescription
 
-private const val Todos = "Todos"
-private val AzulBoton = Color(0xFF2563EB)
+private const val Todos = TengoAlgoParaDonarUiState.TODOS
 private val AzulChipFondo = Color(0xFFEFF6FF)
 private val AzulChipTexto = Color(0xFF1D4ED8)
 private val VerdeSuave = Color(0xFFF0FDF4)
-private val CajaRecepcion = Color(0xFFF1F5F9)
 
 /**
  * "Tengo algo para donar", como familiasquesuman.com/donar: los tipos de donación arriba y,
@@ -78,48 +81,67 @@ fun TengoAlgoParaDonar(
     onAbrirEnlace: (String) -> Unit,
     onNoEncontre: () -> Unit,
     modifier: Modifier = Modifier,
-    centros: List<CentroRecepcion> = CentrosDeRecepcion
+    estado: TengoAlgoParaDonarUiState,
+    onTipoSeleccionado: (String) -> Unit,
+    onCentroSeleccionado: (String) -> Unit,
+    onReintentar: () -> Unit
 ) {
-    // Solo estado de pantalla: qué tipo se eligió y cuál tarjeta está abierta.
-    var tipo by rememberSaveable { mutableStateOf(Todos) }
-    var abierta by rememberSaveable { mutableStateOf<String?>(null) }
-    val visibles = if (tipo == Todos) centros else centros.filter { tipo in it.tipos }
+    val visibles = estado.centrosVisibles
 
     LazyColumn(
-        modifier = modifier,
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = modifier.background(Fondo).testTag("centrosLista"),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text("¿Qué quieres aportar?", style = TextoWeb.Seccion.copy(fontSize = 16.sp), color = Web.Texto)
+            Text("¿Qué quieres aportar?", style = MaterialTheme.typography.titleLarge, color = MarcaAzul)
         }
         item {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            LazyRow(modifier = Modifier.testTag("tiposDonacion"), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(listOf(Todos) + TiposDeDonacion) { nombre ->
-                    ChipTipo(nombre = nombre, elegido = nombre == tipo, onClick = { tipo = nombre })
+                    ChipTipo(nombre = nombre, elegido = nombre == estado.tipoSeleccionado, onClick = { onTipoSeleccionado(nombre) })
                 }
             }
         }
-        if (visibles.isEmpty()) {
-            item {
-                Text(
-                    "Todavía no hay asociaciones para este tipo de aportación.",
-                    style = TextoWeb.Cuerpo,
-                    color = Web.TextoApagado,
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("Lugares donde puedes donar", style = MaterialTheme.typography.titleLarge, color = MarcaAzul)
+                if (estado.datos is UiState.Exito) Text(
+                    if (visibles.size == 1) "1 centro acepta lo que seleccionaste"
+                    else "${visibles.size} centros aceptan lo que seleccionaste",
+                    style = MaterialTheme.typography.bodyMedium, color = TintaSuave)
             }
         }
-        items(visibles, key = { it.id }) { centro ->
-            TarjetaCentro(
-                centro = centro,
-                abierta = abierta == centro.id,
-                onAlternar = { abierta = if (abierta == centro.id) null else centro.id },
-                onLlamar = onLlamar,
-                onWhatsApp = onWhatsApp,
-                onComoLlegar = onComoLlegar,
-                onAbrirEnlace = onAbrirEnlace
-            )
+        when (val datos = estado.datos) {
+            UiState.Cargando -> item {
+                Row(Modifier.fillMaxWidth().padding(vertical = 24.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(Modifier.size(24.dp), color = MarcaAzul)
+                    Text("Cargando centros…", color = TintaSuave)
+                }
+            }
+            is UiState.Error -> item {
+                Surface(shape = RoundedCornerShape(16.dp), color = ErrorFondo) {
+                    Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                        Text(datos.mensaje, color = ErrorTexto, style = MaterialTheme.typography.bodyLarge)
+                        TextButton(onClick = onReintentar) { Text("Reintentar", color = MarcaAzul) }
+                    }
+                }
+            }
+            is UiState.Exito -> {
+                if (visibles.isEmpty()) item {
+                    Surface(shape = RoundedCornerShape(16.dp), color = AzulTarjetaFondo) {
+                        Text("Todavía no hay asociaciones para este tipo de aportación.",
+                            style = MaterialTheme.typography.bodyLarge, color = TintaSuave,
+                            modifier = Modifier.fillMaxWidth().padding(20.dp))
+                    }
+                }
+                items(visibles, key = { it.id }) { centro ->
+                    TarjetaCentro(centro = centro, abierta = estado.centroExpandido == centro.id,
+                        onAlternar = { onCentroSeleccionado(centro.id) },
+                        onLlamar = onLlamar, onWhatsApp = onWhatsApp,
+                        onComoLlegar = onComoLlegar, onAbrirEnlace = onAbrirEnlace)
+                }
+            }
         }
         item { TarjetaNoEncontre(onClick = onNoEncontre) }
     }
@@ -130,8 +152,8 @@ fun TengoAlgoParaDonar(
 /** Un emoji por tipo mientras no haya íconos propios; el color de fondo es de cada tipo. */
 private fun adornoDe(tipo: String): Pair<String, Color> = when (tipo) {
     "Juguetes" -> "🧸" to Color(0xFFFFF4D6)
-    "Ropa" -> "👕" to Color(0xFFF3E8FF)
-    "Alimentos" -> "🍎" to Color(0xFFDCFCE7)
+    "Ropa" -> "👕" to MoradoTarjetaFondo
+    "Alimentos" -> "🍎" to VerdeTarjetaFondo
     "Higiene" -> "💧" to Color(0xFFDBEAFE)
     "Sillas de ruedas" -> "♿" to Color(0xFFD1FAF0)
     "Camas hospitalarias" -> "🛏️" to Color(0xFFFFE4E6)
@@ -149,10 +171,10 @@ private fun ChipTipo(nombre: String, elegido: Boolean, onClick: () -> Unit) {
     val (emoji, fondo) = adornoDe(nombre)
     Surface(
         onClick = onClick,
-        modifier = Modifier.width(78.dp),
+        modifier = Modifier.width(100.dp).semantics { selected = elegido },
         shape = RoundedCornerShape(16.dp),
-        color = Web.Tarjeta,
-        border = BorderStroke(if (elegido) 2.dp else 1.dp, if (elegido) Web.Primario else Web.Borde)
+        color = if (elegido) VerdeTarjetaFondo else fondo.copy(alpha = 0.45f),
+        border = BorderStroke(if (elegido) 2.dp else 1.dp, if (elegido) MarcaAzul else Web.Borde)
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 10.dp),
@@ -160,19 +182,19 @@ private fun ChipTipo(nombre: String, elegido: Boolean, onClick: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Box(
-                modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(fondo),
+                modifier = Modifier.size(36.dp).clip(CircleShape).background(fondo),
                 contentAlignment = Alignment.Center
             ) {
                 if (nombre == Todos) {
-                    Icon(IconoCaja, contentDescription = null, tint = Web.Primario, modifier = Modifier.size(20.dp))
+                    Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, tint = MarcaAzul, modifier = Modifier.size(20.dp))
                 } else {
                     Text(emoji, fontSize = 18.sp)
                 }
             }
             Text(
                 nombre,
-                style = TextoWeb.Chip,
-                color = Web.Texto,
+                style = MaterialTheme.typography.labelMedium,
+                color = Tinta,
                 textAlign = TextAlign.Center,
                 minLines = 2,
                 maxLines = 2,
@@ -198,13 +220,13 @@ private fun TarjetaCentro(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = Web.Tarjeta,
-        border = BorderStroke(1.dp, Web.Borde)
+        color = Superficie,
+        shadowElevation = 2.dp
     ) {
         Column {
             // Cabecera: siempre visible; al tocarla se abre o se cierra.
             Column(
-                modifier = Modifier.clickable(onClick = onAlternar).padding(16.dp),
+                modifier = Modifier.semantics { stateDescription = if (abierta) "Expandida" else "Contraída" }.clickable(onClickLabel = if (abierta) "Contraer asociación" else "Expandir asociación", onClick = onAlternar).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -215,71 +237,66 @@ private fun TarjetaCentro(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
-                                Icon(IconoEscudo, null, tint = Web.Primario, modifier = Modifier.size(12.dp))
-                                Text("Verificado", style = TextoWeb.Chip, color = Web.Primario)
+                                Icon(IconoEscudo, null, tint = MarcaAzul, modifier = Modifier.size(12.dp))
+                                Text("Verificado", style = MaterialTheme.typography.labelMedium, color = MarcaAzul)
                             }
                         }
-                        Text(centro.nombre, style = TextoWeb.TituloTarjeta, color = Web.Primario)
-                        Text(centro.tipo, style = TextoWeb.Cuerpo, color = Web.TextoApagado)
+                        Text(centro.nombre, style = MaterialTheme.typography.titleMedium, color = MarcaAzul)
+                        Text(centro.tipo, style = MaterialTheme.typography.labelLarge, color = TintaSuave)
                     }
                     Icon(
                         IconoChevron,
                         contentDescription = if (abierta) "Cerrar" else "Abrir",
-                        tint = Web.TextoApagado,
+                        tint = TintaSuave,
                         modifier = Modifier.size(20.dp).rotate(if (abierta) 180f else 0f)
                     )
                 }
-                Text(
-                    centro.descripcion,
-                    style = TextoWeb.Cuerpo,
-                    color = Web.TextoApagado,
-                    maxLines = if (abierta) Int.MAX_VALUE else 2,
-                    overflow = TextOverflow.Ellipsis
-                )
                 Row(
                     verticalAlignment = Alignment.Top,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
-                        IconoNavegacion, null, tint = Web.TextoApagado,
+                        Icons.Default.Place, null, tint = TintaSuave,
                         modifier = Modifier.padding(top = 2.dp).size(13.dp)
                     )
                     Text(
                         centro.direccion,
-                        style = TextoWeb.Chico,
-                        color = Web.TextoApagado,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TintaSuave,
                         maxLines = if (abierta) Int.MAX_VALUE else 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                // Cerrada: los primeros 4 tipos y "+N más". Abierta: todos.
-                val mostrados = if (abierta) centro.tipos else centro.tipos.take(4)
+                // Cerrada: los primeros 3 tipos y "+N más". Abierta: todos.
+                val mostrados = if (abierta) centro.tipos else centro.tipos.take(3)
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    mostrados.forEach { Etiqueta(it, Web.Secundario, Web.Texto) }
-                    if (!abierta && centro.tipos.size > 4) {
-                        Etiqueta("+${centro.tipos.size - 4} más", Web.Secundario, Web.TextoApagado)
+                    mostrados.forEach { Etiqueta(it, VerdeTarjetaFondo, VerdeCategoriaTexto) }
+                    if (!abierta && centro.tipos.size > 3) {
+                        Etiqueta("+${centro.tipos.size - 3} más", Web.Secundario, TintaSuave)
                     }
                 }
             }
 
             if (abierta) {
-                HorizontalDivider(color = Web.Borde)
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Borde)
                 Column(
                     modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Acerca del centro", style = MaterialTheme.typography.titleMedium, color = MarcaAzul)
+                        Text(centro.descripcion, style = MaterialTheme.typography.bodyLarge, color = TintaSuave)
+                    }
                     Grupo("Destinatarios", centro.destinatarios, AzulChipFondo, AzulChipTexto)
                     Grupo("Condiciones", centro.condiciones, Web.MoradoFondo, Web.MoradoTexto)
                     Grupo("Métodos de entrega", centro.metodosEntrega, VerdeSuave, Web.VerdeTexto)
 
-                    Surface(shape = RoundedCornerShape(12.dp), color = CajaRecepcion, modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("Condiciones de recepción", style = TextoWeb.Seccion, color = Web.Texto)
-                            Text(centro.condicionesRecepcion, style = TextoWeb.Cuerpo, color = Web.TextoApagado)
-                        }
+                    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Condiciones de recepción", style = MaterialTheme.typography.titleMedium, color = MarcaAzul)
+                        Text(centro.condicionesRecepcion, style = MaterialTheme.typography.bodyLarge, color = TintaSuave)
                     }
 
                     centro.horario?.let { horario ->
@@ -287,8 +304,8 @@ private fun TarjetaCentro(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(IconoReloj, null, tint = Web.TextoApagado, modifier = Modifier.size(16.dp))
-                            Text(horario, style = TextoWeb.Cuerpo, color = Web.TextoApagado)
+                            Icon(IconoReloj, null, tint = TintaSuave, modifier = Modifier.size(16.dp))
+                            Text(horario, style = MaterialTheme.typography.bodyLarge, color = TintaSuave)
                         }
                     }
 
@@ -298,23 +315,24 @@ private fun TarjetaCentro(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("Síguenos en:", style = TextoWeb.Chip, color = Web.TextoApagado)
+                            Text("Síguenos en:", style = MaterialTheme.typography.labelMedium, color = TintaSuave)
                             BotonInstagram(onClick = { onAbrirEnlace(enlace) })
                         }
                     }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        HorizontalDivider(color = Borde)
                         centro.whatsapp?.let {
-                            BotonAccion("WhatsApp", IconoMensaje, Web.WhatsApp, Color.White, null, Modifier.weight(1f)) {
+                            BotonAccion("WhatsApp", IconoMensaje, Web.WhatsApp, Color.White, null, Modifier.fillMaxWidth()) {
                                 onWhatsApp(it)
                             }
                         }
                         centro.telefono?.let {
-                            BotonAccion("Llamar", IconoTelefono, Web.Tarjeta, Web.VerdeTexto, Web.Verde, Modifier.weight(1f)) {
+                            BotonAccion("Llamar", IconoTelefono, Superficie, MarcaAzul, MarcaAzul, Modifier.fillMaxWidth()) {
                                 onLlamar(it)
                             }
                         }
-                        BotonAccion("Cómo llegar", IconoNavegacion, AzulBoton, Color.White, null, Modifier.weight(1f)) {
+                        BotonAccion("Cómo llegar", IconoNavegacion, MarcaAzul, Color.White, null, Modifier.fillMaxWidth()) {
                             onComoLlegar(centro.direccion)
                         }
                     }
@@ -331,8 +349,8 @@ private fun Logo(centro: CentroRecepcion) {
         modifier = Modifier
             .size(56.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(Web.Tarjeta)
-            .padding(1.dp),
+            .background(VerdeTarjetaFondo)
+            .padding(2.dp),
         contentAlignment = Alignment.Center
     ) {
         if (recurso != null) {
@@ -343,7 +361,7 @@ private fun Logo(centro: CentroRecepcion) {
                 modifier = Modifier.size(52.dp)
             )
         } else {
-            Icon(IconoImagen, contentDescription = null, tint = Web.TextoApagado, modifier = Modifier.size(24.dp))
+            Icon(IconoImagen, contentDescription = null, tint = TintaSuave, modifier = Modifier.size(24.dp))
         }
     }
 }
@@ -353,7 +371,7 @@ private fun Etiqueta(texto: String, fondo: Color, color: Color) {
     Text(
         texto,
         modifier = Modifier.clip(RoundedCornerShape(50)).background(fondo).padding(horizontal = 12.dp, vertical = 4.dp),
-        style = TextoWeb.Chip,
+        style = MaterialTheme.typography.labelMedium,
         color = color
     )
 }
@@ -362,7 +380,7 @@ private fun Etiqueta(texto: String, fondo: Color, color: Color) {
 @Composable
 private fun Grupo(titulo: String, valores: List<String>, fondo: Color, color: Color) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(titulo, style = TextoWeb.Seccion, color = Web.Texto)
+        Text(titulo, style = MaterialTheme.typography.titleMedium, color = MarcaAzul)
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             valores.forEach { Etiqueta(it, fondo, color) }
         }
@@ -392,18 +410,18 @@ private fun BotonAccion(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 44.dp),
+        modifier = modifier.heightIn(min = 48.dp),
         shape = RoundedCornerShape(12.dp),
         color = fondo,
-        border = borde?.let { BorderStroke(2.dp, it) }
+        border = borde?.let { BorderStroke(1.dp, it) }
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 6.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
         ) {
-            Icon(icono, contentDescription = null, tint = colorTexto, modifier = Modifier.size(14.dp))
-            Text(texto, style = TextoWeb.Chip.copy(fontSize = 13.sp), color = colorTexto, maxLines = 1)
+            Icon(icono, contentDescription = null, tint = colorTexto, modifier = Modifier.size(18.dp))
+            Text(texto, style = MaterialTheme.typography.labelLarge, color = colorTexto, maxLines = 1)
         }
     }
 }
@@ -412,6 +430,36 @@ private fun BotonAccion(
 @Composable
 private fun TengoAlgoPreview() {
     FamiliasQueSumanTheme {
-        TengoAlgoParaDonar({}, {}, {}, {}, {})
+        TengoAlgoParaDonar({}, {}, {}, {}, {}, estado = TengoAlgoParaDonarUiState(UiState.Exito(CentrosDeRecepcion)), onTipoSeleccionado = {}, onCentroSeleccionado = {}, onReintentar = {})
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun TengoAlgoCargandoPreview() = PreviewEstadoCentros(TengoAlgoParaDonarUiState())
+
+@Preview(showBackground = true)
+@Composable
+private fun TengoAlgoErrorPreview() = PreviewEstadoCentros(
+    TengoAlgoParaDonarUiState(UiState.Error("No se pudieron cargar los centros de donación."))
+)
+
+@Preview(showBackground = true)
+@Composable
+private fun TengoAlgoVacioPreview() = PreviewEstadoCentros(
+    TengoAlgoParaDonarUiState(UiState.Exito(emptyList()), tipoSeleccionado = "Ropa")
+)
+
+@Preview(showBackground = true, heightDp = 1600)
+@Composable
+private fun TengoAlgoExpandidoPreview() = PreviewEstadoCentros(
+    TengoAlgoParaDonarUiState(UiState.Exito(CentrosDeRecepcion), centroExpandido = "apadrina")
+)
+
+@Composable
+private fun PreviewEstadoCentros(estado: TengoAlgoParaDonarUiState) {
+    FamiliasQueSumanTheme {
+        TengoAlgoParaDonar({}, {}, {}, {}, {}, estado = estado,
+            onTipoSeleccionado = {}, onCentroSeleccionado = {}, onReintentar = {})
     }
 }

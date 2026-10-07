@@ -108,7 +108,11 @@ fun CampanasScreen(
     onCrearCampana: () -> Unit = {},
     onEditarCampana: (String) -> Unit = {},
     onBorrarCampana: (String) -> Unit = {},
-    onSugerir: () -> Unit = {}
+    onSugerir: () -> Unit = {},
+    estadoCentros: TengoAlgoParaDonarUiState = TengoAlgoParaDonarUiState(),
+    onTipoCentro: (String) -> Unit = {},
+    onSeleccionarCentro: (String) -> Unit = {},
+    onReintentarCentros: () -> Unit = {}
 ) {
     Scaffold(
         // El Scaffold de FamiliasApp ya respeta barra de estado y de navegación: aquí no se duplica.
@@ -145,7 +149,11 @@ fun CampanasScreen(
                 onWhatsApp = onWhatsAppCentro,
                 onComoLlegar = onComoLlegar,
                 onAbrirEnlace = onAbrirEnlace,
-                onNoEncontre = onNoEncontre
+                onNoEncontre = onNoEncontre,
+                estado = estadoCentros,
+                onTipoSeleccionado = onTipoCentro,
+                onCentroSeleccionado = onSeleccionarCentro,
+                onReintentar = onReintentarCentros
             )
             return@Column
         }
