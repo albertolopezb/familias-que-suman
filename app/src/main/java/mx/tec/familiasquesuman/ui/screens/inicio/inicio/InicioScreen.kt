@@ -111,7 +111,12 @@ fun InicioScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = if (abiertasEnCiudad == 1) "1 actividad abierta en $ciudad." else "$abiertasEnCiudad actividades abiertas en $ciudad.",
+                            text = when {
+                                // Por ahora todas las actividades son de Monterrey: en otra ciudad se dice claro.
+                                ciudad != "Monterrey" -> "Pronto llegaremos a $ciudad. Mientras, mira las actividades de Monterrey."
+                                abiertasEnCiudad == 1 -> "1 actividad abierta en $ciudad."
+                                else -> "$abiertasEnCiudad actividades abiertas en $ciudad."
+                            },
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.White.copy(alpha = 0.9f)
                         )

@@ -61,9 +61,12 @@ fun NavGraphBuilder.grafoInicio(
     esAdmin: () -> Boolean = { false }
 ) {
     composable(RutasInicio.SPLASH) {
+        val app = LocalContext.current.applicationContext as FamiliasApplication
         SplashScreen(
             onSplashFinished = {
-                nav.navigate(RutasInicio.CIUDAD) {
+                // La ciudad solo se pregunta la primera vez; luego se cambia en el Inicio o en Ajustes.
+                val yaEligio = app.container.preferenciasStore.preferencias.value.ciudadElegida
+                nav.navigate(if (yaEligio) RutasInicio.INICIO else RutasInicio.CIUDAD) {
                     popUpTo(RutasInicio.SPLASH) { inclusive = true }
                 }
             }
@@ -108,8 +111,9 @@ fun NavGraphBuilder.grafoInicio(
             value = app.container.perfilRepository.getImpacto(sesion?.correo).actividadesRealizadas
         }
 
+        val prefsInicio by vm.prefs.collectAsStateWithLifecycle()
         InicioScreen(
-            ciudad = vm.ciudadElegida,
+            ciudad = prefsInicio.ciudad,
             onCambiarCiudad = vm::cambiarCiudad,
             asociacion = asociacionDestacada,
             nombreFamilia = sesion?.familia,

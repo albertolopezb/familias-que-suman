@@ -1,22 +1,22 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import mx.tec.familiasquesuman.data.ActividadRepository
+import mx.tec.familiasquesuman.data.PreferenciasStore
 import mx.tec.familiasquesuman.domain.Asociacion
 
 class InicioViewModel(
-    private val actividadRepository: ActividadRepository
+    private val actividadRepository: ActividadRepository,
+    private val preferencias: PreferenciasStore
 ) : ViewModel() {
 
-    var ciudadElegida by mutableStateOf("Monterrey")
-        private set
+    /** La ciudad vive en Preferencias: la que se elige al abrir la app, en el Inicio o en Ajustes es la misma. */
+    val ciudadElegida: String get() = preferencias.preferencias.value.ciudad
+    val prefs = preferencias.preferencias
 
     private val _asociacionDestacada = MutableStateFlow<Asociacion?>(null)
     val asociacionDestacada: StateFlow<Asociacion?> = _asociacionDestacada
@@ -25,9 +25,7 @@ class InicioViewModel(
         cargarDestacados()
     }
 
-    fun cambiarCiudad(nuevaCiudad: String) {
-        ciudadElegida = nuevaCiudad
-    }
+    fun cambiarCiudad(nuevaCiudad: String) = preferencias.cambiarCiudad(nuevaCiudad)
 
     private fun cargarDestacados() {
         viewModelScope.launch {

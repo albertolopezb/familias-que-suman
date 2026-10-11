@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.ui.theme.AmbarAcento
 import mx.tec.familiasquesuman.ui.theme.AzulMarinoPrimario
 
-private val CIUDADES = listOf("Monterrey", "Hermosillo")
+import mx.tec.familiasquesuman.data.CIUDADES
 
 /** La píldora de ciudad con su menú. Solo se enseña en el encabezado del Inicio. */
 @Composable

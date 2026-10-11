@@ -6,6 +6,7 @@ import mx.tec.familiasquesuman.data.CampanaRepository
 import mx.tec.familiasquesuman.data.EncuestaRepository
 import mx.tec.familiasquesuman.data.MapaRepository
 import mx.tec.familiasquesuman.data.PerfilRepository
+import mx.tec.familiasquesuman.data.PreferenciasStore
 import mx.tec.familiasquesuman.data.SugerenciaRepository
 import mx.tec.familiasquesuman.data.TestimonioRepository
 
@@ -14,7 +15,7 @@ import mx.tec.familiasquesuman.data.TestimonioRepository
  * Hoy los repositorios no necesitan nada; cuando entren la API y DataStore,
  * se construyen aquí y ningún ViewModel cambia.
  */
-class AppContainer {
+class AppContainer(contexto: android.content.Context) {
     val actividadRepository: ActividadRepository by lazy { ActividadRepository() }
     val campanaRepository: CampanaRepository by lazy { CampanaRepository() }
     val perfilRepository: PerfilRepository by lazy { PerfilRepository() }
@@ -22,6 +23,8 @@ class AppContainer {
     val testimonioRepository: TestimonioRepository by lazy { TestimonioRepository() }
     val encuestaRepository: EncuestaRepository by lazy { EncuestaRepository() }
     val mapaRepository: MapaRepository by lazy { MapaRepository(actividadRepository, campanaRepository) }
+    /** La ciudad y los avisos que se eligen en Ajustes, guardados en el teléfono. */
+    val preferenciasStore: PreferenciasStore = PreferenciasStore(contexto)
 }
 
 /** Vive tanto como el proceso. Declarada en el manifiesto con `android:name`. */
@@ -32,6 +35,6 @@ class FamiliasApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        container = AppContainer()
+        container = AppContainer(this)
     }
 }

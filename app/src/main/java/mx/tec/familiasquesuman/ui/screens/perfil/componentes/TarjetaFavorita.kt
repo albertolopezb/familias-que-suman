@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import mx.tec.familiasquesuman.ui.components.iniciales
 import mx.tec.familiasquesuman.ui.theme.*
 
 @Composable
@@ -37,7 +38,10 @@ fun TarjetaFavorita(
         border = BorderStroke(1.dp, Borde), shadowElevation = 2.dp) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Box(Modifier.size(50.dp).clip(RoundedCornerShape(10.dp)).background(fondoCategoria))
+            Box(Modifier.size(50.dp).clip(RoundedCornerShape(10.dp)).background(fondoCategoria),
+                contentAlignment = Alignment.Center) {
+                Text(iniciales(nombre), style = MaterialTheme.typography.titleMedium, color = textoCategoria)
+            }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(nombre, style = MaterialTheme.typography.titleMedium, color = Tinta)
                 Surface(shape = RoundedCornerShape(8.dp), color = fondoCategoria) {

@@ -39,7 +39,7 @@ object AppViewModelProvider {
 
     val Factory = viewModelFactory {
         initializer { mx.tec.familiasquesuman.ui.screens.campanas.TengoAlgoParaDonarViewModel() }
-        initializer { AjustesViewModel(familiasApplication().container.perfilRepository) }
+        initializer { AjustesViewModel(familiasApplication().container.preferenciasStore) }
         initializer { AvisoPrivacidadViewModel(familiasApplication().container.perfilRepository) }
         initializer {
             TestimonioViewModel(
@@ -60,7 +60,7 @@ object AppViewModelProvider {
         }
         // Agregar dentro del Factory initializer
         initializer {
-            InicioViewModel(familiasApplication().container.actividadRepository)
+            InicioViewModel(familiasApplication().container.actividadRepository, familiasApplication().container.preferenciasStore)
         }
         initializer {
             ExplorarViewModel(familiasApplication().container.actividadRepository)

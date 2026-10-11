@@ -9,6 +9,22 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import mx.tec.familiasquesuman.data.CIUDADES
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -137,16 +153,39 @@ fun NavGraphBuilder.grafoPerfil(
         val vm: AjustesViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val ciudad by vm.ciudad.collectAsStateWithLifecycle()
         val preferencias by vm.preferencias.collectAsStateWithLifecycle()
+        var eligiendoCiudad by remember { mutableStateOf(false) }
         AjustesScreen(
             ciudad = ciudad, preferencias = preferencias,
             onVolver = { nav.popBackStack() }, onReintentar = vm::reintentar,
-            onCambiarCiudad = vm::solicitarCambioCiudad,
+            onCambiarCiudad = { eligiendoCiudad = true },
             onRecordatorioChange = vm::cambiarRecordatorio,
             onAvisosFavoritosChange = vm::cambiarAvisosFavoritos,
             onUrgenciasCiudadChange = vm::cambiarUrgenciasCiudad,
             onAvisoPrivacidad = { nav.navigate(RutasPerfil.AVISO_PRIVACIDAD) { launchSingleTop = true } },
             onCerrarSesion = cuentaViewModel()::cerrarSesion
         )
+        if (eligiendoCiudad) {
+            val actual = (ciudad as? UiState.Exito)?.datos
+            AlertDialog(
+                onDismissRequest = { eligiendoCiudad = false },
+                title = { Text("¿En qué ciudad están?") },
+                text = {
+                    Column {
+                        CIUDADES.forEach { opcion ->
+                            Row(
+                                Modifier.fillMaxWidth().clickable { vm.cambiarCiudad(opcion); eligiendoCiudad = false }
+                                    .padding(vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(selected = opcion == actual, onClick = { vm.cambiarCiudad(opcion); eligiendoCiudad = false })
+                                Text(opcion)
+                            }
+                        }
+                    }
+                },
+                confirmButton = { TextButton(onClick = { eligiendoCiudad = false }) { Text("Cerrar") } }
+            )
+        }
     }
     composable(RutasPerfil.AVISO_PRIVACIDAD) {
         val vm: AvisoPrivacidadViewModel = viewModel(factory = AppViewModelProvider.Factory)
