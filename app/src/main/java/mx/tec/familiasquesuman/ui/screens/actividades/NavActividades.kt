@@ -19,7 +19,7 @@ import mx.tec.familiasquesuman.domain.Participacion
 import mx.tec.familiasquesuman.notificaciones.Notificaciones
 import mx.tec.familiasquesuman.ui.components.CargandoView
 import mx.tec.familiasquesuman.ui.components.ErrorView
-import mx.tec.familiasquesuman.ui.screens.actividades.componentes.compartirActividad
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.DialogoInvitacion
 import mx.tec.familiasquesuman.ui.screens.inscripcion.alternarFavorita
 import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
 import mx.tec.familiasquesuman.domain.TipoDePunto
@@ -97,6 +97,10 @@ fun NavGraphBuilder.grafoActividades(
         var actividadABorrar by remember { mutableStateOf<ActividadConAsociacion?>(null) }
 // NUEVO: Estado para confirmar duplicación
         var actividadADuplicar by remember { mutableStateOf<ActividadConAsociacion?>(null) }
+        // La actividad que se está por compartir: abre la vista previa de la invitación.
+        var porCompartir by remember { mutableStateOf<ActividadConAsociacion?>(null) }
+        val cuentaLista = cuentaViewModel()
+        val sesionLista by cuentaLista.sesion.collectAsStateWithLifecycle()
 
         ActividadesScreen(
             estado = estado,
@@ -104,7 +108,7 @@ fun NavGraphBuilder.grafoActividades(
             esAdmin = esAdmin(),
             onActividadClick = { id -> nav.navigate(RutasActividades.detalle(id)) },
             onUnirme = onInscribirme,
-            onCompartir = { item -> compartirActividad(contexto, item) },
+            onCompartir = { item -> porCompartir = item },
             onIrAInicio = onIrAInicio,
             onCiudadClick = onCambiarCiudad,
             onReintentar = vm::cargar,
@@ -138,6 +142,16 @@ fun NavGraphBuilder.grafoActividades(
                 }
             }
         )
+
+        porCompartir?.let { item ->
+            DialogoInvitacion(
+                item = item,
+                familia = sesionLista?.familia,
+                lugares = cuentaLista.lugaresDisponibles(item.actividad),
+                onCerrar = { porCompartir = null },
+                onCompartida = { cuentaLista.registrarInvitacion(); porCompartir = null }
+            )
+        }
 
         // Diálogo para Crear
         if (mostrandoCrear) {
@@ -252,6 +266,8 @@ fun NavGraphBuilder.grafoActividades(
         val cuenta = cuentaViewModel()
         val favoritas by cuenta.favoritas.collectAsStateWithLifecycle()
         var simularSinCupo by rememberSaveable { mutableStateOf(false) }
+        var porCompartir by remember { mutableStateOf<ActividadConAsociacion?>(null) }
+        val sesion by cuenta.sesion.collectAsStateWithLifecycle()
 
         when (val actual = estado) {
             is UiState.Cargando -> CargandoView()
@@ -265,18 +281,28 @@ fun NavGraphBuilder.grafoActividades(
                 item = actual.datos,
                 esFavorito = id in favoritas,
                 onRegresar = { nav.popBackStack() },
-                onCompartir = { compartirActividad(contexto, actual.datos) },
+                onCompartir = { porCompartir = actual.datos },
                 onAlternarFavorito = { nav.alternarFavorita(cuenta, id) },
                 // Parte 3 conecta esto con la puerta de cuenta (RF-18).
                 onInscribirme = { onInscribirmeConPrueba(id, simularSinCupo) },
                 simularSinCupo = simularSinCupo,
-                onSimularSinCupoChange = { simularSinCupo = it },
+                // La casilla de prueba de "se acaban los lugares" solo la ve el admin.
+                onSimularSinCupoChange = if (esAdmin()) ({ simularSinCupo = it }) else null,
                 onVerOtrasActividades = {
                     // Si se llegó desde la lista, se regresa a ella; si no, se abre.
                     if (!nav.popBackStack(RutasActividades.LISTA, inclusive = false)) {
                         nav.navigate(RutasActividades.LISTA)
                     }
                 }
+            )
+        }
+        porCompartir?.let { item ->
+            DialogoInvitacion(
+                item = item,
+                familia = sesion?.familia,
+                lugares = cuenta.lugaresDisponibles(item.actividad),
+                onCerrar = { porCompartir = null },
+                onCompartida = { cuenta.registrarInvitacion(); porCompartir = null }
             )
         }
     }

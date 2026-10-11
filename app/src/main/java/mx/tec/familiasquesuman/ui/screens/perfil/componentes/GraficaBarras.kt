@@ -12,6 +12,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import mx.tec.familiasquesuman.ui.theme.Borde
+import mx.tec.familiasquesuman.ui.theme.MarcaAzul
 import mx.tec.familiasquesuman.ui.theme.MarcaOro
 import mx.tec.familiasquesuman.ui.theme.TintaSuave
 
@@ -29,11 +31,15 @@ fun GraficaBarras(etiquetas: List<String>, valores: List<Int>, modifier: Modifie
         } else {
             // Normalización únicamente visual; no asigna valores a meses sin datos.
             val maximo = (valores.maxOrNull() ?: 0).coerceAtLeast(1)
-            Row(Modifier.fillMaxWidth().height(76.dp), verticalAlignment = Alignment.Bottom) {
+            Row(Modifier.fillMaxWidth().height(92.dp), verticalAlignment = Alignment.Bottom) {
                 valores.forEachIndexed { indice, valor ->
-                    Box(Modifier.weight(1f), contentAlignment = Alignment.BottomCenter) {
-                        Box(Modifier.width(33.dp).height((66f * valor / maximo).dp)
-                            .clip(RoundedCornerShape(7.dp)).background(MarcaOro)
+                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(valor.toString(), style = MaterialTheme.typography.labelMedium,
+                            color = if (valor > 0) MarcaAzul else TintaSuave)
+                        Spacer(Modifier.height(4.dp))
+                        // Un mes en cero se ve como una base gris, no como un hueco.
+                        Box(Modifier.width(33.dp).height(if (valor > 0) (66f * valor / maximo).dp else 4.dp)
+                            .clip(RoundedCornerShape(7.dp)).background(if (valor > 0) MarcaOro else Borde)
                             .semantics { contentDescription = "${etiquetas[indice]}: $valor actividades" })
                     }
                 }

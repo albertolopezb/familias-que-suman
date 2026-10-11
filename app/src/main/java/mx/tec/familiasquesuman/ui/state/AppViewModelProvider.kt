@@ -112,7 +112,8 @@ object AppViewModelProvider {
                 c.actividadRepository,
                 c.perfilRepository,
                 c.campanaRepository,
-                mx.tec.familiasquesuman.data.FavoritosStore(familiasApplication())
+                mx.tec.familiasquesuman.data.FavoritosStore(familiasApplication()),
+                mx.tec.familiasquesuman.data.PerfilLocalStore(familiasApplication())
             )
         }
         initializer { AcompanantesViewModel(familiasApplication().container.actividadRepository) }

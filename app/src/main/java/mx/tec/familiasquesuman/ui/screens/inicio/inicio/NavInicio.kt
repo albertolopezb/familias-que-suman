@@ -2,6 +2,10 @@ package mx.tec.familiasquesuman.ui.screens.inicio
 
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import mx.tec.familiasquesuman.FamiliasApplication
+import mx.tec.familiasquesuman.domain.proximasEnOrden
+import mx.tec.familiasquesuman.ui.screens.actividades.RutasActividades
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -96,6 +100,13 @@ fun NavGraphBuilder.grafoInicio(
         val testimonios by testimoniosVm.testimonios.collectAsStateWithLifecycle()
         // Al volver de la lista (donde se puede eliminar) se leen otra vez.
         LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { testimoniosVm.cargar() }
+        val catalogo by cuenta.actividades.collectAsStateWithLifecycle()
+        val inscripciones by cuenta.inscripciones.collectAsStateWithLifecycle()
+        val proximas = proximasEnOrden(catalogo.filter { it.id in inscripciones.keys })
+        val app = LocalContext.current.applicationContext as FamiliasApplication
+        val realizadas by produceState(0, sesion?.correo) {
+            value = app.container.perfilRepository.getImpacto(sesion?.correo).actividadesRealizadas
+        }
 
         InicioScreen(
             ciudad = vm.ciudadElegida,
@@ -113,10 +124,15 @@ fun NavGraphBuilder.grafoInicio(
             onExplorarClick = onNavegarAActividades,
             onActividadesClick = onNavegarAActividades,
             onDonarClick = onNavegarACampanas,
-            onProyectosClick = { nav.navigate(RutasInicio.PROYECTOS) },
-            onVisiteoClick = { nav.navigate(RutasInicio.VISITEO) },
+            onProyectosClick = { nav.navigate(RutasInicio.PROYECTOS) { popUpTo(RutasInicio.INICIO); launchSingleTop = true } },
+            onVisiteoClick = { nav.navigate(RutasInicio.VISITEO) { popUpTo(RutasInicio.INICIO); launchSingleTop = true } },
             testimonios = testimonios.take(2),
-            onVerTestimonios = { nav.navigate(RutasInicio.TESTIMONIOS) { launchSingleTop = true } }
+            onVerTestimonios = { nav.navigate(RutasInicio.TESTIMONIOS) { launchSingleTop = true } },
+            proxima = proximas.firstOrNull(),
+            cuantasProximas = proximas.size,
+            actividadesRealizadas = realizadas,
+            abiertasEnCiudad = proximasEnOrden(catalogo).size,
+            onProximaClick = { id -> nav.navigate(RutasActividades.detalle(id)) }
         )
     }
 

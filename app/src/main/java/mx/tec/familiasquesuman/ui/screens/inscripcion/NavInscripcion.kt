@@ -366,7 +366,7 @@ fun NavGraphBuilder.grafoInscripcion(nav: NavController) {
         }
         CancelarScreen(
             personas = 1 + (inscripciones[actividadId]?.size ?: 0),
-            faltaParaActividad = CuentaDePrueba.FALTA_PARA_ACTIVIDAD,
+            faltaParaActividad = faltaParaLaActividad(cuenta.actividad(actividadId)?.fecha),
             cancelando = cancelacion?.cancelando == true,
             onConfirmar = { cuenta.cancelarInscripcion(actividadId) },
             onMejorNo = { nav.popBackStack() }

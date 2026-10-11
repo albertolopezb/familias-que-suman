@@ -66,7 +66,7 @@ class TestimonioViewModel(
         carga = viewModelScope.launch {
             _participacion.value = UiState.Cargando
             try {
-                val encontrada = perfilRepository.getHistorial().firstOrNull { it.id == participacionId }
+                val encontrada = perfilRepository.getHistorial(correo).firstOrNull { it.id == participacionId }
                 _existente.value = correo?.let { c ->
                     testimonioRepository.getDeFamilia(c).firstOrNull { it.participacionId == participacionId }
                 }

@@ -31,6 +31,20 @@ class PerfilRepository {
     /** Lo que la familia ya hizo, de lo más reciente a lo más viejo (RF-11). */
     suspend fun getHistorial(): List<Participacion> = DatosDePrueba.historial
 
+    /**
+     * El historial de una cuenta. Solo la familia de prueba tiene participaciones registradas;
+     * una cuenta recién creada empieza sin historial, como pasará con el backend.
+     */
+    suspend fun getHistorial(correo: String?): List<Participacion> =
+        if (esFamiliaDePrueba(correo)) DatosDePrueba.historial else emptyList()
+
+    /** El impacto de una cuenta: el de la familia de prueba, o en ceros si es nueva. */
+    suspend fun getImpacto(correo: String?): Impacto =
+        if (esFamiliaDePrueba(correo)) DatosDePrueba.impacto else Impacto(0, 0, 0)
+
+    private fun esFamiliaDePrueba(correo: String?) =
+        correo != null && correo.trim().equals(DatosDePrueba.familia.correo, ignoreCase = true)
+
     /** El folio de la solicitud de eliminación de datos de esta cuenta, si ya la mandó. */
     suspend fun getSolicitudEliminacion(correo: String): String? = solicitudes[correo.trim().lowercase()]
 

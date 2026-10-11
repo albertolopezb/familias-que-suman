@@ -15,21 +15,42 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.ui.theme.*
 
-/** Estado sin datos: no representa una insignia obtenida ni bloqueada. */
+/**
+ * Una insignia: dorada sobre azul cuando ya se ganó; gris con su avance ("2 de 5") cuando falta.
+ */
 @Composable
-fun Insignia(titulo: String, descripcion: String, icono: ImageVector, modifier: Modifier = Modifier) {
-    Surface(modifier, shape = RoundedCornerShape(16.dp), color = Superficie,
-        border = BorderStroke(1.dp, Borde)) {
+fun Insignia(
+    titulo: String,
+    descripcion: String,
+    icono: ImageVector,
+    actual: Int,
+    meta: Int,
+    modifier: Modifier = Modifier
+) {
+    val obtenida = actual >= meta
+    Surface(modifier, shape = RoundedCornerShape(16.dp), color = if (obtenida) AcentoSuave else Superficie,
+        border = BorderStroke(if (obtenida) 1.5.dp else 1.dp, if (obtenida) MarcaOro else Borde)) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Box(Modifier.size(50.dp).clip(CircleShape).background(Borde), contentAlignment = Alignment.Center) {
-                Icon(icono, contentDescription = null, tint = TintaSuave, modifier = Modifier.size(24.dp))
+            Box(Modifier.size(50.dp).clip(CircleShape).background(if (obtenida) MarcaAzul else Borde),
+                contentAlignment = Alignment.Center) {
+                Icon(icono, contentDescription = null, tint = if (obtenida) MarcaOro else TintaSuave,
+                    modifier = Modifier.size(24.dp))
             }
             Text(titulo, style = MaterialTheme.typography.titleMedium, color = Tinta, textAlign = TextAlign.Center)
             Text(descripcion, style = MaterialTheme.typography.bodyMedium, color = TintaSuave,
                 textAlign = TextAlign.Center, modifier = Modifier.heightIn(min = 32.dp))
-            Text("Sin datos", style = MaterialTheme.typography.labelMedium, color = TintaSuave)
+            if (obtenida) {
+                Text("¡Obtenida!", style = MaterialTheme.typography.labelMedium, color = AcentoTexto)
+            } else {
+                LinearProgressIndicator(
+                    progress = { actual.toFloat() / meta },
+                    modifier = Modifier.fillMaxWidth(0.8f).height(5.dp).clip(RoundedCornerShape(3.dp)),
+                    color = MarcaOro, trackColor = Borde, gapSize = 0.dp, drawStopIndicator = {}
+                )
+                Text("$actual de $meta", style = MaterialTheme.typography.labelMedium, color = TintaSuave)
+            }
         }
     }
 }

@@ -79,15 +79,13 @@ fun MisActividadesScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 64.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item(key = "titulo") {
-                TituloDePagina(
-                    titulo = "Mis Actividades",
-                    subtitulo = "${datos.proximas.size} próximas · ${datos.historial.size} realizadas"
-                )
-            }
+            item(key = "resumen") { Resumen(datos.proximas.size, datos.historial.size) }
 
             if (datos.proximas.isEmpty() && datos.historial.isEmpty()) {
                 item(key = "vacia") { TodaviaSinActividades(onVerActividades = onVerActividades) }
+            } else if (datos.proximas.isEmpty()) {
+                // Antes del historial, para que quede claro que no hay nada en puerta.
+                item(key = "sin-proximas") { SinProximas(onVerActividades = onVerActividades) }
             }
 
             if (datos.proximas.isNotEmpty()) {
@@ -386,5 +384,56 @@ private fun MisActividadesVaciaPreview() {
             onCompartirTestimonio = {},
             onVerActividades = {}
         )
+    }
+}
+
+/** Lo que viene y lo que ya hicieron, en los colores de la marca. */
+@Composable
+private fun Resumen(proximas: Int, realizadas: Int) {
+    Row(
+        modifier = Modifier
+            .padding(top = 16.dp)
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(Web.Primario)
+            .padding(horizontal = 18.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Cifra(proximas, if (proximas == 1) "próxima" else "próximas", Modifier.weight(1f))
+        Box(Modifier.size(width = 1.dp, height = 36.dp).background(Color.White.copy(alpha = 0.25f)))
+        Cifra(realizadas, if (realizadas == 1) "realizada" else "realizadas", Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun Cifra(valor: Int, etiqueta: String, modifier: Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(valor.toString(), style = TextoWeb.Titulo.copy(color = Web.Amarillo, fontSize = 26.sp))
+        Text(etiqueta, style = TextoWeb.Chico.copy(color = Color.White))
+    }
+}
+
+/** No tienen nada en puerta: se dice claro, en azul y amarillo, y se ofrece qué hacer. */
+@Composable
+private fun SinProximas(onVerActividades: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(Web.AmbarSuave)
+            .border(1.5.dp, Web.Amarillo, RoundedCornerShape(18.dp))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            CirculoDeIcono(icono = IconosWeb.Calendario, color = Web.Primario, fondo = Web.Amarillo,
+                modifier = Modifier.size(40.dp))
+            Text("No tienen actividades próximas", style = TextoWeb.TituloTarjeta.copy(color = Web.Primario, fontSize = 16.sp))
+        }
+        Text(
+            "Su historial está abajo. Elijan una actividad de este mes para volver a sumar en familia.",
+            style = TextoWeb.Cuerpo, color = Web.Texto
+        )
+        BotonAmarillo(texto = "Ver actividades", onClick = onVerActividades, modifier = Modifier.fillMaxWidth())
     }
 }

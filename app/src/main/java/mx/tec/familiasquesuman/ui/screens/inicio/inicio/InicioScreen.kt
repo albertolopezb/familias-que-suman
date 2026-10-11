@@ -21,7 +21,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.R
+import mx.tec.familiasquesuman.domain.Actividad
 import mx.tec.familiasquesuman.domain.Asociacion
+import mx.tec.familiasquesuman.domain.cuantoFalta
+import mx.tec.familiasquesuman.domain.fechaDeTexto
+import mx.tec.familiasquesuman.ui.components.iniciales
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
 import mx.tec.familiasquesuman.domain.Testimonio
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
 import mx.tec.familiasquesuman.ui.screens.inicio.componentes.*
@@ -46,7 +51,12 @@ fun InicioScreen(
     onProyectosClick: () -> Unit,
     onVisiteoClick: () -> Unit,
     testimonios: List<Testimonio> = emptyList(),
-    onVerTestimonios: () -> Unit = {}
+    onVerTestimonios: () -> Unit = {},
+    proxima: Actividad? = null,
+    cuantasProximas: Int = 0,
+    actividadesRealizadas: Int = 0,
+    abiertasEnCiudad: Int = 0,
+    onProximaClick: (String) -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
     // La barra de arriba (logo, ciudad y perfil) queda fija, igual que en las demás pantallas.
@@ -100,7 +110,7 @@ fun InicioScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "3 actividades cerca de ti en $ciudad.",
+                            text = if (abiertasEnCiudad == 1) "1 actividad abierta en $ciudad." else "$abiertasEnCiudad actividades abiertas en $ciudad.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.White.copy(alpha = 0.9f)
                         )
@@ -146,8 +156,8 @@ fun InicioScreen(
             ) {
                 TarjetaCategoriaUI(
                     titulo = "Actividades en Familia",
-                    descripcion = "Actividades en familia para ayudar durante el año.",
-                    icono = Icons.Default.Favorite,
+                    descripcion = "Para ayudar en familia durante el año.",
+                    icono = IconosWeb.Personas,
                     colorTarjeta = MoradoTarjetaFondo,
                     colorFondo = MoradoCategoriaFondo,
                     colorTexto = MoradoCategoriaTexto,
@@ -157,7 +167,7 @@ fun InicioScreen(
                 TarjetaCategoriaUI(
                     titulo = "Quiero Donar",
                     descripcion = "Apoyo en especie y tiempo.",
-                    icono = Icons.Default.Send,
+                    icono = IconosWeb.ManoCorazon,
                     colorTarjeta = VerdeTarjetaFondo,
                     colorFondo = VerdeCategoriaFondo,
                     colorTexto = VerdeCategoriaTexto,
@@ -177,8 +187,8 @@ fun InicioScreen(
             ) {
                 TarjetaCategoriaUI(
                     titulo = "Proyectos",
-                    descripcion = "Proyectos con causas y objetivos específicos.",
-                    icono = Icons.Default.LocationOn,
+                    descripcion = "Causas con objetivos específicos.",
+                    icono = IconosWeb.Foco,
                     colorTarjeta = AzulTarjetaFondo,
                     colorFondo = AzulCategoriaFondo,
                     colorTexto = AzulCategoriaTexto,
@@ -187,8 +197,8 @@ fun InicioScreen(
                 )
                 TarjetaCategoriaUI(
                     titulo = "Directorio de Visiteo",
-                    descripcion = "Centros y espacios para visitar y apoyar en familia.",
-                    icono = Icons.Default.Place,
+                    descripcion = "Centros para visitar y apoyar en familia.",
+                    icono = IconosWeb.Ubicacion,
                     colorTarjeta = MentaTarjetaFondo.copy(alpha = 0.75f),
                     colorFondo = MentaCategoriaFondo,
                     colorTexto = MentaCategoriaTexto,
@@ -205,8 +215,8 @@ fun InicioScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    MetricaItem("12", "Actividades realizadas", Modifier.weight(1f))
-                    MetricaItem("3", "Próximas esta semana", Modifier.weight(1f))
+                    MetricaItem(actividadesRealizadas.toString(), "Actividades realizadas", Modifier.weight(1f))
+                    MetricaItem(cuantasProximas.toString(), if (cuantasProximas == 1) "Actividad próxima" else "Actividades próximas", Modifier.weight(1f))
                     MetricaItem(favoritas.size.toString(), "Favoritas guardadas", Modifier.weight(1f))
                 }
                 Spacer(modifier = Modifier.height(28.dp))
@@ -267,7 +277,7 @@ fun InicioScreen(
             }
 
             if (nombreFamilia != null) {
-                // Sección Tu Próxima Actividad
+                // Sección Tu Próxima Actividad: la de verdad, no una de ejemplo.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -282,43 +292,9 @@ fun InicioScreen(
                         Text("Ver agenda", color = AmbarAcento)
                     }
                 }
-
-                // Banner Próxima Actividad
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 32.dp),
-                    colors = CardDefaults.cardColors(containerColor = AzulBannerFondo),
-                    shape = RoundedCornerShape(20.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Surface(
-                                color = VerdeConfirmado,
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text(
-                                    text = "✓ Inscrita",
-                                    color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    style = MaterialTheme.typography.labelMedium
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Mañana",
-                                color = AmbarAcento,
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Apoyo en Comedor Comunitario",
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
-                }
+                ProximaActividad(proxima, cuantasProximas, onClick = { proxima?.let { onProximaClick(it.id) } },
+                    onVerActividades = onActividadesClick)
+                Spacer(modifier = Modifier.height(32.dp))
 
             } else {
                 InvitacionCuenta(onCrearCuenta = onCrearCuenta, onIniciarSesion = onIniciarSesion)
@@ -379,8 +355,15 @@ private fun TarjetaCausa(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFFEF3C7))
-            )
+                    .background(Color(0xFFFEF3C7)),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = iniciales(nombre),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color(0xFF92400E)
+                )
+            }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -446,6 +429,62 @@ private fun InvitacionCuenta(onCrearCuenta: () -> Unit, onIniciarSesion: () -> U
             TextButton(onClick = onIniciarSesion, modifier = Modifier.fillMaxWidth()) {
                 Text("Ya tengo cuenta · Iniciar sesión", color = Color.White)
             }
+        }
+    }
+}
+
+/** La próxima actividad de la familia, o un aviso claro de que no tiene ninguna. */
+@Composable
+private fun ProximaActividad(actividad: Actividad?, total: Int, onClick: () -> Unit, onVerActividades: () -> Unit) {
+    if (actividad == null) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = AzulBannerFondo),
+            shape = RoundedCornerShape(20.dp)
+        ) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Aún no tienen actividades próximas", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                Text("Elijan una actividad y súmense en familia.", color = Color.White.copy(alpha = 0.85f),
+                    style = MaterialTheme.typography.bodyMedium)
+                Button(onClick = onVerActividades, colors = ButtonDefaults.buttonColors(containerColor = AmbarAcento),
+                    shape = RoundedCornerShape(12.dp)) {
+                    Text("Ver actividades", color = AzulBannerFondo, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        return
+    }
+    val dia = fechaDeTexto(actividad.fecha)
+    Card(
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = AzulBannerFondo),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(color = VerdeConfirmado, shape = RoundedCornerShape(12.dp)) {
+                    Text(
+                        text = "✓ Inscritos",
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                if (dia != null) {
+                    Text(text = cuantoFalta(dia), color = AmbarAcento, style = MaterialTheme.typography.labelLarge)
+                }
+                Spacer(Modifier.weight(1f))
+                if (total > 1) {
+                    Text("+${total - 1} más", color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.labelMedium)
+                }
+            }
+            Text(text = actividad.titulo, color = Color.White, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = "${actividad.fecha.replaceFirstChar { it.uppercase() }} · ${actividad.horario}",
+                color = Color.White.copy(alpha = 0.85f),
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }

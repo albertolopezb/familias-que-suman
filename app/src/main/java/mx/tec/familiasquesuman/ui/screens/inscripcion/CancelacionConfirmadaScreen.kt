@@ -66,7 +66,7 @@ fun CancelacionConfirmadaScreen(
             IconoEnCirculo(Icons.Filled.Check, AcentoSuave, AcentoTexto)
             Text("Cancelamos tu inscripción", style = MaterialTheme.typography.headlineMedium, color = Tinta)
             Text(
-                "Ya avisamos al $asociacion.",
+                "Ya avisamos a $asociacion.",
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 13.sp),
                 color = TintaSuave,
                 textAlign = TextAlign.Center

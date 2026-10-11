@@ -8,6 +8,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.navigation.NavBackStackEntry
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -138,7 +140,7 @@ fun FamiliasApp() {
             NavHost(
                 navController = nav,
                 startDestination = RutasInicio.SPLASH,
-                modifier = Modifier.padding(padding),
+                modifier = Modifier.padding(padding).deslizarEntrePestanas(rutaActual) { ruta -> nav.irA(ruta) },
                 enterTransition = { entrada(initialState, targetState) },
                 exitTransition = { salida(initialState, targetState) },
                 popEnterTransition = { entradaAlRegresar(initialState, targetState) },
@@ -161,8 +163,8 @@ fun FamiliasApp() {
 
                 grafoInicio(
                     nav = nav,
-                    onNavegarAActividades = { nav.navigate(RutasActividades.LISTA) },
-                    onNavegarACampanas = { nav.navigate(RutasCampanas.LISTA) },
+                    onNavegarAActividades = { nav.irA(RutasActividades.LISTA) },
+                    onNavegarACampanas = { nav.irA(RutasCampanas.LISTA) },
                     // "Ver agenda" es lo de la familia: Mis actividades (pide sesión).
                     onVerAgenda = { abrirConSesion(Rutas.MIS_ACTIVIDADES) },
                     esAdmin = { usuarioActual.esAdmin }
@@ -210,27 +212,70 @@ private val rutasSinBarra = listOf(
 private val rutasDePestana = pestanas.map { it.ruta }.toSet()
 
 private const val DuracionPantalla = 300
-private const val DuracionPestana = 180
+private const val DuracionPestana = 260
 
-/** Entre pestañas la pantalla se desvanece; al entrar a un detalle o flujo se desliza desde la derecha. */
+/**
+ * Entre pestañas la pantalla se desliza completa hacia el lado de la pestaña, como al pasar
+ * páginas; al entrar a un detalle o flujo se desliza un poco desde la derecha.
+ */
 private fun entreRaices(de: NavBackStackEntry, a: NavBackStackEntry) =
     de.destination.route in rutasDePestana && a.destination.route in rutasDePestana
 
+private fun indice(e: NavBackStackEntry) = pestanas.indexOfFirst { it.ruta == e.destination.route }
+
+/** true si la pestaña de destino está a la derecha de la de origen. */
+private fun haciaLaDerecha(de: NavBackStackEntry, a: NavBackStackEntry) = indice(a) > indice(de)
+
+private fun entreRaicesEntra(de: NavBackStackEntry, a: NavBackStackEntry): EnterTransition =
+    slideInHorizontally(tween(DuracionPestana)) { if (haciaLaDerecha(de, a)) it else -it }
+
+private fun entreRaicesSale(de: NavBackStackEntry, a: NavBackStackEntry): ExitTransition =
+    slideOutHorizontally(tween(DuracionPestana)) { if (haciaLaDerecha(de, a)) -it else it }
+
 private fun entrada(de: NavBackStackEntry, a: NavBackStackEntry): EnterTransition =
-    if (entreRaices(de, a)) fadeIn(tween(DuracionPestana))
+    if (entreRaices(de, a)) entreRaicesEntra(de, a)
     else slideInHorizontally(tween(DuracionPantalla)) { it / 3 } + fadeIn(tween(DuracionPantalla))
 
 private fun salida(de: NavBackStackEntry, a: NavBackStackEntry): ExitTransition =
-    if (entreRaices(de, a)) fadeOut(tween(DuracionPestana))
+    if (entreRaices(de, a)) entreRaicesSale(de, a)
     else slideOutHorizontally(tween(DuracionPantalla)) { -it / 5 } + fadeOut(tween(DuracionPantalla))
 
 private fun entradaAlRegresar(de: NavBackStackEntry, a: NavBackStackEntry): EnterTransition =
-    if (entreRaices(de, a)) fadeIn(tween(DuracionPestana))
+    if (entreRaices(de, a)) entreRaicesEntra(de, a)
     else slideInHorizontally(tween(DuracionPantalla)) { -it / 5 } + fadeIn(tween(DuracionPantalla))
 
 private fun salidaAlRegresar(de: NavBackStackEntry, a: NavBackStackEntry): ExitTransition =
-    if (entreRaices(de, a)) fadeOut(tween(DuracionPestana))
+    if (entreRaices(de, a)) entreRaicesSale(de, a)
     else slideOutHorizontally(tween(DuracionPantalla)) { it / 3 } + fadeOut(tween(DuracionPantalla))
+
+/**
+ * En las pantallas de la barra de abajo, deslizar el dedo a la izquierda abre la pestaña de la
+ * derecha y al revés. Lo que se desliza por dentro (chips, carruseles, el mapa) va primero: si
+ * ya usó el gesto, aquí no se cambia de pestaña.
+ */
+private fun Modifier.deslizarEntrePestanas(rutaActual: String?, irA: (String) -> Unit): Modifier {
+    val actual = pestanas.indexOfFirst { it.ruta == rutaActual }
+    if (actual < 0) return this
+    return this.pointerInput(actual) {
+        val umbral = 64.dp.toPx()
+        var recorrido = 0f
+        detectHorizontalDragGestures(
+            onDragStart = { recorrido = 0f },
+            onDragCancel = { recorrido = 0f },
+            onDragEnd = {
+                val destino = when {
+                    recorrido < -umbral -> actual + 1
+                    recorrido > umbral -> actual - 1
+                    else -> -1
+                }
+                if (destino in pestanas.indices) irA(pestanas[destino].ruta)
+            }
+        ) { cambio, delta ->
+            recorrido += delta
+            cambio.consume()
+        }
+    }
+}
 
 /** Pantallas que solo existen con sesión abierta. */
 private val rutasConSesion = setOf(

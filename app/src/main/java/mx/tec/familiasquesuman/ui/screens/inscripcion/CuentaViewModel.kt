@@ -12,7 +12,11 @@ import mx.tec.familiasquesuman.data.ActividadRepository
 import mx.tec.familiasquesuman.domain.Campana
 import mx.tec.familiasquesuman.data.FavoritosStore
 import mx.tec.familiasquesuman.data.CampanaRepository
+import mx.tec.familiasquesuman.data.PerfilLocalStore
 import mx.tec.familiasquesuman.data.PerfilRepository
+import android.net.Uri
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import mx.tec.familiasquesuman.domain.Acompanante
 import mx.tec.familiasquesuman.domain.Actividad
 import mx.tec.familiasquesuman.domain.Asociacion
@@ -96,7 +100,8 @@ class CuentaViewModel(
     private val actividadRepository: ActividadRepository,
     private val perfilRepository: PerfilRepository,
     private val campanaRepository: CampanaRepository,
-    private val favoritosStore: FavoritosStore
+    private val favoritosStore: FavoritosStore,
+    private val perfilLocal: PerfilLocalStore? = null
 ) : ViewModel() {
 
     private data class CuentaGuardada(
@@ -129,6 +134,14 @@ class CuentaViewModel(
 
     private val _campanas = MutableStateFlow<List<Campana>>(emptyList())
     val campanas: StateFlow<List<Campana>> = _campanas.asStateFlow()
+
+    /** Ruta de la foto de perfil de la cuenta con sesión; null = sin foto (se ven las iniciales). */
+    private val _foto = MutableStateFlow<String?>(null)
+    val foto: StateFlow<String?> = _foto.asStateFlow()
+
+    /** Cuántas veces la cuenta ha invitado a otras familias a una actividad. */
+    private val _invitaciones = MutableStateFlow(0)
+    val invitaciones: StateFlow<Int> = _invitaciones.asStateFlow()
 
     /** El corazón que se tocó sin sesión: se pone solo al entrar. */
     private var favoritoPendiente: String? = null
@@ -284,6 +297,8 @@ class CuentaViewModel(
         _acompanantes.value = emptyList()
         _inscripciones.value = emptyMap()
         _favoritas.value = emptySet()
+        _foto.value = null
+        _invitaciones.value = 0
     }
 
     private fun abrirSesion(cuenta: CuentaGuardada) {
@@ -295,6 +310,32 @@ class CuentaViewModel(
         favoritoPendiente = null
         _favoritas.value = if (pendiente != null) guardadas + pendiente else guardadas
         if (pendiente != null) favoritosStore.guardar(cuenta.sesion.correo, _favoritas.value)
+        _foto.value = perfilLocal?.foto(cuenta.sesion.correo)
+        _invitaciones.value = perfilLocal?.invitaciones(cuenta.sesion.correo) ?: 0
+    }
+
+    // ── Foto de perfil e invitaciones ──
+
+    /** Guarda la foto elegida en el selector como foto de la cuenta. */
+    fun cambiarFoto(uri: Uri?) {
+        val correo = _sesion.value?.correo ?: return
+        if (uri == null) return // Cancelar el selector deja la foto como estaba.
+        viewModelScope.launch {
+            val ruta = withContext(Dispatchers.IO) { perfilLocal?.guardarFoto(correo, uri) }
+            if (ruta != null) _foto.value = ruta
+        }
+    }
+
+    fun quitarFoto() {
+        val correo = _sesion.value?.correo ?: return
+        perfilLocal?.quitarFoto(correo)
+        _foto.value = null
+    }
+
+    /** La familia compartió una invitación a una actividad. */
+    fun registrarInvitacion() {
+        val correo = _sesion.value?.correo ?: return
+        _invitaciones.value = perfilLocal?.sumarInvitacion(correo) ?: (_invitaciones.value + 1)
     }
 
     /** Pone o quita el corazón. Solo con sesión: quien llama decide qué hacer si no la hay. */

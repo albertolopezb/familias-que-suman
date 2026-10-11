@@ -37,3 +37,18 @@ internal fun lugares(n: Int) = if (n == 1) "1 lugar" else "$n lugares"
 
 private val patronCorreo = Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]{2,}$")
 internal fun esCorreoValido(correo: String) = patronCorreo.matches(correo.trim())
+
+/**
+ * La nota de P-20 con lo que falta de verdad para la actividad: "Faltan 48 días para la
+ * actividad, todavía estás a tiempo." Sin fecha legible, una nota general.
+ */
+internal fun faltaParaLaActividad(fecha: String?, hoy: java.time.LocalDate = java.time.LocalDate.now()): String {
+    val dia = fecha?.let { mx.tec.familiasquesuman.domain.fechaDeTexto(it, hoy) }
+        ?: return "Puedes cancelar hasta 12 horas antes de la actividad."
+    val dias = java.time.temporal.ChronoUnit.DAYS.between(hoy, dia)
+    return when {
+        dias <= 0 -> "La actividad es hoy: avisa a la asociación si ya no pueden ir."
+        dias == 1L -> "La actividad es mañana, todavía estás a tiempo."
+        else -> "Faltan $dias días para la actividad, todavía estás a tiempo."
+    }
+}

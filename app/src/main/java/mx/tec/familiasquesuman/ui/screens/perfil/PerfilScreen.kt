@@ -4,6 +4,8 @@ import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -13,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddCircle
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Lock
@@ -34,6 +37,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mx.tec.familiasquesuman.domain.Acompanante
+import mx.tec.familiasquesuman.domain.Actividad
+import mx.tec.familiasquesuman.domain.cuantoFalta
+import mx.tec.familiasquesuman.domain.fechaDeTexto
+import mx.tec.familiasquesuman.ui.components.AvatarFamilia
 import mx.tec.familiasquesuman.domain.Familia
 import mx.tec.familiasquesuman.domain.Impacto
 import mx.tec.familiasquesuman.domain.Usuario
@@ -81,7 +88,13 @@ fun PerfilScreen(
     onRespuestasClick: () -> Unit = {},
     familiares: List<Acompanante> = emptyList(),
     onAgregarFamiliar: (Acompanante) -> Unit = {},
-    onQuitarFamiliar: (Acompanante) -> Unit = {}
+    onQuitarFamiliar: (Acompanante) -> Unit = {},
+    foto: String? = null,
+    onCambiarFoto: () -> Unit = {},
+    onQuitarFoto: () -> Unit = {},
+    proximas: List<Actividad>? = null,
+    onProximaClick: (String) -> Unit = {},
+    onVerActividades: () -> Unit = {}
 ) {
     Column(modifier.fillMaxSize().background(Fondo)) {
         BarraSuperior(if (usuarioActual.esAdmin) "Perfil Admin" else "Mi perfil", onRegresar = onRegresar)
@@ -105,7 +118,13 @@ fun PerfilScreen(
                 onRespuestasClick = onRespuestasClick,
                 familiares = familiares,
                 onAgregarFamiliar = onAgregarFamiliar,
-                onQuitarFamiliar = onQuitarFamiliar
+                onQuitarFamiliar = onQuitarFamiliar,
+                foto = foto,
+                onCambiarFoto = onCambiarFoto,
+                onQuitarFoto = onQuitarFoto,
+                proximas = proximas ?: estado.datos.proximas,
+                onProximaClick = onProximaClick,
+                onVerActividades = onVerActividades
             )
         }
     }
@@ -129,7 +148,13 @@ private fun ContenidoPerfil(
     onRespuestasClick: () -> Unit,
     familiares: List<Acompanante>,
     onAgregarFamiliar: (Acompanante) -> Unit,
-    onQuitarFamiliar: (Acompanante) -> Unit
+    onQuitarFamiliar: (Acompanante) -> Unit,
+    foto: String?,
+    onCambiarFoto: () -> Unit,
+    onQuitarFoto: () -> Unit,
+    proximas: List<Actividad>,
+    onProximaClick: (String) -> Unit,
+    onVerActividades: () -> Unit
 ) {
     Column(
         Modifier
@@ -142,20 +167,15 @@ private fun ContenidoPerfil(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Box(
-                Modifier
-                    .size(60.dp)
-                    .clip(CircleShape)
-                    .background(if (usuarioActual.esAdmin) Color(0xFFFFD1D1) else Color(0xFFC5DEFF)),
-                contentAlignment = Alignment.Center
-            ) {
-                if (usuarioActual.esAdmin) {
-                    Icon(
-                        imageVector = Icons.Outlined.Lock,
-                        contentDescription = "Admin",
-                        tint = Color(0xFFB3261E)
-                    )
+            if (usuarioActual.esAdmin) {
+                Box(
+                    Modifier.size(64.dp).clip(CircleShape).background(Color(0xFFFFD1D1)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Outlined.Lock, contentDescription = "Admin", tint = Color(0xFFB3261E))
                 }
+            } else {
+                FotoDePerfil(foto, usuarioActual.nombreFamilia, onCambiarFoto, onQuitarFoto)
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
@@ -223,23 +243,21 @@ private fun ContenidoPerfil(
             TarjetaPerfil {
                 Text("Actividades por mes", style = MaterialTheme.typography.titleMedium, color = Tinta)
                 Spacer(Modifier.height(12.dp))
-                GraficaBarras(etiquetasMensuales, valoresMensuales)
+                if (valoresMensuales.isEmpty() && datos.porMes.isNotEmpty()) {
+                    GraficaBarras(datos.porMes.map { it.first }, datos.porMes.map { it.second })
+                } else {
+                    GraficaBarras(etiquetasMensuales, valoresMensuales)
+                }
             }
 
             EtiquetaSeccion("MI FAMILIA")
             SeccionFamilia(familiares, onAgregarFamiliar, onQuitarFamiliar)
 
             EtiquetaSeccion("PRÓXIMAS")
-            datos.proximas.forEach { actividad ->
-                TarjetaPerfil {
-                    Text(actividad.titulo, style = MaterialTheme.typography.titleMedium, color = Tinta)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "${actividad.fecha} · ${actividad.horario}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TintaSuave
-                    )
-                }
+            if (proximas.isEmpty()) {
+                SinProximas(onVerActividades)
+            } else {
+                proximas.forEach { actividad -> TarjetaProxima(actividad, onClick = { onProximaClick(actividad.id) }) }
             }
 
             AccesoPerfil(
@@ -279,7 +297,7 @@ private fun ProbarNotificaciones() {
         ).show()
     }
 
-    EtiquetaSeccion("NOTIFICACIONES")
+    EtiquetaSeccion("PROBAR NOTIFICACIONES")
     if (!activadas) {
         OutlinedButton(onClick = pedirPermiso, modifier = Modifier.fillMaxWidth()) {
             Text("Activar notificaciones")
@@ -356,5 +374,82 @@ private fun PerfilPreview() {
             onFavoritosClick = {},
             onInsigniasClick = {}
         )
+    }
+}
+
+/** La foto de la familia, con un botón de cámara para cambiarla o quitarla. */
+@Composable
+private fun FotoDePerfil(foto: String?, nombre: String, onCambiar: () -> Unit, onQuitar: () -> Unit) {
+    var menu by remember { mutableStateOf(false) }
+    Box {
+        Box(Modifier.size(68.dp).clip(CircleShape).clickable { if (foto == null) onCambiar() else menu = true }) {
+            AvatarFamilia(foto, nombre, 68.dp)
+        }
+        Box(
+            Modifier.align(Alignment.BottomEnd).size(24.dp).clip(CircleShape).background(MarcaOro)
+                .border(2.dp, Color.White, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Outlined.Edit, contentDescription = null, tint = MarcaAzul, modifier = Modifier.size(13.dp))
+        }
+        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+            DropdownMenuItem(text = { Text("Cambiar foto") }, onClick = { menu = false; onCambiar() })
+            DropdownMenuItem(text = { Text("Quitar foto", color = ErrorRojo) }, onClick = { menu = false; onQuitar() })
+        }
+    }
+}
+
+@Composable
+private fun TarjetaProxima(actividad: Actividad, onClick: () -> Unit) {
+    val dia = fechaDeTexto(actividad.fecha)
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = Superficie,
+        border = BorderStroke(1.dp, Borde),
+        shadowElevation = 2.dp
+    ) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(
+                Modifier.size(52.dp).clip(RoundedCornerShape(14.dp)).background(MarcaAzul),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(dia?.dayOfMonth?.toString() ?: "—", style = MaterialTheme.typography.titleLarge, color = MarcaOro)
+                Text(
+                    dia?.month?.getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale("es", "MX"))
+                        ?.uppercase()?.trimEnd('.') ?: "",
+                    style = MaterialTheme.typography.labelSmall, color = Color.White
+                )
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(actividad.titulo, style = MaterialTheme.typography.titleMedium, color = Tinta)
+                Text(actividad.horario, style = MaterialTheme.typography.bodyMedium, color = TintaSuave)
+            }
+            if (dia != null) {
+                Surface(shape = RoundedCornerShape(50), color = AcentoSuave) {
+                    Text(cuantoFalta(dia), style = MaterialTheme.typography.labelMedium, color = AcentoTexto,
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp))
+                }
+            }
+        }
+    }
+}
+
+/** Cuando la familia no tiene nada en puerta, se le dice claro y se le ofrece qué hacer. */
+@Composable
+private fun SinProximas(onVerActividades: () -> Unit) {
+    Surface(Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp), color = MarcaAzul) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Aún no tienen actividades próximas", style = MaterialTheme.typography.titleMedium, color = Color.White)
+            Text("Elijan una actividad de este mes y súmense en familia.",
+                style = MaterialTheme.typography.bodyMedium, color = Color(0xFFC9D6F5))
+            Button(onClick = onVerActividades, shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MarcaOro, contentColor = MarcaAzul)) {
+                Text("Ver actividades", fontWeight = FontWeight.Bold)
+            }
+        }
     }
 }

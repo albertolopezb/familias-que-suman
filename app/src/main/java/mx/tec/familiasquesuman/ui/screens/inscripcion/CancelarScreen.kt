@@ -70,8 +70,9 @@ fun CancelarScreen(
         ) {
             Text("¿Cancelar tu inscripción?", style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp), color = Tinta)
             Text(
-                (if (personas == 1) "Tu lugar vuelve" else "Los ${lugares(personas)} vuelven") +
-                    " a quedar disponibles de inmediato para otra familia. Puedes volver a inscribirte si todavía hay cupo.",
+                (if (personas == 1) "Tu lugar vuelve a quedar disponible"
+                else "Los ${lugares(personas)} vuelven a quedar disponibles") +
+                    " de inmediato para otra familia. Puedes volver a inscribirte si todavía hay cupo.",
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 13.sp),
                 color = TintaSuave
             )

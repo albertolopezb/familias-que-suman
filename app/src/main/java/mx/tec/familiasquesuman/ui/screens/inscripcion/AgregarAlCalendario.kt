@@ -9,22 +9,9 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import mx.tec.familiasquesuman.domain.Actividad
+import mx.tec.familiasquesuman.domain.fechaDeTexto
 
-// RF-07. Las fechas son texto ("sábado, 26 de septiembre") y no traen año: se toma el
-// año en curso, o el siguiente si esa fecha ya quedó muy atrás.
-
-private val meses = listOf(
-    "enero", "febrero", "marzo", "abril", "mayo", "junio",
-    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
-)
-
-private fun parsearFecha(fecha: String, hoy: LocalDate = LocalDate.now()): LocalDate? {
-    val texto = fecha.lowercase()
-    val dia = Regex("""\b(\d{1,2})\b""").find(texto)?.groupValues?.get(1)?.toIntOrNull() ?: return null
-    val mes = meses.indexOfFirst { texto.contains(it) }.takeIf { it >= 0 }?.plus(1) ?: return null
-    val candidata = runCatching { LocalDate.of(hoy.year, mes, dia) }.getOrNull() ?: return null
-    return if (candidata.isBefore(hoy.minusMonths(2))) candidata.plusYears(1) else candidata
-}
+// RF-07. La fecha de la actividad se lee con fechaDeTexto (domain/Fechas.kt).
 
 private fun parsearHoras(horario: String): Pair<LocalTime, LocalTime?>? {
     val horas = Regex("""(\d{1,2}):(\d{2})""").findAll(horario)
@@ -42,7 +29,7 @@ fun agregarActividadAlCalendario(context: Context, actividad: Actividad, asociac
         putExtra(CalendarContract.Events.EVENT_LOCATION, actividad.direccion)
         putExtra(CalendarContract.Events.DESCRIPTION, "Con $asociacion. ${actividad.descripcion}")
 
-        val dia = parsearFecha(actividad.fecha)
+        val dia = fechaDeTexto(actividad.fecha)
         val horas = parsearHoras(actividad.horario)
         if (dia != null && horas != null) {
             val zona = ZoneId.systemDefault()

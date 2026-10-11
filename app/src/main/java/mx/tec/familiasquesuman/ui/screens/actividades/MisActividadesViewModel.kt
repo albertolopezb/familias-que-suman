@@ -15,6 +15,7 @@ import mx.tec.familiasquesuman.domain.ActividadConAsociacion
 import mx.tec.familiasquesuman.domain.EstadoParticipacion
 import mx.tec.familiasquesuman.domain.MomentoEncuesta
 import mx.tec.familiasquesuman.domain.Participacion
+import mx.tec.familiasquesuman.domain.fechaDeTexto
 import mx.tec.familiasquesuman.ui.state.UiState
 
 /** Lo que la pestaña "Mis Actividades" necesita junto: lo que viene y lo que ya pasó. */
@@ -56,10 +57,11 @@ class MisActividadesViewModel(
             val despues = respuestas.filter { it.momento == MomentoEncuesta.DESPUES }.map { it.actividadId }.toSet()
             _estado.value = UiState.Exito(
                 MisActividades(
+                    // De la más cercana a la más lejana.
                     proximas = ids.mapNotNull { id ->
                         runCatching { actividadRepository.getActividadConAsociacion(id) }.getOrNull()
-                    },
-                    historial = perfilRepository.getHistorial().map { p ->
+                    }.sortedBy { fechaDeTexto(it.actividad.fecha) ?: java.time.LocalDate.MAX },
+                    historial = perfilRepository.getHistorial(correoDeLaCuenta).map { p ->
                         p.copy(estado = estadoDe(p, testimonios.any { it.participacionId == p.id }, p.id in despues))
                     },
                     conEncuestaPrevia = respuestas.filter { it.momento == MomentoEncuesta.ANTES }.map { it.actividadId }.toSet(),

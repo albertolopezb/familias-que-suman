@@ -21,6 +21,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import mx.tec.familiasquesuman.domain.MomentoEncuesta
+import mx.tec.familiasquesuman.domain.proximasEnOrden
 import mx.tec.familiasquesuman.domain.Participacion
 import mx.tec.familiasquesuman.domain.ActividadConAsociacion
 import mx.tec.familiasquesuman.ui.state.familiasApplication
@@ -205,6 +206,12 @@ fun NavGraphBuilder.grafoPerfil(
         val cuentaVm = cuentaViewModel()
         val sesionActual by cuentaVm.sesion.collectAsStateWithLifecycle()
         val familiares by cuentaVm.acompanantes.collectAsStateWithLifecycle()
+        val foto by cuentaVm.foto.collectAsStateWithLifecycle()
+        val inscripciones by cuentaVm.inscripciones.collectAsStateWithLifecycle()
+        val catalogo by cuentaVm.actividades.collectAsStateWithLifecycle()
+        val proximas = proximasEnOrden(catalogo.filter { it.id in inscripciones.keys })
+        LaunchedEffect(sesionActual?.correo) { vm.cargar(sesionActual?.correo) }
+        val selectorFoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia(), cuentaVm::cambiarFoto)
 
         // 2. Determinamos si es Admin o Usuario Normal según el correo en sesión
         val base = UsuariosHardcodeados.obtenerPorCorreo(sesionActual?.correo)
@@ -228,7 +235,13 @@ fun NavGraphBuilder.grafoPerfil(
             onRegresar = { nav.popBackStack() },
             familiares = familiares,
             onAgregarFamiliar = cuentaVm::agregarFamiliar,
-            onQuitarFamiliar = cuentaVm::quitarFamiliar
+            onQuitarFamiliar = cuentaVm::quitarFamiliar,
+            foto = foto,
+            onCambiarFoto = { selectorFoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+            onQuitarFoto = cuentaVm::quitarFoto,
+            proximas = proximas,
+            onProximaClick = { id -> nav.navigate(RutasActividades.detalle(id)) },
+            onVerActividades = { nav.navigate(RutasActividades.LISTA) { popUpTo(RutasInicio.INICIO); launchSingleTop = true } }
         )
     }
     composable(RutasPerfil.FAVORITOS) {
@@ -262,6 +275,12 @@ fun NavGraphBuilder.grafoPerfil(
     composable(RutasPerfil.INSIGNIAS) {
         val vm: InsigniasViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val estado by vm.estado.collectAsStateWithLifecycle()
+        val cuenta = cuentaViewModel()
+        val sesion by cuenta.sesion.collectAsStateWithLifecycle()
+        val acompanantes by cuenta.acompanantes.collectAsStateWithLifecycle()
+        val invitaciones by cuenta.invitaciones.collectAsStateWithLifecycle()
+        val conHijos = acompanantes.any { it.edad in 1..17 }
+        LaunchedEffect(sesion?.correo, conHijos, invitaciones) { vm.cargar(sesion?.correo, conHijos, invitaciones) }
         InsigniasScreen(estado = estado, onVolver = { nav.popBackStack() }, onReintentar = vm::reintentar)
     }
 }

@@ -27,6 +27,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import mx.tec.familiasquesuman.domain.UsuariosHardcodeados
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
 import mx.tec.familiasquesuman.ui.theme.AmbarAcento
@@ -47,7 +49,9 @@ fun BotonPerfil(
     modifier: Modifier = Modifier,
     hayNotificaciones: Boolean = true
 ) {
-    val sesion by cuentaViewModel().sesion.collectAsStateWithLifecycle()
+    val cuenta = cuentaViewModel()
+    val sesion by cuenta.sesion.collectAsStateWithLifecycle()
+    val foto by cuenta.foto.collectAsStateWithLifecycle()
     val conSesion = sesion != null
     val esAdmin = UsuariosHardcodeados.obtenerPorCorreo(sesion?.correo).esAdmin
 
@@ -64,15 +68,21 @@ fun BotonPerfil(
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(Color(0xFFF1F5F9))
-                .clickable { abierto = true },
+                .clickable { abierto = true }
+                .semantics(mergeDescendants = true) { contentDescription = "Mi perfil" },
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                IconosWeb.Usuario,
-                contentDescription = "Mi perfil",
-                tint = AzulMarinoPrimario,
-                modifier = Modifier.size(20.dp)
-            )
+            val s = sesion
+            if (s != null && !esAdmin) {
+                AvatarFamilia(foto, s.familia, 40.dp)
+            } else {
+                Icon(
+                    IconosWeb.Usuario,
+                    contentDescription = "Mi perfil",
+                    tint = AzulMarinoPrimario,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
             if (hayNotificaciones && conSesion) {
                 Box(
                     modifier = Modifier

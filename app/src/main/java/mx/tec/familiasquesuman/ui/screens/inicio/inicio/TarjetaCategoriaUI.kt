@@ -33,7 +33,8 @@ fun TarjetaCategoriaUI(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .height(155.dp) // <-- Fuerza a que TODAS midan 155dp de alto exactos
+            .fillMaxHeight()
+            .heightIn(min = 150.dp) // Todas iguales, pero crecen si el texto lo pide (no se corta).
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = colorTarjeta)

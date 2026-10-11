@@ -155,15 +155,9 @@ private fun FotoDetalle(foto: String?, descripcion: String) {
                 .fillMaxWidth()
                 .heightIn(max = 260.dp)
         )
-    } else {
-        // Todavía no está el archivo en res/drawable: se deja el hueco a la vista.
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-                .background(Web.Secundario)
-        )
     }
+    // Si el archivo todavía no está en res/drawable, no se deja un recuadro gris vacío:
+    // el detalle empieza directo con el título.
 }
 
 @Composable

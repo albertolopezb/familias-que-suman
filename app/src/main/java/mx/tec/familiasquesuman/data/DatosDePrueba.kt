@@ -33,7 +33,8 @@ internal object DatosDePrueba {
         ciudad = "Monterrey"
     )
 
-    val impacto = Impacto(actividadesRealizadas = 12, horasDeServicio = 36, campanasApoyadas = 4)
+    // Cuadra con el historial de abajo: 4 actividades de unas 2.5 horas y 2 campañas apoyadas.
+    val impacto = Impacto(actividadesRealizadas = 4, horasDeServicio = 10, campanasApoyadas = 2)
 
     val asociaciones = mutableListOf(
         Asociacion("a1", "Comedor Comunitario San Bernabé", "Alimentación",
