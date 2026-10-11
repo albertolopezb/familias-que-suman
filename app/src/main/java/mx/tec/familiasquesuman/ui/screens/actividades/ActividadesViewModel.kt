@@ -92,7 +92,8 @@ class ActividadesViewModel(
         direccion: String,
         cupoTotal: Int,
         lugaresDisponibles: Int,
-        edadMinima: Int?
+        edadMinima: Int?,
+        ciudad: String = "Monterrey"
     ) {
         viewModelScope.launch {
             val estadoActual = _estado.value
@@ -106,7 +107,8 @@ class ActividadesViewModel(
                 direccion = direccion,
                 cupoTotal = cupoTotal,
                 lugaresDisponibles = lugaresDisponibles,
-                edadMinima = edadMinima
+                edadMinima = edadMinima,
+                ciudad = ciudad
             )
 
             // Si ya hay una lista cargada, creamos una Asociación simulada y la añadimos a la lista

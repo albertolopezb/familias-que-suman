@@ -8,6 +8,13 @@ import kotlinx.coroutines.flow.asStateFlow
 /** Las ciudades donde opera Familias que Suman. */
 val CIUDADES = listOf("Monterrey", "Hermosillo")
 
+/** "Monterrey" → "Monterrey, N.L."; "Hermosillo" → "Hermosillo, Son." */
+fun ciudadConEstado(ciudad: String): String = when (ciudad) {
+    "Monterrey" -> "Monterrey, N.L."
+    "Hermosillo" -> "Hermosillo, Son."
+    else -> ciudad
+}
+
 /** Lo que la persona elige en Ajustes. Se guarda en el teléfono y sobrevive al cerrar la app. */
 data class Preferencias(
     val ciudad: String = CIUDADES.first(),

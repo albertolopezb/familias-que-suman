@@ -137,7 +137,7 @@ fun NavGraphBuilder.grafoInicio(
             proxima = proximas.firstOrNull(),
             cuantasProximas = proximas.size,
             actividadesRealizadas = realizadas,
-            abiertasEnCiudad = proximasEnOrden(catalogo).size,
+            abiertasEnCiudad = proximasEnOrden(catalogo.filter { it.ciudad == prefsInicio.ciudad }).size,
             onProximaClick = { id -> nav.navigate(RutasActividades.detalle(id)) },
             esAdmin = esAdmin(),
             onIrAlPanel = { nav.navigate(Rutas.PERFIL) { launchSingleTop = true } }

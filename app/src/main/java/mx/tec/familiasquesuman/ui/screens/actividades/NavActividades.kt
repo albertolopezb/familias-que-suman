@@ -1,5 +1,7 @@
 package mx.tec.familiasquesuman.ui.screens.actividades
 
+import mx.tec.familiasquesuman.FamiliasApplication
+import mx.tec.familiasquesuman.data.ciudadConEstado
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -80,7 +82,13 @@ fun NavGraphBuilder.grafoActividades(
 
     composable(RutasActividades.LISTA) {
         val vm: ActividadesViewModel = viewModel(factory = AppViewModelProvider.Factory)
-        val estado by vm.estado.collectAsStateWithLifecycle()
+        val estadoTodas by vm.estado.collectAsStateWithLifecycle()
+        // Solo las de la ciudad elegida en el Inicio o en Ajustes.
+        val app = LocalContext.current.applicationContext as FamiliasApplication
+        val prefs by app.container.preferenciasStore.preferencias.collectAsStateWithLifecycle()
+        val estado = (estadoTodas as? UiState.Exito)
+            ?.let { UiState.Exito(it.datos.filter { item -> item.actividad.ciudad == prefs.ciudad }) }
+            ?: estadoTodas
         val contexto = LocalContext.current
 
         // La pestaña "Mapa". Se vuelve a cargar cada vez que la pantalla regresa,
@@ -104,7 +112,7 @@ fun NavGraphBuilder.grafoActividades(
 
         ActividadesScreen(
             estado = estado,
-            ciudad = ciudad,
+            ciudad = ciudadConEstado(prefs.ciudad),
             esAdmin = esAdmin(),
             onActividadClick = { id -> nav.navigate(RutasActividades.detalle(id)) },
             onUnirme = onInscribirme,
@@ -166,7 +174,8 @@ fun NavGraphBuilder.grafoActividades(
                         direccion = direccion,
                         cupoTotal = cupoTotal,
                         lugaresDisponibles = libres,
-                        edadMinima = edadMin
+                        edadMinima = edadMin,
+                        ciudad = prefs.ciudad
                     )
                     mostrandoCrear = false
                 },

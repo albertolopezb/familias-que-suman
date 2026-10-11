@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.actividades
 
+import androidx.compose.ui.text.style.TextAlign
 import mx.tec.familiasquesuman.domain.fechaDeTexto
 import mx.tec.familiasquesuman.domain.fechaPasadaDeTexto
 import java.time.LocalDate
@@ -142,13 +143,30 @@ fun ActividadesScreen(
                 when (estado) {
                     is UiState.Cargando -> items(2) { TarjetaSilueta(Modifier.padding(bottom = 16.dp)) }
                     is UiState.Error -> item(key = "error") {
-                        // Vista de error existente...
+                        AvisoLista(
+                            titulo = "No pudimos cargar las actividades",
+                            texto = estado.mensaje,
+                            boton = "Reintentar",
+                            onBoton = onReintentar
+                        )
                     }
                     is UiState.Exito -> {
                         // Las que vienen, de la más cercana a la más lejana; las pasadas, de la más reciente a la más vieja.
                         val (pasadasSinOrden, proximasSinOrden) = estado.datos.partition { it.actividad.yaPaso }
                         val proximas = proximasSinOrden.sortedBy { fechaDeTexto(it.actividad.fecha) ?: LocalDate.MAX }
                         val pasadas = pasadasSinOrden.sortedByDescending { fechaPasadaDeTexto(it.actividad.fecha) ?: LocalDate.MIN }
+
+                        if (proximas.isEmpty()) {
+                            item(key = "sin-actividades") {
+                                AvisoLista(
+                                    titulo = "No hay actividades disponibles por ahora",
+                                    texto = "Cuando una asociación publique una actividad en $ciudad, aparecerá aquí. " +
+                                        "¿Conoces una? Sugiérela abajo.",
+                                    boton = null,
+                                    onBoton = {}
+                                )
+                            }
+                        }
 
                         tarjetasAdmin(
                             actividades = proximas,
@@ -428,6 +446,25 @@ private fun LazyListScope.tarjetasAdmin(
                     }
                 }
             }
+        }
+    }
+}
+
+/** El aviso de la lista cuando no hay actividades o no se pudieron cargar. */
+@Composable
+private fun AvisoLista(titulo: String, texto: String, boton: String?, onBoton: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 24.dp, horizontal = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        CirculoDeIcono(icono = IconosWeb.CalendarioVacio, color = Web.Primario, fondo = Web.Secundario)
+        Text(titulo, style = TextoWeb.TituloTarjeta, textAlign = TextAlign.Center)
+        Text(texto, style = TextoWeb.Cuerpo, color = Web.TextoApagado, textAlign = TextAlign.Center)
+        if (boton != null) {
+            BotonAmarillo(texto = boton, onClick = onBoton, conFlechas = false, modifier = Modifier.padding(top = 4.dp))
         }
     }
 }

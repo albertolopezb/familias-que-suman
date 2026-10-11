@@ -40,7 +40,9 @@ data class Actividad(
     val queLlevar: String = "",
     val recomendaciones: String = "",
     val foto: String? = null,       // nombre del drawable, sin extensión
-    val yaPaso: Boolean = false
+    val yaPaso: Boolean = false,
+    // La ciudad de Familias que Suman donde se hace ("Monterrey", "Hermosillo"). Filtra las listas.
+    val ciudad: String = "Monterrey"
 ) {
     val ocupados: Int get() = cupoTotal - lugaresDisponibles
     val sinLugares: Boolean get() = lugaresDisponibles <= 0

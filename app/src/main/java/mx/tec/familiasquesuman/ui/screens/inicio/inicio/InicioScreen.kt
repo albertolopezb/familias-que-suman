@@ -113,10 +113,9 @@ fun InicioScreen(
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = when {
-                                // Por ahora todas las actividades son de Monterrey: en otra ciudad se dice claro.
-                                ciudad != "Monterrey" -> "Pronto llegaremos a $ciudad. Mientras, mira las actividades de Monterrey."
-                                abiertasEnCiudad == 1 -> "1 actividad abierta en $ciudad."
+                            text = when (abiertasEnCiudad) {
+                                0 -> "Por ahora no hay actividades abiertas en $ciudad."
+                                1 -> "1 actividad abierta en $ciudad."
                                 else -> "$abiertasEnCiudad actividades abiertas en $ciudad."
                             },
                             style = MaterialTheme.typography.bodyMedium,
