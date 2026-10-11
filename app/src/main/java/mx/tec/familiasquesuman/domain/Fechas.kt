@@ -1,6 +1,8 @@
 package mx.tec.familiasquesuman.domain
 
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.temporal.ChronoUnit
 
 // Las fechas de las actividades son texto ("sábado, 26 de septiembre") y no traen año: se toma
@@ -29,6 +31,38 @@ private fun fechaDelAnio(fecha: String, anio: Int): LocalDate? {
     val dia = Regex("""\b(\d{1,2})\b""").find(texto)?.groupValues?.get(1)?.toIntOrNull() ?: return null
     val mes = MESES.indexOfFirst { texto.contains(it) }.takeIf { it >= 0 }?.plus(1) ?: return null
     return runCatching { LocalDate.of(anio, mes, dia) }.getOrNull()
+}
+
+/** "9:00 – 12:00" → 9:00. null si el horario no trae horas. */
+fun horaDeInicio(horario: String): LocalTime? = horasDe(horario).firstOrNull()
+
+/** "9:00 – 12:00" → 12:00. null si el horario no trae hora de fin. */
+fun horaDeFin(horario: String): LocalTime? = horasDe(horario).getOrNull(1)
+
+private fun horasDe(horario: String): List<LocalTime> =
+    Regex("""(\d{1,2}):(\d{2})""").findAll(horario).mapNotNull { m ->
+        runCatching { LocalTime.of(m.groupValues[1].toInt(), m.groupValues[2].toInt()) }.getOrNull()
+    }.toList()
+
+/**
+ * true si la actividad ya terminó: fue otro día, o es hoy y ya pasó su hora de fin (o la de
+ * inicio, si no trae fin). Sin fecha legible no se puede saber y cuenta como pendiente.
+ */
+fun yaTermino(actividad: Actividad, ahora: LocalDateTime = LocalDateTime.now()): Boolean =
+    yaPasoLaHora(actividad, ahora, horaDeFin(actividad.horario) ?: horaDeInicio(actividad.horario))
+
+/** true si la actividad ya empezó (o terminó): ya no tiene caso recordarla ni invitar a ella. */
+fun yaEmpezo(actividad: Actividad, ahora: LocalDateTime = LocalDateTime.now()): Boolean =
+    yaPasoLaHora(actividad, ahora, horaDeInicio(actividad.horario))
+
+private fun yaPasoLaHora(actividad: Actividad, ahora: LocalDateTime, hora: LocalTime?): Boolean {
+    val hoy = ahora.toLocalDate()
+    val dia = fechaDeTexto(actividad.fecha, hoy) ?: return false
+    return when {
+        dia.isBefore(hoy) -> true
+        dia.isAfter(hoy) -> false
+        else -> hora != null && !ahora.toLocalTime().isBefore(hora)
+    }
 }
 
 /** Cuánto falta, dicho como lo diría una persona: "Hoy", "Mañana", "En 5 días", "En 3 semanas". */

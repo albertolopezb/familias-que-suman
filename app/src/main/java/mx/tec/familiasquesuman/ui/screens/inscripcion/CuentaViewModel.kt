@@ -35,7 +35,9 @@ import mx.tec.familiasquesuman.domain.avisoBienvenida
 import mx.tec.familiasquesuman.domain.avisoCancelacion
 import mx.tec.familiasquesuman.domain.avisoInscripcion
 import mx.tec.familiasquesuman.domain.avisosDelDia
-import java.time.LocalDate
+import mx.tec.familiasquesuman.domain.juntarAvisos
+import mx.tec.familiasquesuman.domain.lugaresConAjuste
+import java.time.LocalDateTime
 
 /** Quién tiene la sesión abierta. En la etapa 2 sale del servidor. */
 data class Sesion(val familia: String, val correo: String, val titular: Acompanante)
@@ -257,8 +259,7 @@ class CuentaViewModel(
     fun asociacion(id: String): Asociacion? = _asociaciones.value.firstOrNull { it.id == id }
 
     /** Lo que dice el repositorio más lo que cambió en esta sesión. */
-    fun lugaresDisponibles(actividad: Actividad): Int =
-        (actividad.lugaresDisponibles + (_ajusteLugares.value[actividad.id] ?: 0)).coerceIn(0, actividad.cupoTotal)
+    fun lugaresDisponibles(actividad: Actividad): Int = lugaresConAjuste(actividad, _ajusteLugares.value)
 
     // ── A dónde regresar ──
 
@@ -517,7 +518,7 @@ class CuentaViewModel(
         if (_sesion.value == null || _actividades.value.isEmpty()) return
         val prefs = preferenciasStore?.preferencias?.value
         val nuevos = avisosDelDia(
-            hoy = LocalDate.now(),
+            ahora = LocalDateTime.now(),
             actividades = _actividades.value,
             campanas = _campanas.value,
             asociaciones = _asociaciones.value.associate { it.id to it.nombre },
@@ -536,14 +537,9 @@ class CuentaViewModel(
      * [reemplazar]: volver a inscribirse a la misma actividad vuelve a avisar.
      */
     private fun recibirAvisos(nuevos: List<Aviso>, reemplazar: Boolean) {
-        val actuales = _avisos.value
-        val llegan = if (reemplazar) nuevos else nuevos.filter { n -> actuales.none { it.id == n.id } }
-        if (llegan.isEmpty()) return
-        val ahora = System.currentTimeMillis()
-        // Del mismo lote, el primero queda arriba.
-        val conHora = llegan.mapIndexed { i, aviso -> aviso.copy(creado = ahora - i, leido = false) }
-        _avisos.value = (conHora + actuales.filter { a -> conHora.none { it.id == a.id } })
-            .sortedByDescending { it.creado }
+        val (bandeja, llegaron) = juntarAvisos(_avisos.value, nuevos, reemplazar, System.currentTimeMillis())
+        if (llegaron.isEmpty()) return
+        _avisos.value = bandeja
         guardarAvisos()
     }
 

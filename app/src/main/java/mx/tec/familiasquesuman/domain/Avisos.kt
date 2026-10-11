@@ -1,7 +1,7 @@
 package mx.tec.familiasquesuman.domain
 
 import java.time.Instant
-import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
@@ -42,7 +42,7 @@ private const val LUGARES_URGENCIA = 3
  * Quien llama agrega solo los que no tenía; aquí no se sabe qué ya llegó.
  */
 fun avisosDelDia(
-    hoy: LocalDate,
+    ahora: LocalDateTime,
     actividades: List<Actividad>,
     campanas: List<Campana>,
     asociaciones: Map<String, String>,
@@ -52,8 +52,10 @@ fun avisosDelDia(
     ciudad: String,
     queAvisar: QueAvisar
 ): List<Aviso> {
+    val hoy = ahora.toLocalDate()
+    // Lo que ya empezó no se recuerda ni se ofrece: llegaría tarde.
     val proximas = actividades
-        .filter { !it.yaPaso }
+        .filter { !it.yaPaso && !yaEmpezo(it, ahora) }
         .mapNotNull { a -> fechaDeTexto(a.fecha, hoy)?.let { a to ChronoUnit.DAYS.between(hoy, it) } }
         .filter { (_, dias) -> dias >= 0 }
         .sortedBy { it.second }
@@ -114,6 +116,42 @@ fun avisosDelDia(
             }
     }
     return avisos
+}
+
+/** Lo que dice el repositorio más lo que movieron las inscripciones y cancelaciones. */
+fun lugaresConAjuste(actividad: Actividad, ajuste: Map<String, Int>): Int =
+    (actividad.lugaresDisponibles + (ajuste[actividad.id] ?: 0)).coerceIn(0, actividad.cupoTotal)
+
+/**
+ * Pone en la bandeja los que llegan, sin leer y con la hora de [ahora]. Los que ya estaban no se
+ * repiten, salvo con [reemplazar] (volver a inscribirse a la misma actividad vuelve a avisar).
+ * Devuelve la bandeja nueva y los que de verdad llegaron.
+ */
+fun juntarAvisos(actuales: List<Aviso>, nuevos: List<Aviso>, reemplazar: Boolean, ahora: Long): Pair<List<Aviso>, List<Aviso>> {
+    val llegan = if (reemplazar) nuevos else nuevos.filter { n -> actuales.none { it.id == n.id } }
+    if (llegan.isEmpty()) return actuales to emptyList()
+    // Del mismo lote, el primero queda arriba.
+    val conHora = llegan.mapIndexed { i, aviso -> aviso.copy(creado = ahora - i, leido = false) }
+    val bandeja = (conHora + actuales.filter { a -> conHora.none { it.id == a.id } }).sortedByDescending { it.creado }
+    return bandeja to conHora
+}
+
+/** Los que también salen como notificación del teléfono; los demás pasan con la app abierta. */
+private val TIPOS_DEL_TELEFONO = setOf(TipoAviso.RECORDATORIO, TipoAviso.FAVORITO, TipoAviso.CIERRE, TipoAviso.URGENCIA)
+
+/**
+ * Cuáles mandar como notificación del teléfono: sin leer, que no se hayan mandado ya, de los
+ * últimos 2 días y solo de 8:00 a 21:00, para no despertar a nadie (lo de la noche sale a las 8).
+ */
+fun porNotificar(
+    bandeja: List<Aviso>,
+    notificados: Set<String>,
+    ahora: LocalDateTime,
+    zona: ZoneId = ZoneId.systemDefault()
+): List<Aviso> {
+    if (ahora.hour !in 8..20) return emptyList()
+    val desde = ahora.minusDays(2).atZone(zona).toInstant().toEpochMilli()
+    return bandeja.filter { !it.leido && it.tipo in TIPOS_DEL_TELEFONO && it.id !in notificados && it.creado >= desde }
 }
 
 /** Al crear la cuenta. */

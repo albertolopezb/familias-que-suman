@@ -31,9 +31,13 @@ object Notificaciones {
     const val CANAL_RECORDATORIOS = "recordatorios"
     const val CANAL_URGENCIAS = "urgencias"
     const val CANAL_INSCRIPCIONES = "inscripciones"
+    const val CANAL_FAVORITOS = "favoritos"
 
     /** Prefijo del enlace profundo. El patrón completo es URI_ACTIVIDAD + "{actividadId}". */
     const val URI_ACTIVIDAD = "familiasquesuman://actividad/"
+
+    /** Igual, para abrir una campaña: URI_CAMPANA + "{campanaId}". */
+    const val URI_CAMPANA = "familiasquesuman://campana/"
 
     /** Crea los canales. Llamarlo más de una vez no hace nada, así que se llama antes de cada envío. */
     fun crearCanales(context: Context) {
@@ -45,7 +49,9 @@ object Notificaciones {
                 NotificationChannel(CANAL_URGENCIAS, "Urgencias en tu ciudad", NotificationManager.IMPORTANCE_HIGH)
                     .apply { description = "Cuando una asociación que sigues necesita voluntarios pronto." },
                 NotificationChannel(CANAL_INSCRIPCIONES, "Inscripciones", NotificationManager.IMPORTANCE_DEFAULT)
-                    .apply { description = "La confirmación de cada inscripción." }
+                    .apply { description = "La confirmación de cada inscripción." },
+                NotificationChannel(CANAL_FAVORITOS, "Avisos de tus favoritos", NotificationManager.IMPORTANCE_DEFAULT)
+                    .apply { description = "Lo nuevo de las asociaciones que sigues y las campañas favoritas que están por cerrar." }
             )
         )
     }
@@ -63,24 +69,31 @@ object Notificaciones {
     /**
      * Publica una notificación. Devuelve false si no se pudo (sin permiso), sin tronar.
      * @param actividadId la actividad que se abre al tocarla.
+     * @param campanaId la campaña que se abre al tocarla, si no es una actividad.
      */
     @SuppressLint("MissingPermission") // se revisa con estanActivadas() justo antes
     fun enviar(
         context: Context,
         titulo: String,
         texto: String,
-        actividadId: String,
-        canal: String = CANAL_RECORDATORIOS
+        actividadId: String? = null,
+        canal: String = CANAL_RECORDATORIOS,
+        campanaId: String? = null
     ): Boolean {
         if (!estanActivadas(context)) return false
         crearCanales(context)
 
+        val enlace = when {
+            actividadId != null -> URI_ACTIVIDAD + actividadId
+            campanaId != null -> URI_CAMPANA + campanaId
+            else -> null
+        }
         val abrirApp = context.packageManager.getLaunchIntentForPackage(context.packageName)?.apply {
             action = Intent.ACTION_VIEW
-            data = Uri.parse(URI_ACTIVIDAD + actividadId)
+            if (enlace != null) data = Uri.parse(enlace)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         } ?: return false
-        val id = (canal + actividadId).hashCode()
+        val id = (canal + (enlace ?: titulo)).hashCode()
         val alTocar = PendingIntent.getActivity(
             context, id, abrirApp, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

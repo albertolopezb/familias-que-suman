@@ -5,17 +5,18 @@ import mx.tec.familiasquesuman.domain.ActividadConAsociacion
 import mx.tec.familiasquesuman.domain.Asociacion
 import mx.tec.familiasquesuman.domain.CentroVisiteo
 import mx.tec.familiasquesuman.domain.Proyecto
-import mx.tec.familiasquesuman.domain.fechaDeTexto
-import java.time.LocalDate
+import mx.tec.familiasquesuman.domain.yaTermino
+import java.time.LocalDateTime
 
 class ActividadRepository {
 
     /**
-     * Una actividad cuya fecha ya pasó cuenta como pasada aunque los datos digan lo contrario:
-     * así no se ofrece inscribirse a algo que ya ocurrió y todas las pantallas coinciden.
+     * Una actividad que ya terminó (otro día, o hoy después de su hora de fin) cuenta como pasada
+     * aunque los datos digan lo contrario: así no se ofrece inscribirse a algo que ya ocurrió y
+     * todas las pantallas coinciden.
      */
-    private fun alDia(actividad: Actividad, hoy: LocalDate = LocalDate.now()): Actividad =
-        if (!actividad.yaPaso && fechaDeTexto(actividad.fecha, hoy)?.isBefore(hoy) == true) {
+    private fun alDia(actividad: Actividad, ahora: LocalDateTime = LocalDateTime.now()): Actividad =
+        if (!actividad.yaPaso && yaTermino(actividad, ahora)) {
             actividad.copy(yaPaso = true)
         } else actividad
 

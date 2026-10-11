@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.actividades
 
+import mx.tec.familiasquesuman.domain.lugaresConAjuste
 import mx.tec.familiasquesuman.FamiliasApplication
 import mx.tec.familiasquesuman.data.ciudadConEstado
 import androidx.compose.runtime.LaunchedEffect
@@ -86,8 +87,14 @@ fun NavGraphBuilder.grafoActividades(
         // Solo las de la ciudad elegida en el Inicio o en Ajustes.
         val app = LocalContext.current.applicationContext as FamiliasApplication
         val prefs by app.container.preferenciasStore.preferencias.collectAsStateWithLifecycle()
+        // Los lugares, con lo que movieron las inscripciones y cancelaciones (igual que el detalle).
+        val ajusteLugares by cuentaViewModel().ajusteLugares.collectAsStateWithLifecycle()
         val estado = (estadoTodas as? UiState.Exito)
-            ?.let { UiState.Exito(it.datos.filter { item -> item.actividad.ciudad == prefs.ciudad }) }
+            ?.let { exito ->
+                UiState.Exito(exito.datos.filter { item -> item.actividad.ciudad == prefs.ciudad }.map { item ->
+                    item.copy(actividad = item.actividad.copy(lugaresDisponibles = lugaresConAjuste(item.actividad, ajusteLugares)))
+                })
+            }
             ?: estadoTodas
         val contexto = LocalContext.current
 

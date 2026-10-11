@@ -1,6 +1,7 @@
 package mx.tec.familiasquesuman
 
 import android.app.Application
+import mx.tec.familiasquesuman.notificaciones.RevisarAvisosWorker
 import mx.tec.familiasquesuman.data.ActividadRepository
 import mx.tec.familiasquesuman.data.CampanaRepository
 import mx.tec.familiasquesuman.data.EncuestaRepository
@@ -36,5 +37,7 @@ class FamiliasApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        // Cada pocas horas, aunque la app esté cerrada, revisa si toca algún aviso.
+        RevisarAvisosWorker.programar(this)
     }
 }

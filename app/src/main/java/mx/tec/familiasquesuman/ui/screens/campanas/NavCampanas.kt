@@ -29,6 +29,8 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
+import mx.tec.familiasquesuman.notificaciones.Notificaciones
 import mx.tec.familiasquesuman.domain.Campana
 import mx.tec.familiasquesuman.domain.PuntoEntrega
 import mx.tec.familiasquesuman.domain.TipoSugerencia
@@ -184,7 +186,9 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController, esAdmin: () -> Boolean = {
     // P-11 / P-11c + hoja de apartar P-12 / P-12b / P-14
     composable(
         route = RutasCampanas.DETALLE,
-        arguments = listOf(navArgument("campanaId") { type = NavType.StringType })
+        arguments = listOf(navArgument("campanaId") { type = NavType.StringType }),
+        // Al tocar el aviso de "cierra pronto" se abre aquí.
+        deepLinks = listOf(navDeepLink { uriPattern = Notificaciones.URI_CAMPANA + "{campanaId}" })
     ) { entrada ->
         val id = entrada.arguments?.getString("campanaId") ?: return@composable
         val vm: DetalleCampanaViewModel = viewModel(factory = AppViewModelProvider.Factory)

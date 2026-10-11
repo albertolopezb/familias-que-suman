@@ -3,15 +3,22 @@ package mx.tec.familiasquesuman
 import mx.tec.familiasquesuman.domain.Actividad
 import mx.tec.familiasquesuman.domain.ArticuloMeta
 import mx.tec.familiasquesuman.domain.Campana
+import mx.tec.familiasquesuman.domain.Aviso
 import mx.tec.familiasquesuman.domain.QueAvisar
 import mx.tec.familiasquesuman.domain.TipoAviso
 import mx.tec.familiasquesuman.domain.avisoInscripcion
 import mx.tec.familiasquesuman.domain.avisosDelDia
 import mx.tec.familiasquesuman.domain.haceCuanto
+import mx.tec.familiasquesuman.domain.horaDeInicio
+import mx.tec.familiasquesuman.domain.juntarAvisos
+import mx.tec.familiasquesuman.domain.porNotificar
+import mx.tec.familiasquesuman.domain.yaTermino
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 
 class AvisosTest {
@@ -35,9 +42,10 @@ class AvisosTest {
         inscritas: Set<String> = emptySet(),
         favoritas: Set<String> = emptySet(),
         queAvisar: QueAvisar = QueAvisar(),
-        campanas: List<Campana> = emptyList()
+        campanas: List<Campana> = emptyList(),
+        ahora: java.time.LocalDateTime = hoy.atTime(8, 0)
     ) = avisosDelDia(
-        hoy, actividades, campanas, mapOf("a1" to "Casa de Día Los Robles"), inscritas, favoritas,
+        ahora, actividades, campanas, mapOf("a1" to "Casa de Día Los Robles"), inscritas, favoritas,
         lugares = { it.lugaresDisponibles }, ciudad = "Monterrey", queAvisar = queAvisar
     )
 
@@ -103,5 +111,54 @@ class AvisosTest {
         assertEquals("Hace 3 h", haceCuanto(ahora - 3 * 3_600_000, ahora, zona))
         assertEquals("Ayer", haceCuanto(ahora - 20 * 3_600_000, ahora, zona))
         assertEquals("8 sep", haceCuanto(hoy.minusDays(33).atTime(9, 0).atZone(zona).toInstant().toEpochMilli(), ahora, zona))
+    }
+
+    @Test
+    fun lo_de_hoy_que_ya_empezo_no_se_recuerda_ni_se_ofrece() {
+        val deHoy = listOf(actividad("hoy", "domingo, 11 de octubre", libres = 2))
+        val tarde = hoy.atTime(10, 30)
+        assertTrue(avisos(deHoy, inscritas = setOf("hoy"), ahora = tarde).isEmpty())
+        assertTrue(avisos(deHoy, favoritas = setOf("a1"), queAvisar = QueAvisar(urgencias = true), ahora = tarde).isEmpty())
+        assertEquals(1, avisos(deHoy, inscritas = setOf("hoy"), ahora = hoy.atTime(9, 59)).size)
+    }
+
+    @Test
+    fun una_actividad_termina_a_su_hora_de_fin() {
+        val a = actividad("x", "domingo, 11 de octubre")
+        assertEquals(LocalTime.of(9, 0), horaDeInicio("9:00 – 12:00"))
+        assertFalse(yaTermino(a, hoy.atTime(12, 59)))
+        assertTrue(yaTermino(a, hoy.atTime(13, 0)))
+        assertTrue(yaTermino(a, hoy.plusDays(1).atTime(8, 0)))
+        assertFalse(yaTermino(a, hoy.minusDays(1).atTime(20, 0)))
+    }
+
+    @Test
+    fun al_juntar_no_se_repiten_salvo_al_reemplazar() {
+        val viejo = Aviso("r1", TipoAviso.RECORDATORIO, "t", "x", creado = 100, leido = true)
+        val (sinCambio, nada) = juntarAvisos(listOf(viejo), listOf(viejo.copy(creado = 0, leido = false)), false, 500)
+        assertEquals(listOf(viejo), sinCambio)
+        assertTrue(nada.isEmpty())
+        val (bandeja, llegaron) = juntarAvisos(listOf(viejo), listOf(viejo.copy(texto = "nuevo")), true, 500)
+        assertEquals(1, bandeja.size)
+        assertEquals("nuevo", bandeja.single().texto)
+        assertFalse(llegaron.single().leido)
+    }
+
+    @Test
+    fun al_telefono_solo_de_dia_sin_leer_y_una_vez() {
+        val zona = ZoneId.of("America/Monterrey")
+        val nueve = hoy.atTime(9, 0)
+        val reciente = nueve.minusHours(1).atZone(zona).toInstant().toEpochMilli()
+        val viejo = nueve.minusDays(3).atZone(zona).toInstant().toEpochMilli()
+        val bandeja = listOf(
+            Aviso("ok", TipoAviso.RECORDATORIO, "t", "x", creado = reciente),
+            Aviso("leido", TipoAviso.FAVORITO, "t", "x", creado = reciente, leido = true),
+            Aviso("ya", TipoAviso.CIERRE, "t", "x", creado = reciente),
+            Aviso("viejo", TipoAviso.URGENCIA, "t", "x", creado = viejo),
+            Aviso("inscripcion", TipoAviso.INSCRIPCION, "t", "x", creado = reciente)
+        )
+        assertEquals(listOf("ok"), porNotificar(bandeja, setOf("ya"), nueve, zona).map { it.id })
+        assertTrue(porNotificar(bandeja, emptySet(), hoy.atTime(7, 59), zona).isEmpty())
+        assertTrue(porNotificar(bandeja, emptySet(), hoy.atTime(21, 0), zona).isEmpty())
     }
 }

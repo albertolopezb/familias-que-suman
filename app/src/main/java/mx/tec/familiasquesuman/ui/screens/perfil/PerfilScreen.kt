@@ -46,6 +46,7 @@ import mx.tec.familiasquesuman.domain.Impacto
 import mx.tec.familiasquesuman.domain.Usuario
 import mx.tec.familiasquesuman.notificaciones.Notificaciones
 import mx.tec.familiasquesuman.notificaciones.NotificacionesDemo
+import mx.tec.familiasquesuman.notificaciones.RevisarAvisosWorker
 import mx.tec.familiasquesuman.notificaciones.rememberPedirPermisoNotificaciones
 import mx.tec.familiasquesuman.ui.components.CargandoView
 import mx.tec.familiasquesuman.ui.components.ErrorView
@@ -320,6 +321,13 @@ private fun ProbarNotificaciones() {
         onClick = { avisar(NotificacionesDemo.dispararInscripcionConfirmada(contexto)) },
         modifier = Modifier.fillMaxWidth()
     ) { Text("Ya están inscritos") }
+    OutlinedButton(
+        onClick = {
+            RevisarAvisosWorker.probarEn(contexto)
+            Toast.makeText(contexto, "Cierra la app: en 20 segundos llegan los avisos pendientes", Toast.LENGTH_LONG).show()
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) { Text("Avisos con la app cerrada (en 20 s)") }
 }
 
 @Composable

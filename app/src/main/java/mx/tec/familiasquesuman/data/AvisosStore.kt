@@ -27,6 +27,17 @@ class AvisosStore(contexto: Context) {
         prefs.edit().putString(llave(correo), arreglo.toString()).apply()
     }
 
+    /** Los que ya salieron como notificación del teléfono: no se vuelven a mandar. */
+    fun notificados(correo: String): Set<String> =
+        prefs.getStringSet("notificados:${correo.trim().lowercase()}", null)?.toSet().orEmpty()
+
+    fun marcarNotificados(correo: String, ids: Collection<String>) {
+        // Solo se guardan los que siguen en la bandeja, para que la lista no crezca sin fin.
+        val enBandeja = cargar(correo).map { it.id }.toSet()
+        val todos = (notificados(correo) + ids).filter { it in enBandeja }.toSet()
+        prefs.edit().putStringSet("notificados:${correo.trim().lowercase()}", todos).apply()
+    }
+
     private fun escribir(a: Aviso) = JSONObject()
         .put("id", a.id)
         .put("tipo", a.tipo.name)
