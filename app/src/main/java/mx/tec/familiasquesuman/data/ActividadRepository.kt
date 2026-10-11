@@ -5,13 +5,24 @@ import mx.tec.familiasquesuman.domain.ActividadConAsociacion
 import mx.tec.familiasquesuman.domain.Asociacion
 import mx.tec.familiasquesuman.domain.CentroVisiteo
 import mx.tec.familiasquesuman.domain.Proyecto
+import mx.tec.familiasquesuman.domain.fechaDeTexto
+import java.time.LocalDate
 
 class ActividadRepository {
 
-    suspend fun getActividades(): List<Actividad> = DatosDePrueba.actividades
+    /**
+     * Una actividad cuya fecha ya pasó cuenta como pasada aunque los datos digan lo contrario:
+     * así no se ofrece inscribirse a algo que ya ocurrió y todas las pantallas coinciden.
+     */
+    private fun alDia(actividad: Actividad, hoy: LocalDate = LocalDate.now()): Actividad =
+        if (!actividad.yaPaso && fechaDeTexto(actividad.fecha, hoy)?.isBefore(hoy) == true) {
+            actividad.copy(yaPaso = true)
+        } else actividad
+
+    suspend fun getActividades(): List<Actividad> = DatosDePrueba.actividades.map { alDia(it) }
 
     suspend fun getActividad(id: String): Actividad =
-        DatosDePrueba.actividades.first { it.id == id }
+        alDia(DatosDePrueba.actividades.first { it.id == id })
 
     suspend fun getAsociaciones(): List<Asociacion> = DatosDePrueba.asociaciones.toList()
 
@@ -28,7 +39,7 @@ class ActividadRepository {
 
     suspend fun getActividadesConAsociacion(): List<ActividadConAsociacion> {
         val porId = organizadoresPorId()
-        return DatosDePrueba.actividades.mapNotNull { actividad ->
+        return DatosDePrueba.actividades.map { alDia(it) }.mapNotNull { actividad ->
             porId[actividad.asociacionId]?.let { ActividadConAsociacion(actividad, it) }
         }
     }

@@ -1,5 +1,8 @@
 package mx.tec.familiasquesuman.ui.screens.actividades
 
+import mx.tec.familiasquesuman.domain.fechaDeTexto
+import mx.tec.familiasquesuman.domain.fechaPasadaDeTexto
+import java.time.LocalDate
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -142,7 +145,10 @@ fun ActividadesScreen(
                         // Vista de error existente...
                     }
                     is UiState.Exito -> {
-                        val (pasadas, proximas) = estado.datos.partition { it.actividad.yaPaso }
+                        // Las que vienen, de la más cercana a la más lejana; las pasadas, de la más reciente a la más vieja.
+                        val (pasadasSinOrden, proximasSinOrden) = estado.datos.partition { it.actividad.yaPaso }
+                        val proximas = proximasSinOrden.sortedBy { fechaDeTexto(it.actividad.fecha) ?: LocalDate.MAX }
+                        val pasadas = pasadasSinOrden.sortedByDescending { fechaPasadaDeTexto(it.actividad.fecha) ?: LocalDate.MIN }
 
                         tarjetasAdmin(
                             actividades = proximas,

@@ -14,11 +14,21 @@ private val MESES = listOf(
 
 /** "sábado, 28 de noviembre" → 2026-11-28. null si el texto no trae día y mes. */
 fun fechaDeTexto(fecha: String, hoy: LocalDate = LocalDate.now()): LocalDate? {
+    val candidata = fechaDelAnio(fecha, hoy.year) ?: return null
+    return if (candidata.isBefore(hoy.minusMonths(2))) candidata.plusYears(1) else candidata
+}
+
+/** Para algo que ya pasó: la fecha más reciente que no sea posterior a hoy. */
+fun fechaPasadaDeTexto(fecha: String, hoy: LocalDate = LocalDate.now()): LocalDate? {
+    val candidata = fechaDelAnio(fecha, hoy.year) ?: return null
+    return if (candidata.isAfter(hoy)) candidata.minusYears(1) else candidata
+}
+
+private fun fechaDelAnio(fecha: String, anio: Int): LocalDate? {
     val texto = fecha.lowercase()
     val dia = Regex("""\b(\d{1,2})\b""").find(texto)?.groupValues?.get(1)?.toIntOrNull() ?: return null
     val mes = MESES.indexOfFirst { texto.contains(it) }.takeIf { it >= 0 }?.plus(1) ?: return null
-    val candidata = runCatching { LocalDate.of(hoy.year, mes, dia) }.getOrNull() ?: return null
-    return if (candidata.isBefore(hoy.minusMonths(2))) candidata.plusYears(1) else candidata
+    return runCatching { LocalDate.of(anio, mes, dia) }.getOrNull()
 }
 
 /** Cuánto falta, dicho como lo diría una persona: "Hoy", "Mañana", "En 5 días", "En 3 semanas". */

@@ -220,7 +220,8 @@ private fun TarjetaProyectoStacked(
             .clip(formaTarjeta)
             .background(colorFondo)
             .clickable(onClick = onClick)
-            .padding(20.dp)
+            // Abajo lleva más aire: la siguiente tarjeta se encima 20dp y no debe tapar el texto.
+            .padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 36.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

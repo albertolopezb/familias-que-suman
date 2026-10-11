@@ -60,7 +60,8 @@ class MisActividadesViewModel(
                     // De la más cercana a la más lejana.
                     proximas = ids.mapNotNull { id ->
                         runCatching { actividadRepository.getActividadConAsociacion(id) }.getOrNull()
-                    }.sortedBy { fechaDeTexto(it.actividad.fecha) ?: java.time.LocalDate.MAX },
+                    }.filter { !it.actividad.yaPaso }
+                        .sortedBy { fechaDeTexto(it.actividad.fecha) ?: java.time.LocalDate.MAX },
                     historial = perfilRepository.getHistorial(correoDeLaCuenta).map { p ->
                         p.copy(estado = estadoDe(p, testimonios.any { it.participacionId == p.id }, p.id in despues))
                     },

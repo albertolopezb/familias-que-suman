@@ -245,6 +245,11 @@ private fun ContenidoPerfil(
                 Spacer(Modifier.height(12.dp))
                 if (valoresMensuales.isEmpty() && datos.porMes.isNotEmpty()) {
                     GraficaBarras(datos.porMes.map { it.first }, datos.porMes.map { it.second })
+                    if (datos.porMes.all { it.second == 0 }) {
+                        Spacer(Modifier.height(8.dp))
+                        Text("Cuando participen en una actividad, aquí verán cuántas hicieron cada mes.",
+                            style = MaterialTheme.typography.bodyMedium, color = TintaSuave)
+                    }
                 } else {
                     GraficaBarras(etiquetasMensuales, valoresMensuales)
                 }
