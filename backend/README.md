@@ -35,7 +35,17 @@ Para apagarlo: `docker compose down` (conserva los datos) o `docker compose down
 **Migraciones, en una frase:** cada archivo cambia la base una sola vez, en orden, y Flyway (el contenedor
 `migrar`) apunta cuáles ya corrió. Por eso, para cambiar algo, **no se edita un archivo viejo: se crea el siguiente**.
 
-Ejemplo: para que las cuentas tengan teléfono, se crea `db/migrations/V2__telefono_en_cuentas.sql` con
+## Las migraciones que hay
+
+| Archivo | Qué agrega |
+|---|---|
+| `V1__esquema_inicial.sql` | `cuentas`, `asociaciones`, `actividades`, `inscripciones` |
+| `V2__familia.sql` | Foto de perfil en `cuentas`, `acompanantes`, `favoritos`, `preferencias` |
+| `V3__participacion.sql` | `asistencias` (historial), `testimonios`, `respuestas_encuesta`, `invitaciones` |
+| `V4__catalogo.sql` | `proyectos`, `formas_apoyo`, `centros`, `campanas`, `articulos_meta`, `aportaciones` |
+| `V5__sugerencias_y_privacidad.sql` | `sugerencias`, `solicitudes_eliminacion` |
+
+Ejemplo para agregar algo: para que las cuentas tengan teléfono, se crea `db/migrations/V6__telefono_en_cuentas.sql` con
 
 ```sql
 ALTER TABLE cuentas ADD COLUMN telefono text;
@@ -55,5 +65,5 @@ Los puertos solo escuchan en `127.0.0.1`: nada es visible desde la red. El `.env
 
 ## Siguientes pasos
 
-- Agregar el resto de las tablas como `V2`, `V3`... (testimonios, encuestas, campañas, proyectos, favoritos).
-- Decidir la API y agregarla al compose.
+- Decidir la API y agregarla al compose; las tablas ya cubren lo que hace la app.
+- Crear el bucket de fotos (perfil y testimonios) cuando la API las suba.
