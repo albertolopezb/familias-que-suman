@@ -57,7 +57,9 @@ fun InicioScreen(
     cuantasProximas: Int = 0,
     actividadesRealizadas: Int = 0,
     abiertasEnCiudad: Int = 0,
-    onProximaClick: (String) -> Unit = {}
+    onProximaClick: (String) -> Unit = {},
+    esAdmin: Boolean = false,
+    onIrAlPanel: () -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
     // La barra de arriba (logo, ciudad y perfil) queda fija, igual que en las demás pantallas.
@@ -215,8 +217,8 @@ fun InicioScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Las métricas son de la familia: solo con sesión.
-            if (nombreFamilia != null) {
+            // Las métricas son de la familia: solo con sesión, y no para el admin.
+            if (nombreFamilia != null && !esAdmin) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -282,7 +284,10 @@ fun InicioScreen(
                 Spacer(modifier = Modifier.height(28.dp))
             }
 
-            if (nombreFamilia != null) {
+            if (esAdmin) {
+                PanelAdmin(onIrAlPanel)
+                Spacer(modifier = Modifier.height(32.dp))
+            } else if (nombreFamilia != null) {
                 // Sección Tu Próxima Actividad: la de verdad, no una de ejemplo.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -491,6 +496,30 @@ private fun ProximaActividad(actividad: Actividad?, total: Int, onClick: () -> U
                 color = Color.White.copy(alpha = 0.85f),
                 style = MaterialTheme.typography.bodyMedium
             )
+        }
+    }
+}
+
+/** El admin no se inscribe: en lugar de su agenda ve el acceso a su panel. */
+@Composable
+private fun PanelAdmin(onIrAlPanel: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = AzulBannerFondo),
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("MODO ADMINISTRADOR", color = AmbarAcento, style = MaterialTheme.typography.labelMedium)
+            Text("Revisa lo que mandaron las familias", color = Color.White, style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Sugerencias, testimonios y respuestas de encuestas están en tu panel. " +
+                    "En cada sección puedes crear, editar o borrar con el botón +.",
+                color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodyMedium
+            )
+            Button(onClick = onIrAlPanel, colors = ButtonDefaults.buttonColors(containerColor = AmbarAcento),
+                shape = RoundedCornerShape(12.dp)) {
+                Text("Ir a mi panel", color = AzulBannerFondo, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

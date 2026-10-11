@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
+import mx.tec.familiasquesuman.ui.navigation.Rutas
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -137,7 +138,9 @@ fun NavGraphBuilder.grafoInicio(
             cuantasProximas = proximas.size,
             actividadesRealizadas = realizadas,
             abiertasEnCiudad = proximasEnOrden(catalogo).size,
-            onProximaClick = { id -> nav.navigate(RutasActividades.detalle(id)) }
+            onProximaClick = { id -> nav.navigate(RutasActividades.detalle(id)) },
+            esAdmin = esAdmin(),
+            onIrAlPanel = { nav.navigate(Rutas.PERFIL) { launchSingleTop = true } }
         )
     }
 
