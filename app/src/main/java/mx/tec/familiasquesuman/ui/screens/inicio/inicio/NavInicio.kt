@@ -120,8 +120,9 @@ fun NavGraphBuilder.grafoInicio(
             onVerAgenda = onVerAgenda,
             onCrearCuenta = { nav.navigate(RutasInscripcion.CREAR_CUENTA) { launchSingleTop = true } },
             onIniciarSesion = { nav.navigate(RutasInscripcion.INICIAR_SESION) { launchSingleTop = true } },
-            // Explorar lleva a las actividades.
+            // "Explorar ahora" del banner lleva a las actividades; "Ver todas" de causas, a la lista de causas.
             onExplorarClick = onNavegarAActividades,
+            onVerCausas = { nav.navigate(RutasInicio.EXPLORAR) { launchSingleTop = true } },
             onActividadesClick = onNavegarAActividades,
             onDonarClick = onNavegarACampanas,
             onProyectosClick = { nav.navigate(RutasInicio.PROYECTOS) { popUpTo(RutasInicio.INICIO); launchSingleTop = true } },
@@ -145,6 +146,8 @@ fun NavGraphBuilder.grafoInicio(
         var creando by remember { mutableStateOf(false) }
         var editando by remember { mutableStateOf<Asociacion?>(null) }
         var borrando by remember { mutableStateOf<Asociacion?>(null) }
+        val todas by cuenta.asociaciones.collectAsStateWithLifecycle()
+        val favoritasExplorar by cuenta.favoritas.collectAsStateWithLifecycle()
 
         ExplorarScreen(
             textoBusqueda = textoBusqueda,
@@ -156,7 +159,11 @@ fun NavGraphBuilder.grafoInicio(
             esAdmin = esAdmin(),
             onCrearAsociacion = { creando = true },
             onEditarAsociacion = { editando = it },
-            onBorrarAsociacion = { borrando = it }
+            onBorrarAsociacion = { borrando = it },
+            categorias = todas.map { it.categoria }.distinct(),
+            favoritas = favoritasExplorar,
+            onAlternarFavorita = { id -> nav.alternarFavorita(cuenta, id) },
+            onRegresar = { nav.popBackStack() }
         )
 
         if (creando || editando != null) {
@@ -195,18 +202,29 @@ fun NavGraphBuilder.grafoInicio(
     composable(RutasInicio.ASOCIACION) { backStackEntry ->
         val id = backStackEntry.arguments?.getString("asociacionId") ?: ""
         val vm: AsociacionViewModel = viewModel(factory = AppViewModelProvider.Factory)
-        vm.cargarAsociacion(id)
+        // Se carga una vez por asociación, no en cada recomposición.
+        LaunchedEffect(id) { vm.cargarAsociacion(id) }
 
         val asociacion by vm.asociacion.collectAsStateWithLifecycle()
         val cuenta = cuentaViewModel()
         val favoritas by cuenta.favoritas.collectAsStateWithLifecycle()
+        val catalogo by cuenta.actividades.collectAsStateWithLifecycle()
+        val contexto = LocalContext.current
 
         asociacion?.let {
             AsociacionScreen(
                 asociacion = it,
                 esFavorito = id in favoritas,
                 onToggleFavorito = { nav.alternarFavorita(cuenta, id) },
-                onVerActividades = onNavegarAActividades
+                onVerActividades = onNavegarAActividades,
+                actividades = proximasEnOrden(catalogo.filter { a -> a.asociacionId == id }),
+                onActividadClick = { actividadId -> nav.navigate(RutasActividades.detalle(actividadId)) },
+                onWhatsApp = { numero ->
+                    abrirWhatsApp(contexto, numero, "Hola, los encontré en Familias que Suman y me gustaría ayudar.")
+                },
+                onLlamar = { telefono -> llamar(contexto, telefono) },
+                onComoLlegar = { direccion -> abrirMapa(contexto, direccion) },
+                onRegresar = { nav.popBackStack() }
             )
         }
     }

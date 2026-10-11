@@ -46,6 +46,7 @@ fun InicioScreen(
     onCrearCuenta: () -> Unit,
     onIniciarSesion: () -> Unit,
     onExplorarClick: () -> Unit,
+    onVerCausas: () -> Unit = onExplorarClick,
     onActividadesClick: () -> Unit,
     onDonarClick: () -> Unit,
     onProyectosClick: () -> Unit,
@@ -233,7 +234,7 @@ fun InicioScreen(
                     style = MaterialTheme.typography.titleLarge,
                     color = AzulBannerFondo
                 )
-                TextButton(onClick = onExplorarClick) {
+                TextButton(onClick = onVerCausas) {
                     Text("Ver todas", color = AmbarAcento)
                 }
             }
