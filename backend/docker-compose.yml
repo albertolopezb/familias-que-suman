@@ -1,22 +1,27 @@
-# Levantar desde backend/ (la primera vez copia .env.example a .env):
+# Levantar desde backend/ (no hace falta nada más; el .env es opcional):
 #   docker compose up -d
+# Crea la base, aplica las migraciones, carga los datos de prueba y levanta el almacenamiento.
 
 # Nombre propio para que no se mezcle con los contenedores de otros proyectos.
 name: familias-que-suman
+
+# Valores de desarrollo. Si alguien necesita otros (por ejemplo, un puerto ocupado), los pone
+# en su propio backend/.env (ver .env.example) y esos ganan.
+x-db: &db
+  POSTGRES_DB: ${POSTGRES_DB:-familias}
+  POSTGRES_USER: ${POSTGRES_USER:-familias}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cambia-esta-contrasena}
 
 services:
 
   db:
     image: postgres:16
     restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    environment: *db
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 3s
       timeout: 3s
       retries: 20
@@ -24,37 +29,36 @@ services:
     ports:
       - "127.0.0.1:${DB_PORT:-5432}:5432"
 
-  # Aplica las migraciones de db/migrations y termina. Se vuelve a correr solo con
-  # `docker compose up -d`, y solo aplica las que falten.
+  # Aplica las migraciones de db/migrations y termina. Cada `docker compose up -d` aplica
+  # solo las que falten, así quien hace `git pull` recibe los cambios de los demás.
   migrar:
     image: flyway/flyway:11
     depends_on:
       db:
         condition: service_healthy
     environment:
-      FLYWAY_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
-      FLYWAY_USER: ${POSTGRES_USER}
-      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
+      FLYWAY_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-familias}
+      FLYWAY_USER: ${POSTGRES_USER:-familias}
+      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD:-cambia-esta-contrasena}
       FLYWAY_LOCATIONS: filesystem:/flyway/sql
       FLYWAY_CONNECT_RETRIES: "10"
     command: migrate
     volumes:
       - ./db/migrations:/flyway/sql:ro
 
-  # Datos de prueba, solo para desarrollo y solo cuando se pide:
-  #   docker compose --profile seed run --rm seed
+  # Datos de prueba (solo desarrollo). Corre después de las migraciones y termina. Se puede
+  # correr las veces que sea: no duplica nada.
   seed:
     image: postgres:16
-    profiles: ["seed"]
     depends_on:
       migrar:
         condition: service_completed_successfully
     environment:
       PGHOST: db
-      PGDATABASE: ${POSTGRES_DB}
-      PGUSER: ${POSTGRES_USER}
-      PGPASSWORD: ${POSTGRES_PASSWORD}
-    command: ["psql", "-v", "ON_ERROR_STOP=1", "-f", "/seed/dev.sql"]
+      PGDATABASE: ${POSTGRES_DB:-familias}
+      PGUSER: ${POSTGRES_USER:-familias}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-cambia-esta-contrasena}
+    command: ["psql", "-q", "-v", "ON_ERROR_STOP=1", "-f", "/seed/dev.sql"]
     volumes:
       - ./db/seed:/seed:ro
 
@@ -67,8 +71,8 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${STORAGE_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${STORAGE_ROOT_PASSWORD}
+      MINIO_ROOT_USER: ${STORAGE_ROOT_USER:-familias-storage}
+      MINIO_ROOT_PASSWORD: ${STORAGE_ROOT_PASSWORD:-cambia-esta-contrasena-tambien}
     volumes:
       - storage-data:/data
     ports:

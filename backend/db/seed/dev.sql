@@ -1,7 +1,7 @@
 -- Datos de prueba SOLO para desarrollo (nunca en un servidor real).
 -- Se pueden correr varias veces: no duplican nada.
 --
---   docker compose --profile seed run --rm seed
+--   Se cargan solos con `docker compose up -d`.
 --
 -- Cuentas de prueba:
 --   ana.rodriguez@correo.com / familia123   (familia)

@@ -6,14 +6,21 @@ Cada integrante los levanta en su propia computadora; lo que se comparte por Git
 
 ## Levantarlo
 
-Con Docker Desktop abierto:
+Con Docker Desktop abierto, desde la raíz del repo:
 
 ```bash
+git pull
 cd backend
-cp .env.example .env                           # una sola vez (el .env es tuyo, no se sube a Git)
-docker compose up -d                           # levanta la base y crea las tablas
-docker compose --profile seed run --rm seed    # opcional: datos de prueba
+docker compose up -d
 ```
+
+Eso es todo: crea la base, aplica las migraciones que falten, carga los datos de prueba y
+levanta el almacenamiento de fotos. Después de cada `git pull`, el mismo `docker compose up -d`
+te pone al día con los cambios de los demás. Los datos de prueba no se duplican.
+
+Cuentas de prueba: `ana.rodriguez@correo.com` / `familia123` y `admin@correo.com` / `admin123`.
+
+El `.env` es opcional: solo hace falta si quieres otros puertos o contraseñas (copia `.env.example` a `.env`).
 
 Para ver las tablas:
 
@@ -29,8 +36,8 @@ Para apagarlo: `docker compose down` (conserva los datos) o `docker compose down
 |---|---|
 | `docker-compose.yml` | Lista de contenedores que se levantan: la base de datos, el que crea las tablas y el de fotos. |
 | `db/migrations/` | Archivos SQL que **crean y cambian las tablas**, en orden: `V1`, `V2`, `V3`... |
-| `db/seed/dev.sql` | **Datos de prueba** para desarrollar. Solo se cargan si lo pides. |
-| `.env.example` | Plantilla de las contraseñas y puertos. Se copia a `.env`. |
+| `db/seed/dev.sql` | **Datos de prueba** para desarrollar. Se cargan solos al levantar. |
+| `.env.example` | Plantilla opcional de contraseñas y puertos. Se copia a `.env` si quieres cambiarlos. |
 
 **Migraciones, en una frase:** cada archivo cambia la base una sola vez, en orden, y Flyway (el contenedor
 `migrar`) apunta cuáles ya corrió. Por eso, para cambiar algo, **no se edita un archivo viejo: se crea el siguiente**.
@@ -55,8 +62,10 @@ y con `docker compose up -d` se aplica. Quien haga `git pull` y corra lo mismo, 
 
 ## Si algo falla
 
-- **"port is already allocated":** otra cosa usa ese puerto. Cambia `DB_PORT`, `STORAGE_API_PORT` o
-  `STORAGE_CONSOLE_PORT` en tu `.env`.
+- **"port is already allocated":** otra cosa usa ese puerto. Copia `.env.example` a `.env` y cambia
+  `DB_PORT`, `STORAGE_API_PORT` o `STORAGE_CONSOLE_PORT`.
+- **`migrar` dice "checksum mismatch":** se editó una migración que tu base ya había aplicado. Deshaz
+  ese cambio (`git checkout` del archivo) o empieza de cero con `docker compose down -v`.
 - **Quiero empezar de cero:** `docker compose down -v` y luego `docker compose up -d`.
 
 ## Seguridad
