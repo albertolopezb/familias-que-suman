@@ -56,6 +56,8 @@ fun ActividadesScreen(
     onVerAsociaciones: () -> Unit,
     modifier: Modifier = Modifier,
     esAdmin: Boolean = false,
+    /** Ids de las actividades a las que la familia ya está inscrita. */
+    inscritas: Set<String> = emptySet(),
     onForzarEstado: () -> Unit = {},
     // callbacks de administración:
     onCrearActividad: () -> Unit = {},
@@ -171,6 +173,7 @@ fun ActividadesScreen(
                         tarjetasAdmin(
                             actividades = proximas,
                             esAdmin = esAdmin,
+                            inscritas = inscritas,
                             onActividadClick = onActividadClick,
                             onUnirme = onUnirme,
                             onCompartir = onCompartir,
@@ -190,6 +193,7 @@ fun ActividadesScreen(
                             tarjetasAdmin(
                                 actividades = pasadas,
                                 esAdmin = esAdmin,
+                                inscritas = inscritas,
                                 onActividadClick = onActividadClick,
                                 onUnirme = onUnirme,
                                 onCompartir = onCompartir,
@@ -391,6 +395,7 @@ fun DialogoFormularioActividad(
 private fun LazyListScope.tarjetasAdmin(
     actividades: List<ActividadConAsociacion>,
     esAdmin: Boolean,
+    inscritas: Set<String>,
     onActividadClick: (String) -> Unit,
     onUnirme: (String) -> Unit,
     onCompartir: (ActividadConAsociacion) -> Unit,
@@ -407,7 +412,8 @@ private fun LazyListScope.tarjetasAdmin(
                 onClick = { onActividadClick(item.actividad.id) },
                 onUnirme = { onUnirme(item.actividad.id) },
                 onCompartir = { onCompartir(item) },
-                modifier = Modifier.alpha(opacidad)
+                modifier = Modifier.alpha(opacidad),
+                inscrito = item.actividad.id in inscritas
             )
 
             // Si la cuenta es Admin, agregamos la barra de acciones debajo de cada tarjeta

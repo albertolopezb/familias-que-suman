@@ -75,7 +75,9 @@ fun DetalleActividadScreen(
     onVerOtrasActividades: () -> Unit,
     modifier: Modifier = Modifier,
     simularSinCupo: Boolean = false,
-    onSimularSinCupoChange: ((Boolean) -> Unit)? = null
+    onSimularSinCupoChange: ((Boolean) -> Unit)? = null,
+    /** Cuántas personas de la familia van; null si no están inscritos. */
+    inscritos: Int? = null
 ) {
     val actividad = item.actividad
 
@@ -103,7 +105,7 @@ fun DetalleActividadScreen(
                 ) {
                     Encabezado(item)
 
-                    if (actividad.sinLugares && actividad.tieneCupo && !actividad.yaPaso) {
+                    if (actividad.sinLugares && actividad.tieneCupo && !actividad.yaPaso && inscritos == null) {
                         AvisoSinLugares(cupoTotal = actividad.cupoTotal)
                     }
 
@@ -136,6 +138,7 @@ fun DetalleActividadScreen(
                 onVerOtrasActividades = onVerOtrasActividades,
                 simularSinCupo = simularSinCupo,
                 onSimularSinCupoChange = onSimularSinCupoChange,
+                inscritos = inscritos,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
@@ -303,7 +306,8 @@ private fun Contacto(nombre: String) {
 
 /**
  * El botón de abajo, siempre a la vista. Normal: "Unirme a esta actividad".
- * Sin cupo: apagado, con el enlace a otras actividades. Pasada: apagado.
+ * Ya inscritos: lo dice y el botón cambia quiénes van. Sin cupo: apagado, con el enlace a
+ * otras actividades. Pasada: apagado.
  */
 @Composable
 private fun PieDeAccion(
@@ -312,6 +316,7 @@ private fun PieDeAccion(
     onVerOtrasActividades: () -> Unit,
     simularSinCupo: Boolean,
     onSimularSinCupoChange: ((Boolean) -> Unit)?,
+    inscritos: Int?,
     modifier: Modifier = Modifier
 ) {
     val actividad = item.actividad
@@ -333,6 +338,28 @@ private fun PieDeAccion(
                 alto = 52.dp,
                 modifier = Modifier.fillMaxWidth()
             )
+
+            inscritos != null -> {
+                Text(
+                    text = "✓ Ya están inscritos · " + if (inscritos == 1) "va 1 persona" else "van $inscritos personas",
+                    style = TextoWeb.Chip,
+                    color = Web.VerdeTexto,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Web.VerdeFondo)
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                )
+                BotonAmarillo(
+                    texto = "Modificar quiénes van",
+                    onClick = onInscribirme,
+                    radio = 16.dp,
+                    alto = 52.dp,
+                    negritas = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(8.dp, RoundedCornerShape(16.dp))
+                )
+            }
 
             actividad.sinLugares && actividad.tieneCupo -> {
                 BotonAmarillo(

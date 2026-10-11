@@ -257,7 +257,9 @@ fun NavGraphBuilder.grafoInscripcion(nav: NavController) {
                     actividadId = actividadId,
                     titular = titular,
                     guardados = cuenta.inscripciones.value[actividadId] ?: cuenta.acompanantes.value,
-                    lugaresDisponibles = cuenta.lugaresDisponibles(actividad),
+                    // Si ya están inscritos, los lugares que tienen se suman: son suyos al modificar.
+                    lugaresDisponibles = cuenta.lugaresDisponibles(actividad) +
+                        (cuenta.inscripciones.value[actividadId]?.let { 1 + it.size } ?: 0),
                     simularSinCupo = sinCupo
                 )
             }

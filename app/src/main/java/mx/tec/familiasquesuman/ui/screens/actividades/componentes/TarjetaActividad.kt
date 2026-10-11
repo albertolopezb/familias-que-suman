@@ -41,7 +41,9 @@ fun TarjetaActividad(
     modifier: Modifier = Modifier,
     onUnirme: () -> Unit = {},
     onCompartir: () -> Unit = {},
-    cupoEnVivo: Boolean = true
+    cupoEnVivo: Boolean = true,
+    /** La familia ya va: en lugar de "Unirme" se ofrece cambiar quiénes van. */
+    inscrito: Boolean = false
 ) {
     val actividad = item.actividad
     val forma = RoundedCornerShape(16.dp)
@@ -115,6 +117,15 @@ fun TarjetaActividad(
                 overflow = TextOverflow.Ellipsis
             )
 
+            if (inscrito && !actividad.yaPaso) {
+                Etiqueta(
+                    texto = "✓ Ya están inscritos",
+                    fondo = Web.VerdeFondo,
+                    color = Web.VerdeTexto,
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+            }
+
             if (!actividad.yaPaso && cupoEnVivo) {
                 Row(
                     modifier = Modifier
@@ -123,9 +134,15 @@ fun TarjetaActividad(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     BotonAmarillo(
-                        texto = if (actividad.sinLugares) "Sin lugares" else "Unirme",
+                        texto = when {
+                            inscrito -> "Modificar"
+                            actividad.sinLugares -> "Sin lugares"
+                            else -> "Unirme"
+                        },
                         onClick = onUnirme,
-                        habilitado = !actividad.sinLugares,
+                        // Sin lugares libres, quien ya va todavía puede cambiar quiénes van.
+                        habilitado = inscrito || !actividad.sinLugares,
+                        conFlechas = !inscrito,
                         modifier = Modifier.weight(1f)
                     )
                     BotonContorno(

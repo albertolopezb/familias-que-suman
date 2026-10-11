@@ -116,11 +116,13 @@ fun NavGraphBuilder.grafoActividades(
         var porCompartir by remember { mutableStateOf<ActividadConAsociacion?>(null) }
         val cuentaLista = cuentaViewModel()
         val sesionLista by cuentaLista.sesion.collectAsStateWithLifecycle()
+        val inscripcionesLista by cuentaLista.inscripciones.collectAsStateWithLifecycle()
 
         ActividadesScreen(
             estado = estado,
             ciudad = ciudadConEstado(prefs.ciudad),
             esAdmin = esAdmin(),
+            inscritas = inscripcionesLista.keys,
             onActividadClick = { id -> nav.navigate(RutasActividades.detalle(id)) },
             onUnirme = onInscribirme,
             onCompartir = { item -> porCompartir = item },
@@ -284,6 +286,7 @@ fun NavGraphBuilder.grafoActividades(
         var simularSinCupo by rememberSaveable { mutableStateOf(false) }
         var porCompartir by remember { mutableStateOf<ActividadConAsociacion?>(null) }
         val sesion by cuenta.sesion.collectAsStateWithLifecycle()
+        val inscripcionesDetalle by cuenta.inscripciones.collectAsStateWithLifecycle()
 
         when (val actual = estado) {
             is UiState.Cargando -> CargandoView()
@@ -294,6 +297,7 @@ fun NavGraphBuilder.grafoActividades(
             )
 
             is UiState.Exito -> DetalleActividadScreen(
+                inscritos = inscripcionesDetalle[id]?.let { 1 + it.size },
                 item = actual.datos,
                 esFavorito = id in favoritas,
                 onRegresar = { nav.popBackStack() },
