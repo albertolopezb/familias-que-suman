@@ -90,14 +90,15 @@ fun CrearCuentaScreen(
                 esContrasena = true,
                 habilitado = !ui.enviando
             )
+        }
+        // La casilla va junto al botón: así sube con el teclado y se acepta sin tener que cerrarlo.
+        BarraAccionesInferior {
             Casilla(
                 marcada = ui.aceptaAviso,
                 onCambio = onAceptaAvisoChange,
                 texto = "He leído el aviso de privacidad y acepto cómo se usan los datos de mi familia.",
                 habilitada = !ui.enviando
             )
-        }
-        BarraAccionesInferior {
             BotonPrimario(
                 texto = if (ui.enviando) "Creando tu cuenta…" else "Crear cuenta",
                 onClick = onCrearCuenta,

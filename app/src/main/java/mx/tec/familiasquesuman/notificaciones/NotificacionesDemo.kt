@@ -42,7 +42,7 @@ object NotificacionesDemo {
     ): Boolean = Notificaciones.enviar(
         context,
         titulo = "Ya están inscritos",
-        texto = "Van ${if (personas == 1) "1 persona" else "$personas personas"} a $tituloActividad, $cuando. " +
+        texto = "${if (personas == 1) "Va 1 persona" else "Van $personas personas"} a $tituloActividad, $cuando. " +
             "Toca para ver los detalles.",
         actividadId = actividadId,
         canal = Notificaciones.CANAL_INSCRIPCIONES

@@ -11,6 +11,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -66,6 +67,7 @@ object RutasPerfil {
     const val RESPUESTAS = "perfil/respuestas?actividadId={actividadId}"
     const val AVISO_PRIVACIDAD = "perfil/aviso_privacidad"
     const val AJUSTES = "perfil/ajustes"
+    const val NOTIFICACIONES = "perfil/notificaciones"
     fun testimonio(participacionId: String) = "perfil/testimonio/${Uri.encode(participacionId)}"
     fun encuestaFinal(participacionId: String, titulo: String) =
         "perfil/encuesta_final/${Uri.encode(participacionId)}?titulo=${Uri.encode(titulo)}"
@@ -148,6 +150,29 @@ fun NavGraphBuilder.grafoPerfil(
 ) {
     composable(RutasPerfil.ENCUESTA_PREVIA, arguments = argumentosEncuesta) { entrada ->
         EncuestaDestino(nav, entrada, EncuestaPrevia, MomentoEncuesta.ANTES)
+    }
+    composable(RutasPerfil.NOTIFICACIONES) {
+        val cuenta = cuentaViewModel()
+        val avisos by cuenta.avisos.collectAsStateWithLifecycle()
+        // Las que no habían visto se marcan como "Nuevas" mientras esté abierta la pantalla;
+        // al abrirla se dan por vistas y el número del círculo de perfil se quita.
+        val nuevas = rememberSaveable { ArrayList(cuenta.avisos.value.filter { !it.leido }.map { it.id }) }
+        LaunchedEffect(avisos) { cuenta.marcarAvisosLeidos() }
+        NotificacionesScreen(
+            avisos = avisos,
+            nuevas = nuevas.toSet(),
+            ahora = remember(avisos) { System.currentTimeMillis() },
+            onAviso = { aviso ->
+                val destino = when {
+                    aviso.actividadId != null -> RutasActividades.detalle(aviso.actividadId)
+                    aviso.campanaId != null -> RutasCampanas.detalle(aviso.campanaId)
+                    else -> Rutas.PERFIL
+                }
+                nav.navigate(destino) { launchSingleTop = true }
+            },
+            onAjustes = { nav.navigate(RutasPerfil.AJUSTES) { launchSingleTop = true } },
+            onRegresar = { nav.popBackStack() }
+        )
     }
     composable(RutasPerfil.AJUSTES) {
         val vm: AjustesViewModel = viewModel(factory = AppViewModelProvider.Factory)

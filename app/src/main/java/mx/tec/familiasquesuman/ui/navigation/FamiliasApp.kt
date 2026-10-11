@@ -111,7 +111,8 @@ fun FamiliasApp() {
             when (destino) {
                 DestinoPerfil.PERFIL -> abrirConSesion(Rutas.PERFIL)
                 DestinoPerfil.MIS_ACTIVIDADES -> abrirConSesion(Rutas.MIS_ACTIVIDADES)
-                DestinoPerfil.NOTIFICACIONES, DestinoPerfil.AJUSTES -> abrirConSesion(RutasPerfil.AJUSTES)
+                DestinoPerfil.NOTIFICACIONES -> abrirConSesion(RutasPerfil.NOTIFICACIONES)
+                DestinoPerfil.AJUSTES -> abrirConSesion(RutasPerfil.AJUSTES)
                 DestinoPerfil.INICIAR_SESION -> {
                     cuenta.tomarDestino()
                     nav.navigate(RutasInscripcion.INICIAR_SESION) { launchSingleTop = true }
@@ -279,7 +280,8 @@ private fun Modifier.deslizarEntrePestanas(rutaActual: String?, irA: (String) ->
 
 /** Pantallas que solo existen con sesión abierta. */
 private val rutasConSesion = setOf(
-    Rutas.PERFIL, Rutas.MIS_ACTIVIDADES, RutasPerfil.AJUSTES, RutasPerfil.FAVORITOS, RutasPerfil.INSIGNIAS
+    Rutas.PERFIL, Rutas.MIS_ACTIVIDADES, RutasPerfil.AJUSTES, RutasPerfil.FAVORITOS, RutasPerfil.INSIGNIAS,
+    RutasPerfil.NOTIFICACIONES
 )
 
 /** Cambio de pestaña: una sola copia de cada pantalla y la pila limpia. */

@@ -4,7 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DropdownMenu
@@ -25,8 +27,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import mx.tec.familiasquesuman.domain.UsuariosHardcodeados
@@ -43,15 +47,14 @@ val LocalIrAPerfil = compositionLocalOf<(DestinoPerfil) -> Unit> { {} }
 /**
  * El botón de perfil de la esquina de arriba. Al tocarlo se abre un cuadrito con
  * lo importante: con sesión, Mi perfil, Mis actividades, Notificaciones y Ajustes; sin sesión, entrar o crear cuenta.
+ * Con notificaciones sin leer lleva encima cuántas son.
  */
 @Composable
-fun BotonPerfil(
-    modifier: Modifier = Modifier,
-    hayNotificaciones: Boolean = true
-) {
+fun BotonPerfil(modifier: Modifier = Modifier) {
     val cuenta = cuentaViewModel()
     val sesion by cuenta.sesion.collectAsStateWithLifecycle()
     val foto by cuenta.foto.collectAsStateWithLifecycle()
+    val sinLeer by cuenta.sinLeer.collectAsStateWithLifecycle()
     val conSesion = sesion != null
     val esAdmin = UsuariosHardcodeados.obtenerPorCorreo(sesion?.correo).esAdmin
 
@@ -69,7 +72,13 @@ fun BotonPerfil(
                 .clip(CircleShape)
                 .background(Color(0xFFF1F5F9))
                 .clickable { abierto = true }
-                .semantics(mergeDescendants = true) { contentDescription = "Mi perfil" },
+                .semantics(mergeDescendants = true) {
+                    contentDescription = when {
+                        !conSesion || sinLeer == 0 -> "Mi perfil"
+                        sinLeer == 1 -> "Mi perfil, 1 notificación sin leer"
+                        else -> "Mi perfil, $sinLeer notificaciones sin leer"
+                    }
+                },
             contentAlignment = Alignment.Center
         ) {
             val s = sesion
@@ -83,17 +92,10 @@ fun BotonPerfil(
                     modifier = Modifier.size(20.dp)
                 )
             }
-            if (hayNotificaciones && conSesion) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = (-3).dp, y = 3.dp)
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(AmbarAcento)
-                        .border(1.5.dp, Color.White, CircleShape)
-                )
-            }
+        }
+        // Fuera del círculo recortado para que el número no se corte.
+        if (conSesion && sinLeer > 0) {
+            ContadorAvisos(sinLeer, Modifier.align(Alignment.TopEnd).offset(x = 6.dp, y = (-5).dp))
         }
 
         DropdownMenu(
@@ -110,9 +112,7 @@ fun BotonPerfil(
                     Opcion("Mis actividades", IconosWeb.Calendario) { ir(DestinoPerfil.MIS_ACTIVIDADES) }
                 }
 
-                if (hayNotificaciones) {
-                    Opcion("Notificaciones", IconosWeb.Campana) { ir(DestinoPerfil.NOTIFICACIONES) }
-                }
+                Opcion("Notificaciones", IconosWeb.Campana, contador = sinLeer) { ir(DestinoPerfil.NOTIFICACIONES) }
                 Opcion("Ajustes", IconosWeb.Engrane) { ir(DestinoPerfil.AJUSTES) }
                 Opcion("Cerrar sesión", IconosWeb.Usuario) { ir(DestinoPerfil.CERRAR_SESION) }
             } else {
@@ -124,10 +124,33 @@ fun BotonPerfil(
 }
 
 @Composable
-private fun Opcion(texto: String, icono: ImageVector, onClick: () -> Unit) {
+private fun Opcion(texto: String, icono: ImageVector, contador: Int = 0, onClick: () -> Unit) {
     DropdownMenuItem(
         text = { Text(texto, style = MaterialTheme.typography.labelLarge, color = AzulMarinoPrimario) },
         leadingIcon = { Icon(icono, contentDescription = null, tint = AzulMarinoPrimario, modifier = Modifier.size(18.dp)) },
+        trailingIcon = if (contador > 0) ({ ContadorAvisos(contador) }) else null,
         onClick = onClick
     )
+}
+
+/** La pastilla ámbar con cuántas notificaciones no han leído; de 10 en adelante dice "9+". */
+@Composable
+private fun ContadorAvisos(cuantas: Int, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .defaultMinSize(minWidth = 20.dp, minHeight = 20.dp)
+            .clip(CircleShape)
+            .background(AmbarAcento)
+            .border(1.5.dp, Color.White, CircleShape)
+            .padding(horizontal = 5.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            if (cuantas > 9) "9+" else "$cuantas",
+            color = AzulMarinoPrimario,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            lineHeight = 12.sp
+        )
+    }
 }

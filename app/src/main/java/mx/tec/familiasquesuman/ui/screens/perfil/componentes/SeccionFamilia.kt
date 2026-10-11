@@ -65,14 +65,14 @@ fun SeccionFamilia(
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         if (familiares.isEmpty()) {
             Text(
-                "Registra a tu familia una sola vez y aparecerá lista cada vez que te inscribas a una actividad.",
+                "Registra a cada integrante de tu familia una sola vez y aparecerá cada vez que te inscribas a una actividad.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TintaSuave
             )
         } else {
             familiares.forEach { persona -> FilaFamiliar(persona, onQuitar = { onQuitar(persona) }) }
         }
-        BotonSecundario("+ Registrar familia", onClick = { verFormulario = true })
+        BotonSecundario("+ Registrar integrante de la familia", onClick = { verFormulario = true })
     }
 
     if (verFormulario) {
@@ -133,7 +133,7 @@ private fun FormularioFamiliar(onGuardar: (Acompanante) -> Unit, onCerrar: () ->
 
     Dialog(onDismissRequest = onCerrar, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         HojaInferior(onCerrar = onCerrar, conVelo = false) {
-            Text("Registrar familia", style = MaterialTheme.typography.titleMedium, color = Tinta)
+            Text("Registrar integrante de la familia", style = MaterialTheme.typography.titleMedium, color = Tinta)
             Spacer(Modifier.height(4.dp))
             Text(
                 "Cuando te inscribas a una actividad, esta persona aparecerá ya anotada.",
