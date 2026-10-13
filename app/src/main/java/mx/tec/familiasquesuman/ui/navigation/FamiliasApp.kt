@@ -1,5 +1,9 @@
 package mx.tec.familiasquesuman.ui.navigation
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.view.Window
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
@@ -51,6 +55,10 @@ import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Web
 import mx.tec.familiasquesuman.ui.screens.actividades.grafoActividades
 import mx.tec.familiasquesuman.ui.screens.inscripcion.cuentaViewModel
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import mx.tec.familiasquesuman.ui.theme.AzulEncabezado
 import androidx.compose.runtime.MutableState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.tec.familiasquesuman.domain.Usuario
@@ -106,6 +114,16 @@ fun FamiliasApp() {
     // encuestas, sugerir) usan toda la pantalla, como en una app nativa.
     val mostrarBarraInferior = rutaActual != null && rutasSinBarra.none { rutaActual == it || rutaActual.startsWith("$it/") }
 
+    // En las pestañas el encabezado es azul y llega hasta arriba: la franja de la barra de estado
+    // se pinta del mismo azul y sus íconos pasan a blanco. En las demás pantallas todo sigue igual.
+    val esPestana = rutaActual in rutasDePestana
+    val vista = LocalView.current
+    SideEffect {
+        vista.context.buscarVentana()?.let { ventana ->
+            WindowCompat.getInsetsController(ventana, vista).isAppearanceLightStatusBars = !esPestana
+        }
+    }
+
     CompositionLocalProvider(
         LocalIrAPerfil provides { destino ->
             when (destino) {
@@ -131,7 +149,7 @@ fun FamiliasApp() {
         }
     ) {
         Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
+            containerColor = if (esPestana) AzulEncabezado else MaterialTheme.colorScheme.background,
             bottomBar = {
                 if (mostrarBarraInferior) {
                     BarraInferior(rutaActual = rutaActual, onPestana = { nav.irA(it.ruta) })
@@ -181,9 +199,6 @@ fun FamiliasApp() {
                         }
                     },
                     onVerAsociaciones = { nav.navigate(RutasInicio.EXPLORAR) },
-                    // El mini menú del mapa lleva al detalle de lo que se tocó.
-                    onVerProyecto = { id -> nav.navigate(RutasInicio.proyecto(id)) },
-                    onVerCampana = { id -> nav.navigate(RutasCampanas.detalle(id)) },
                     onInscribirme = { id -> nav.navigate(RutasInscripcion.inscribirse(id)) },
                     onInscribirmeConPrueba = { id, sinCupo -> nav.navigate(RutasInscripcion.inscribirse(id, sinCupo)) },
                     onCancelarInscripcion = { id -> nav.navigate(RutasInscripcion.cancelar(id)) },
@@ -199,6 +214,15 @@ fun FamiliasApp() {
             }
         }
     }
+}
+
+private fun Context.buscarVentana(): Window? {
+    var contexto: Context? = this
+    while (contexto is ContextWrapper) {
+        if (contexto is Activity) return contexto.window
+        contexto = contexto.baseContext
+    }
+    return null
 }
 
 /** Pantallas completas, sin la barra de pestañas. */

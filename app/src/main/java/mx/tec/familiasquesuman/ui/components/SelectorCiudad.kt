@@ -36,13 +36,18 @@ import mx.tec.familiasquesuman.ui.theme.AzulMarinoPrimario
 
 import mx.tec.familiasquesuman.data.CIUDADES
 
-/** La píldora de ciudad con su menú. Solo se enseña en el encabezado del Inicio. */
+/**
+ * La píldora de ciudad con su menú. Vive en el apartado azul de cada pestaña;
+ * [sobreAzul] la pinta clara sobre ese fondo.
+ */
 @Composable
 fun SelectorCiudad(
     ciudadActual: String,
     onCiudadSeleccionada: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sobreAzul: Boolean = false
 ) {
+    val colorTexto = if (sobreAzul) Color.White else AzulMarinoPrimario
     var desplegado by remember { mutableStateOf(false) }
 
     Box(modifier) {
@@ -50,7 +55,7 @@ fun SelectorCiudad(
             modifier = Modifier
                 .clip(RoundedCornerShape(20.dp))
                 .clickable { desplegado = !desplegado },
-            color = Color(0xFFF1F5F9)
+            color = if (sobreAzul) Color.White.copy(alpha = 0.14f) else Color(0xFFF1F5F9)
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -66,12 +71,12 @@ fun SelectorCiudad(
                 Text(
                     text = ciudadActual,
                     style = MaterialTheme.typography.labelLarge,
-                    color = AzulMarinoPrimario
+                    color = colorTexto
                 )
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = "Cambiar ciudad",
-                    tint = AzulMarinoPrimario,
+                    tint = colorTexto,
                     modifier = Modifier.size(18.dp)
                 )
             }

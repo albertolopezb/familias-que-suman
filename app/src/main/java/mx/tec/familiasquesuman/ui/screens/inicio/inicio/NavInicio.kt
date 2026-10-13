@@ -6,7 +6,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import mx.tec.familiasquesuman.FamiliasApplication
 import mx.tec.familiasquesuman.domain.proximasEnOrden
+import mx.tec.familiasquesuman.ui.screens.actividades.MapaViewModel
 import mx.tec.familiasquesuman.ui.screens.actividades.RutasActividades
+import mx.tec.familiasquesuman.ui.screens.campanas.RutasCampanas
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -21,6 +23,7 @@ import androidx.navigation.compose.composable
 import mx.tec.familiasquesuman.domain.Asociacion
 import mx.tec.familiasquesuman.domain.CentroVisiteo
 import mx.tec.familiasquesuman.domain.Proyecto
+import mx.tec.familiasquesuman.domain.TipoDePunto
 import mx.tec.familiasquesuman.domain.TipoSugerencia
 import mx.tec.familiasquesuman.ui.components.CampoAdmin
 import mx.tec.familiasquesuman.ui.components.DialogoConfirmarBorrado
@@ -113,6 +116,10 @@ fun NavGraphBuilder.grafoInicio(
         }
 
         val prefsInicio by vm.prefs.collectAsStateWithLifecycle()
+        // El mapa de la ciudad elegida. Se carga al abrir el Inicio y cada vez que cambia la ciudad.
+        val mapaVm: MapaViewModel = viewModel(factory = AppViewModelProvider.Factory)
+        val mapa by mapaVm.estado.collectAsStateWithLifecycle()
+        LaunchedEffect(prefsInicio.ciudad) { mapaVm.cargar(prefsInicio.ciudad) }
         InicioScreen(
             ciudad = prefsInicio.ciudad,
             onCambiarCiudad = vm::cambiarCiudad,
@@ -139,6 +146,16 @@ fun NavGraphBuilder.grafoInicio(
             actividadesRealizadas = realizadas,
             abiertasEnCiudad = proximasEnOrden(catalogo.filter { it.ciudad == prefsInicio.ciudad }).size,
             onProximaClick = { id -> nav.navigate(RutasActividades.detalle(id)) },
+            mapa = mapa,
+            onReintentarMapa = { mapaVm.cargar(prefsInicio.ciudad) },
+            // El mini menú del mapa lleva al detalle de lo que se tocó.
+            onAbrirPunto = { punto ->
+                when (punto.tipo) {
+                    TipoDePunto.ACTIVIDAD -> nav.navigate(RutasActividades.detalle(punto.id))
+                    TipoDePunto.PROYECTO -> nav.navigate(RutasInicio.proyecto(punto.id))
+                    TipoDePunto.DONACION -> nav.navigate(RutasCampanas.detalle(punto.id))
+                }
+            },
             esAdmin = esAdmin(),
             onIrAlPanel = { nav.navigate(Rutas.PERFIL) { launchSingleTop = true } }
         )

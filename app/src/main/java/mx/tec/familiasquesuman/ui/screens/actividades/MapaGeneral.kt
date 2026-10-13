@@ -5,7 +5,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateCentroid
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -39,14 +43,16 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerInputScope
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -55,7 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import mx.tec.familiasquesuman.domain.Coordenada
-import mx.tec.familiasquesuman.domain.MapaCercano
+import mx.tec.familiasquesuman.domain.MapaDeCiudad
 import mx.tec.familiasquesuman.domain.PuntoEnMapa
 import mx.tec.familiasquesuman.domain.TipoDePunto
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.BotonAmarillo
@@ -65,22 +71,34 @@ import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TextoWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Web
 import mx.tec.familiasquesuman.ui.state.UiState
+import mx.tec.familiasquesuman.ui.theme.AzulCategoriaTexto
+import mx.tec.familiasquesuman.ui.theme.AzulTarjetaFondo
+import mx.tec.familiasquesuman.ui.theme.MoradoCategoriaTexto
+import mx.tec.familiasquesuman.ui.theme.MoradoTarjetaFondo
+import mx.tec.familiasquesuman.ui.theme.VerdeCategoriaTexto
+import mx.tec.familiasquesuman.ui.theme.VerdeTarjetaFondo
+import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.cos
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
- * La pestaña "Mapa" de Actividades: actividades, proyectos y donaciones cerca de
- * la familia, con filtro por tipo y un mini menú al tocar un puntero.
+ * El mapa del Inicio: actividades, proyectos y donaciones de la ciudad elegida
+ * (Monterrey u Hermosillo), con filtro por tipo y un mini menú al tocar un puntero.
  *
- * Todavía no es un mapa de verdad. El lienzo de abajo coloca cada puntero en su
- * lugar real respecto a la familia (norte arriba, anillos de distancia) pero no
- * pinta calles. Cuando se conecte el SDK de mapas solo cambia [LienzoDelMapa]:
- * los filtros, el mini menú y la navegación se quedan como están.
+ * Es una vista general de la ciudad: no usa la ubicación del teléfono ni pide ningún
+ * permiso. Los punteros llevan el color de su tarjeta en el Inicio (actividades en
+ * morado, donar en verde, proyectos en azul).
+ *
+ * Todavía no es un mapa de verdad. El lienzo de abajo coloca cada puntero en su lugar
+ * real (norte arriba) pero no pinta calles. Cuando se conecte el SDK de mapas solo
+ * cambia [LienzoDelMapa]: los filtros, el mini menú y la navegación se quedan igual.
  */
 @Composable
-fun MapaCercaDeTi(
-    estado: UiState<MapaCercano>,
+fun MapaGeneral(
+    estado: UiState<MapaDeCiudad>,
     onAbrir: (PuntoEnMapa) -> Unit,
     onReintentar: () -> Unit,
     modifier: Modifier = Modifier
@@ -139,7 +157,9 @@ fun MapaCercaDeTi(
 
                 is UiState.Exito -> {
                     LienzoDelMapa(
-                        tuUbicacion = estado.datos.tuUbicacion,
+                        ciudad = estado.datos.ciudad,
+                        centroDeCiudad = estado.datos.centro,
+                        todos = todos,
                         visibles = visibles,
                         claveSeleccionada = claveSeleccionada,
                         onSeleccionar = { claveSeleccionada = it }
@@ -157,8 +177,13 @@ fun MapaCercaDeTi(
                     )
 
                     if (visibles.isEmpty()) {
+                        val tipoFiltrado = TipoDePunto.entries.firstOrNull { it.name == filtro }
                         Text(
-                            text = "Por ahora no hay nada de esto cerca de ti.",
+                            text = when {
+                                todos.isEmpty() -> "Pronto habrá actividades, proyectos y donaciones en ${estado.datos.ciudad}."
+                                tipoFiltrado != null -> "Por ahora no hay ${tipoFiltrado.plural.lowercase()} en ${estado.datos.ciudad}."
+                                else -> "Por ahora no hay nada en ${estado.datos.ciudad}."
+                            },
                             style = TextoWeb.Cuerpo,
                             color = Web.TextoApagado,
                             textAlign = TextAlign.Center,
@@ -191,20 +216,20 @@ private const val FILTRO_TODO = "TODO"
 
 /** Un gris azulado más frío que el fondo de la página, para que el lienzo se lea como mapa. */
 private val FondoMapa = Color(0xFFE6EDF3)
-private val AzulUbicacion = Color(0xFF2563EB)
 
+/** El color de cada puntero es el de su tarjeta en el Inicio. */
 private val TipoDePunto.color: Color
     get() = when (this) {
-        TipoDePunto.ACTIVIDAD -> Web.Primario
-        TipoDePunto.PROYECTO -> Web.VerdeTema
-        TipoDePunto.DONACION -> Web.Rosa
+        TipoDePunto.ACTIVIDAD -> MoradoCategoriaTexto
+        TipoDePunto.PROYECTO -> AzulCategoriaTexto
+        TipoDePunto.DONACION -> VerdeCategoriaTexto
     }
 
 private val TipoDePunto.fondo: Color
     get() = when (this) {
-        TipoDePunto.ACTIVIDAD -> Web.Secundario
-        TipoDePunto.PROYECTO -> Web.VerdeFondo
-        TipoDePunto.DONACION -> Web.RosaFondo
+        TipoDePunto.ACTIVIDAD -> MoradoTarjetaFondo
+        TipoDePunto.PROYECTO -> AzulTarjetaFondo
+        TipoDePunto.DONACION -> VerdeTarjetaFondo
     }
 
 /** Los mismos íconos que la barra inferior usa para cada sección. */
@@ -214,10 +239,6 @@ private val TipoDePunto.icono: ImageVector
         TipoDePunto.PROYECTO -> IconosWeb.Foco
         TipoDePunto.DONACION -> IconosWeb.ManoCorazon
     }
-
-private fun textoDeDistancia(km: Double): String =
-    if (km < 1) "a ${(km * 1000).roundToInt()} m de ti"
-    else "a ${(km * 10).roundToInt() / 10.0} km de ti"
 
 // ---------------------------------------------------------------------------
 // Filtros
@@ -294,16 +315,22 @@ private fun ChipFiltro(
 // El lienzo: lo único que se reemplaza cuando llegue el mapa de verdad
 // ---------------------------------------------------------------------------
 
-private val ANILLOS_KM = listOf(2, 5, 10, 20)
+/** Cada cuántos kilómetros se pinta una línea de la cuadrícula; se elige según el acercamiento. */
+private val PASOS_KM = listOf(1f, 2f, 5f, 10f, 20f, 50f)
 
-/** Lo que se alcanza a ver al abrir el mapa: unos 6 km a la redonda. Lo demás, alejando. */
-private const val RADIO_INICIAL_KM = 6f
+/** Cuánto se ve de la ciudad si todavía no hay punteros (Hermosillo, por ejemplo). */
+private const val RADIO_SIN_PUNTOS_KM = 12f
+
+/** Aunque los punteros estén muy juntos, el mapa no se acerca más que esto. */
+private const val RADIO_MINIMO_KM = 3f
 private const val ESCALA_MINIMA = 0.3f
 private const val ESCALA_MAXIMA = 8f
 
 @Composable
 private fun LienzoDelMapa(
-    tuUbicacion: Coordenada,
+    ciudad: String,
+    centroDeCiudad: Coordenada,
+    todos: List<PuntoEnMapa>,
     visibles: List<PuntoEnMapa>,
     claveSeleccionada: String,
     onSeleccionar: (String) -> Unit,
@@ -326,7 +353,11 @@ private fun LienzoDelMapa(
             // Tocar el fondo cierra el mini menú.
             .pointerInput(Unit) { detectTapGestures { onSeleccionar("") } }
             .pointerInput(Unit) {
-                detectTransformGestures { centroide, arrastre, zoom, _ ->
+                // Con un dedo y el mapa a su tamaño normal, el dedo es de la página (para que
+                // siga desplazándose); con dos dedos, o ya acercado, el mapa se lo queda.
+                gestosDelMapa(
+                    arrastraConUnDedo = { escala > 1.01f || desplazamiento != Offset.Zero }
+                ) { centroide, arrastre, zoom ->
                     val nueva = (escala * zoom).coerceIn(ESCALA_MINIMA, ESCALA_MAXIMA)
                     val factor = nueva / escala
                     // El zoom se hace alrededor de los dedos, no del centro del lienzo.
@@ -347,55 +378,77 @@ private fun LienzoDelMapa(
         val densidad = LocalDensity.current
         val anchoPin = with(densidad) { 34.dp.toPx() }
         val altoPin = with(densidad) { 42.dp.toPx() }
-        val margen = with(densidad) { 24.dp.toPx() }
+        val margenX = with(densidad) { 28.dp.toPx() }
+        // Arriba queda lugar para el aviso y para lo alto de un puntero; abajo, un respiro.
+        val arriba = altoPin + with(densidad) { 40.dp.toPx() }
+        val abajo = alto - with(densidad) { 16.dp.toPx() }
+        val minimoEntreLineas = with(densidad) { 64.dp.toPx() }
 
-        // Grados a kilómetros desde la familia. A esta escala la Tierra se puede tratar como plana.
-        val kmPorGradoLng = 111.320 * cos(Math.toRadians(tuUbicacion.latitud))
+        // Grados a kilómetros desde el centro de la ciudad. A esta escala la Tierra se puede tratar como plana.
+        val kmPorGradoLng = 111.320 * cos(Math.toRadians(centroDeCiudad.latitud))
         fun enKm(donde: Coordenada) = Offset(
-            x = ((donde.longitud - tuUbicacion.longitud) * kmPorGradoLng).toFloat(),
-            y = (-(donde.latitud - tuUbicacion.latitud) * 110.574).toFloat()   // el norte va arriba
+            x = ((donde.longitud - centroDeCiudad.longitud) * kmPorGradoLng).toFloat(),
+            y = (-(donde.latitud - centroDeCiudad.latitud) * 110.574).toFloat()   // el norte va arriba
         )
 
-        // Como "cerca de mí" en cualquier mapa: se abre mostrando lo de alrededor,
-        // no la ciudad completa. Lo que queda fuera se alcanza alejando o arrastrando.
-        val pxPorKm = (min(ancho, alto) / 2f - margen).coerceAtLeast(1f) / RADIO_INICIAL_KM
+        // Se abre mostrando todo lo de la ciudad (aunque el filtro esconda algo, para que el
+        // mapa no salte al filtrar). Sin punteros, mira el centro de la ciudad.
+        val enKmTodos = todos.map { enKm(it.coordenada) }
+        val centroDeVistaKm = if (enKmTodos.isEmpty()) Offset.Zero else Offset(
+            (enKmTodos.minOf { it.x } + enKmTodos.maxOf { it.x }) / 2f,
+            (enKmTodos.minOf { it.y } + enKmTodos.maxOf { it.y }) / 2f
+        )
+        val mitadAnchoKm = if (enKmTodos.isEmpty()) RADIO_SIN_PUNTOS_KM
+        else max(enKmTodos.maxOf { abs(it.x - centroDeVistaKm.x) }, RADIO_MINIMO_KM)
+        val mitadAltoKm = if (enKmTodos.isEmpty()) RADIO_SIN_PUNTOS_KM
+        else max(enKmTodos.maxOf { abs(it.y - centroDeVistaKm.y) }, RADIO_MINIMO_KM)
+
+        val pxPorKm = min(
+            (ancho / 2f - margenX) / mitadAnchoKm,
+            ((abajo - arriba) / 2f) / mitadAltoKm
+        ).coerceAtLeast(1f)
         val pxPorKmActual = pxPorKm * escala
-        val centro = Offset(ancho / 2f, alto / 2f) + desplazamiento
+        val centroDeVistaPx = Offset(ancho / 2f, (arriba + abajo) / 2f) + desplazamiento
+        fun enPantalla(donde: Coordenada) = centroDeVistaPx + (enKm(donde) - centroDeVistaKm) * pxPorKmActual
+
+        // La cuadrícula: cada cuadro mide los kilómetros que dice el rótulo de abajo.
+        val pasoKm = PASOS_KM.firstOrNull { it * pxPorKmActual >= minimoEntreLineas } ?: PASOS_KM.last()
+        val pasoPx = pasoKm * pxPorKmActual
 
         val medidor = rememberTextMeasurer()
-        val estiloAnillo = TextoWeb.Chico.copy(fontSize = 10.sp, color = Web.TextoApagado)
+        val estiloCiudad = TextStyle(
+            fontSize = 30.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 6.sp,
+            color = Web.Primario.copy(alpha = 0.10f)
+        )
 
         Canvas(Modifier.fillMaxSize()) {
-            drawCircle(Web.Primario.copy(alpha = 0.05f), radius = ANILLOS_KM.first() * pxPorKmActual, center = centro)
-            ANILLOS_KM.forEach { km ->
-                val radio = km * pxPorKmActual
-                drawCircle(
-                    color = Web.Primario.copy(alpha = 0.22f),
-                    radius = radio,
-                    center = centro,
-                    style = Stroke(
-                        width = 1.dp.toPx(),
-                        pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 6.dp.toPx()))
-                    )
-                )
-                val rotulo = medidor.measure("$km km", estiloAnillo)
-                drawText(
-                    textLayoutResult = rotulo,
-                    topLeft = Offset(
-                        centro.x - rotulo.size.width / 2f,
-                        centro.y - radio - rotulo.size.height - 2.dp.toPx()
-                    )
-                )
+            val origen = enPantalla(centroDeCiudad)
+            if (pasoPx >= 8f) {
+                val lineas = Web.Primario.copy(alpha = 0.08f)
+                var x = origen.x + ceil(-origen.x / pasoPx) * pasoPx
+                while (x <= size.width) {
+                    drawLine(lineas, Offset(x, 0f), Offset(x, size.height), strokeWidth = 1.dp.toPx())
+                    x += pasoPx
+                }
+                var y = origen.y + ceil(-origen.y / pasoPx) * pasoPx
+                while (y <= size.height) {
+                    drawLine(lineas, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
+                    y += pasoPx
+                }
             }
-            // La familia: punto azul con halo, como en cualquier app de mapas.
-            drawCircle(AzulUbicacion.copy(alpha = 0.18f), radius = 16.dp.toPx(), center = centro)
-            drawCircle(Color.White, radius = 8.dp.toPx(), center = centro)
-            drawCircle(AzulUbicacion, radius = 5.5.dp.toPx(), center = centro)
+            // El nombre de la ciudad, grande y tenue, en el centro de la ciudad.
+            val rotulo = medidor.measure(ciudad.uppercase(), estiloCiudad)
+            drawText(
+                textLayoutResult = rotulo,
+                topLeft = Offset(origen.x - rotulo.size.width / 2f, origen.y - rotulo.size.height / 2f)
+            )
         }
 
         // Dos cosas en el mismo lugar (una actividad y su proyecto) no deben taparse.
         val puntas = separar(
-            puntas = visibles.map { centro + enKm(it.coordenada) * pxPorKmActual },
+            puntas = visibles.map { enPantalla(it.coordenada) },
             minimo = anchoPin * 0.8f
         )
         visibles.forEachIndexed { i, punto ->
@@ -439,6 +492,17 @@ private fun LienzoDelMapa(
             )
         }
 
+        Text(
+            text = "Cada cuadro: ${pasoKm.roundToInt()} km",
+            style = TextoWeb.Chico.copy(fontSize = 10.sp),
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(10.dp)
+                .clip(RoundedCornerShape(50))
+                .background(Web.Tarjeta.copy(alpha = 0.92f))
+                .padding(horizontal = 8.dp, vertical = 3.dp)
+        )
+
         Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
@@ -452,19 +516,59 @@ private fun LienzoDelMapa(
                 Text("−", style = TextoWeb.Boton.copy(fontSize = 20.sp), color = Web.Primario)
             }
             BotonDeMapa(
-                descripcion = "Volver a mi ubicación",
+                descripcion = "Ver toda la ciudad",
                 onClick = {
                     escala = 1f
                     desplazamiento = Offset.Zero
                 }
             ) {
-                Icon(IconosWeb.Ubicacion, contentDescription = null, tint = AzulUbicacion, modifier = Modifier.size(18.dp))
+                Icon(IconosWeb.Ubicacion, contentDescription = null, tint = Web.Primario, modifier = Modifier.size(18.dp))
             }
         }
     }
 }
 
-/** Los botones redondos que flotan sobre el mapa: acercar, alejar y volver a mi ubicación. */
+/**
+ * Lo mismo que detectTransformGestures (zoom con dos dedos y arrastre), con una diferencia:
+ * un solo dedo solo cuenta si [arrastraConUnDedo] lo permite. Así el mapa, que vive dentro de
+ * la página del Inicio, no impide desplazarla cuando se toca encima de él.
+ */
+private suspend fun PointerInputScope.gestosDelMapa(
+    arrastraConUnDedo: () -> Boolean,
+    onGesto: (centroide: Offset, arrastre: Offset, zoom: Float) -> Unit
+) {
+    awaitEachGesture {
+        awaitFirstDown(requireUnconsumed = false)
+        var zoomTotal = 1f
+        var arrastreTotal = Offset.Zero
+        var pasoElUmbral = false
+        val umbral = viewConfiguration.touchSlop
+        do {
+            val evento = awaitPointerEvent()
+            val cancelado = evento.changes.any { it.isConsumed }
+            if (!cancelado) {
+                val conDosDedos = evento.changes.count { it.pressed } > 1
+                if (conDosDedos || arrastraConUnDedo()) {
+                    val zoom = evento.calculateZoom()
+                    val arrastre = evento.calculatePan()
+                    if (!pasoElUmbral) {
+                        zoomTotal *= zoom
+                        arrastreTotal += arrastre
+                        pasoElUmbral = abs(1f - zoomTotal) > 0.02f || arrastreTotal.getDistance() > umbral
+                    }
+                    if (pasoElUmbral) {
+                        if (zoom != 1f || arrastre != Offset.Zero) {
+                            onGesto(evento.calculateCentroid(useCurrent = false), arrastre, zoom)
+                        }
+                        evento.changes.forEach { if (it.positionChanged()) it.consume() }
+                    }
+                }
+            }
+        } while (!cancelado && evento.changes.any { it.pressed })
+    }
+}
+
+/** Los botones redondos que flotan sobre el mapa: acercar, alejar y ver toda la ciudad. */
 @Composable
 private fun BotonDeMapa(
     descripcion: String,
@@ -577,12 +681,7 @@ private fun MiniMenuDePunto(
                 fondo = punto.tipo.fondo,
                 color = punto.tipo.color
             )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = textoDeDistancia(punto.distanciaKm),
-                style = TextoWeb.Chico,
-                modifier = Modifier.weight(1f)
-            )
+            Spacer(Modifier.weight(1f))
             Icon(
                 IconosWeb.Cerrar,
                 contentDescription = "Cerrar",

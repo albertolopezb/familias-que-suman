@@ -3,7 +3,7 @@ package mx.tec.familiasquesuman.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // Colores de la Marca
-val MarcaAzul = Color(0xFF1B3B6B)
+val MarcaAzul = Color(0xFF1E293B)
 val AzulMarinoPrimario = MarcaAzul
 val MarcaOro = Color(0xFFF59E0B)
 val AmbarAcento = MarcaOro
@@ -26,7 +26,10 @@ val ErrorRojo = Color(0xFFDC2626)
 val ErrorFondo = Color(0xFFFEE2E2)
 val ErrorTexto = Color(0xFF991B1B)
 
-val AzulBannerFondo = Color(0xFF36496C) // Azul institucional vibrante
+val AzulBannerFondo = Color(0xFF1E293B) // Azul institucional vibrante
+
+// El azul marino del encabezado de las pestañas (y de la franja de la barra de estado).
+val AzulEncabezado = Color(0xFF1E293B)
 
 // 1. Morado (Actividades en Familia)
 val MoradoTarjetaFondo = Color(0xFFF3E8FF) // Pastel morado más vivo

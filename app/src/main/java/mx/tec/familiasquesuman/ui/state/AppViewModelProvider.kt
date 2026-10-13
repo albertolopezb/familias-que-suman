@@ -90,7 +90,7 @@ object AppViewModelProvider {
             )
         }
 
-        // La pestaña "Mapa" de Actividades: lo que hay cerca de la familia
+        // El mapa del Inicio: los punteros de la ciudad elegida
         initializer { MapaViewModel(familiasApplication().container.mapaRepository) }
 
         // Parte 4 · Campañas

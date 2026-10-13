@@ -14,7 +14,7 @@ import mx.tec.familiasquesuman.ui.theme.Inter
  */
 object Web {
     // Marca
-    val Primario = Color(0xFF1D3972)     // títulos y enlaces
+    val Primario = Color(0xFF1E293B)     // títulos y enlaces
     val Amarillo = Color(0xFFF9B11F)     // botón "Unirme"
     val WhatsApp = Color(0xFF25D366)
 

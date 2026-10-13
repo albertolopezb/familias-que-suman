@@ -2,6 +2,7 @@ package mx.tec.familiasquesuman.ui.screens.campanas
 
 import androidx.compose.foundation.layout.WindowInsets
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoAzul
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -134,14 +135,12 @@ fun CampanasScreen(
     // Qué modo se está viendo. Solo es estado de pantalla (como "qué pestaña"), no de datos.
     var modo by rememberSaveable { mutableStateOf(ModoDonar.CAMPANA) }
 
-        EncabezadoApp()
-        Text(
-            if (esAdmin) "Quiero Donar (Admin)" else "Quiero Donar",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MarcaAzul,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp)
-        )
-        SelectorModoDonar(modo = modo, onElegir = { modo = it })
+        EncabezadoAzul(
+            etiqueta = "Tu apoyo cuenta",
+            titulo = if (esAdmin) "Quiero Donar (Admin)" else "Quiero Donar"
+        ) {
+            SelectorModoDonar(modo = modo, onElegir = { modo = it })
+        }
 
         if (modo == ModoDonar.TENGO_ALGO) {
             TengoAlgoParaDonar(
@@ -214,7 +213,7 @@ enum class ModoDonar { CAMPANA, TENGO_ALGO }
 @Composable
 private fun SelectorModoDonar(modo: ModoDonar, onElegir: (ModoDonar) -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         BotonModo(
@@ -228,8 +227,8 @@ private fun SelectorModoDonar(modo: ModoDonar, onElegir: (ModoDonar) -> Unit) {
         BotonModo(
             texto = "Tengo algo para donar",
             activo = modo == ModoDonar.TENGO_ALGO,
-            colorActivo = MarcaAzul,
-            textoActivo = Color.White,
+            colorActivo = MarcaOro,
+            textoActivo = Tinta,
             onClick = { onElegir(ModoDonar.TENGO_ALGO) },
             modifier = Modifier.weight(1f)
         )
@@ -249,14 +248,14 @@ private fun BotonModo(
         onClick = onClick,
         modifier = modifier.height(48.dp),
         shape = RoundedCornerShape(12.dp),
-        color = if (activo) colorActivo else Color.White,
-        border = if (activo) null else BorderStroke(1.dp, Borde)
+        color = if (activo) colorActivo else Color.White.copy(alpha = 0.12f),
+        border = if (activo) null else BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
     ) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
             Text(
                 text = texto,
                 style = MaterialTheme.typography.labelLarge,
-                color = if (activo) textoActivo else TintaSuave,
+                color = if (activo) textoActivo else Color.White,
                 textAlign = TextAlign.Center
             )
         }

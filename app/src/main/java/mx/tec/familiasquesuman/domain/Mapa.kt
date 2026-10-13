@@ -1,29 +1,12 @@
 package mx.tec.familiasquesuman.domain
 
-import kotlin.math.asin
-import kotlin.math.cos
-import kotlin.math.pow
-import kotlin.math.sin
-import kotlin.math.sqrt
-
 // Kotlin puro, igual que Modelos.kt. Vive en su propio archivo para no tocar
 // Modelos.kt mientras el equipo hace el merge; si conviene, se junta después.
 
-/** Un lugar en el mapa. */
-data class Coordenada(val latitud: Double, val longitud: Double) {
+/** Un lugar en el mapa: latitud y longitud. */
+data class Coordenada(val latitud: Double, val longitud: Double)
 
-    /** Distancia en línea recta, en kilómetros (fórmula de haversine). */
-    fun distanciaKmA(otra: Coordenada): Double {
-        val radioTierraKm = 6371.0
-        val dLat = Math.toRadians(otra.latitud - latitud)
-        val dLng = Math.toRadians(otra.longitud - longitud)
-        val a = sin(dLat / 2).pow(2) +
-            cos(Math.toRadians(latitud)) * cos(Math.toRadians(otra.latitud)) * sin(dLng / 2).pow(2)
-        return 2 * radioTierraKm * asin(sqrt(a))
-    }
-}
-
-/** Las tres cosas que enseña el mapa "cerca de ti". Cada una trae sus textos. */
+/** Las tres cosas que enseña el mapa de la ciudad. Cada una trae sus textos. */
 enum class TipoDePunto(
     val etiqueta: String,       // "Actividad"
     val plural: String,         // "Actividades"
@@ -45,15 +28,18 @@ data class PuntoEnMapa(
     val descripcion: String,    // breve; el mini menú la corta a tres renglones
     val cuando: String,         // cuándo se realiza o hasta cuándo se necesita
     val lugar: String,
-    val coordenada: Coordenada,
-    val distanciaKm: Double     // desde la ubicación de la familia
+    val coordenada: Coordenada
 ) {
     /** Único entre los tres tipos: una actividad y un proyecto pueden repetir id. */
     val clave: String get() = "${tipo.name}:$id"
 }
 
-/** Lo que necesita la vista de mapa: dónde está la familia y qué hay cerca. */
-data class MapaCercano(
-    val tuUbicacion: Coordenada,
-    val puntos: List<PuntoEnMapa>   // del más cercano al más lejano
+/**
+ * Lo que necesita el mapa del Inicio: la ciudad elegida y sus punteros. No usa la
+ * ubicación del teléfono: es una vista general de la ciudad, igual para todos.
+ */
+data class MapaDeCiudad(
+    val ciudad: String,             // "Monterrey" o "Hermosillo"
+    val centro: Coordenada,         // hacia dónde mira el mapa si no hay punteros
+    val puntos: List<PuntoEnMapa>
 )

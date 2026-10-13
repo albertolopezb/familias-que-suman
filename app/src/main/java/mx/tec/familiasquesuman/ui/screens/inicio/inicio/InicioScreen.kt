@@ -23,12 +23,17 @@ import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.R
 import mx.tec.familiasquesuman.domain.Actividad
 import mx.tec.familiasquesuman.domain.Asociacion
+import mx.tec.familiasquesuman.domain.MapaDeCiudad
+import mx.tec.familiasquesuman.domain.PuntoEnMapa
 import mx.tec.familiasquesuman.domain.cuantoFalta
 import mx.tec.familiasquesuman.domain.fechaDeTexto
 import mx.tec.familiasquesuman.ui.components.iniciales
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
 import mx.tec.familiasquesuman.domain.Testimonio
+import mx.tec.familiasquesuman.ui.screens.actividades.MapaGeneral
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoAzul
+import mx.tec.familiasquesuman.ui.state.UiState
 import mx.tec.familiasquesuman.ui.screens.inicio.componentes.*
 import mx.tec.familiasquesuman.ui.theme.*
 
@@ -58,19 +63,29 @@ fun InicioScreen(
     actividadesRealizadas: Int = 0,
     abiertasEnCiudad: Int = 0,
     onProximaClick: (String) -> Unit = {},
+    // el mapa general de la ciudad elegida
+    mapa: UiState<MapaDeCiudad> = UiState.Cargando,
+    onAbrirPunto: (PuntoEnMapa) -> Unit = {},
+    onReintentarMapa: () -> Unit = {},
     esAdmin: Boolean = false,
     onIrAlPanel: () -> Unit = {}
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
-    // La barra de arriba (logo, ciudad y perfil) queda fija, igual que en las demás pantallas.
-    EncabezadoApp(ciudad = ciudad, onCiudadSeleccionada = onCambiarCiudad)
+    Column(modifier = Modifier.fillMaxSize().background(GrisFondo)) {
+    // El encabezado azul (logo, ciudad y perfil) queda fijo, igual que en las demás pantallas.
+    // Sin título: el saludo va debajo, fuera del azul.
+    EncabezadoAzul(
+        etiqueta = null,
+        titulo = null,
+        ciudad = ciudad,
+        onCiudadSeleccionada = onCambiarCiudad
+    )
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(GrisFondo)
             .verticalScroll(rememberScrollState())
     ) {
-        // Saludo; la ciudad y el perfil están en la barra de arriba.
+        // El saludo, fuera del azul.
         HeaderInicio(nombreFamilia = nombreFamilia)
 
         Column(modifier = Modifier.padding(horizontal = 20.dp)) {
@@ -136,6 +151,24 @@ fun InicioScreen(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // El mapa general de la ciudad, justo después del llamado a la acción.
+            Text(
+                text = "Mapa de $ciudad",
+                style = MaterialTheme.typography.titleLarge,
+                color = AzulBannerFondo
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            MapaGeneral(
+                estado = mapa,
+                onAbrir = onAbrirPunto,
+                onReintentar = onReintentarMapa,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(440.dp)
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 

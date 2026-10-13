@@ -31,7 +31,7 @@ import java.io.File
 
 private const val ANCHO = 1080
 private const val ALTO = 1920
-private const val AZUL = 0xFF1B3B6B.toInt()
+private const val AZUL = 0xFF1E293B.toInt()
 private const val AZUL_OSCURO = 0xFF0E2148.toInt()
 private const val ORO = 0xFFF5B83D.toInt()
 private const val BLANCO = 0xFFFFFFFF.toInt()

@@ -46,6 +46,7 @@ import mx.tec.familiasquesuman.ui.components.BotonCrearAdmin
 import mx.tec.familiasquesuman.ui.components.FilaAccionesAdmin
 import mx.tec.familiasquesuman.ui.components.TarjetaSugerir
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoAzul
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Etiqueta
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.FilaDato
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
@@ -57,6 +58,8 @@ import mx.tec.familiasquesuman.ui.theme.AzulCategoriaFondo
 import mx.tec.familiasquesuman.ui.theme.AzulCategoriaTexto
 import mx.tec.familiasquesuman.ui.theme.AzulTarjetaFondo
 import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
+import mx.tec.familiasquesuman.ui.theme.MarcaAzul
+import mx.tec.familiasquesuman.ui.theme.MarcaOro
 import mx.tec.familiasquesuman.ui.theme.MentaCategoriaFondo
 import mx.tec.familiasquesuman.ui.theme.MentaCategoriaTexto
 import mx.tec.familiasquesuman.ui.theme.MentaTarjetaFondo
@@ -117,54 +120,35 @@ fun VisiteoScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize().background(Web.Fondo)) {
-        EncabezadoApp()
+        EncabezadoAzul(etiqueta = "Visita y apoya", titulo = "Directorio") {
+            Buscador(valor = busqueda, onValor = { busqueda = it }, placeholder = "Buscar centro...")
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                TIPOS.forEach { t ->
+                    val activo = t == tipo
+                    Text(
+                        t,
+                        style = TextoWeb.Chip,
+                        color = if (activo) Web.Primario else Color.White,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(if (activo) MarcaOro else Color.White.copy(alpha = 0.12f))
+                            .border(1.dp, if (activo) MarcaOro else Color.White.copy(alpha = 0.2f), RoundedCornerShape(50))
+                            .clickable { tipo = t }
+                            .padding(horizontal = 14.dp, vertical = 8.dp)
+                    )
+                }
+            }
+        }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 64.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 64.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item(key = "banner") {
                 BannerDirectorio(ciudad = ciudad, total = centros.size)
-            }
-            item(key = "buscador") {
-                Buscador(valor = busqueda, onValor = { busqueda = it }, placeholder = "Buscar centro...")
-            }
-            item(key = "filtros") {
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    TIPOS.forEach { t ->
-                        val activo = t == tipo
-                        val paleta = paletaDe(t)
-                        val fondo = when {
-                            !activo -> Web.Tarjeta
-                            t == "Todos" -> AzulBannerFondo
-                            else -> paleta.fondoFuerte
-                        }
-                        val texto = when {
-                            !activo -> Web.Texto
-                            t == "Todos" -> Color.White
-                            else -> paleta.texto
-                        }
-                        val borde = when {
-                            !activo -> Web.Borde
-                            t == "Todos" -> AzulBannerFondo
-                            else -> paleta.texto
-                        }
-                        Text(
-                            t,
-                            style = TextoWeb.Chip,
-                            color = texto,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(fondo)
-                                .border(1.dp, borde, RoundedCornerShape(50))
-                                .clickable { tipo = t }
-                                .padding(horizontal = 14.dp, vertical = 8.dp)
-                        )
-                    }
-                }
             }
             if (visibles.isEmpty()) {
                 item(key = "vacio") {

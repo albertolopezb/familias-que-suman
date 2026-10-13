@@ -50,7 +50,7 @@ val LocalIrAPerfil = compositionLocalOf<(DestinoPerfil) -> Unit> { {} }
  * Con notificaciones sin leer lleva encima cuántas son.
  */
 @Composable
-fun BotonPerfil(modifier: Modifier = Modifier) {
+fun BotonPerfil(modifier: Modifier = Modifier, sobreAzul: Boolean = false) {
     val cuenta = cuentaViewModel()
     val sesion by cuenta.sesion.collectAsStateWithLifecycle()
     val foto by cuenta.foto.collectAsStateWithLifecycle()
@@ -70,7 +70,7 @@ fun BotonPerfil(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFF1F5F9))
+                .background(if (sobreAzul) Color.White.copy(alpha = 0.14f) else Color(0xFFF1F5F9))
                 .clickable { abierto = true }
                 .semantics(mergeDescendants = true) {
                     contentDescription = when {
@@ -88,7 +88,7 @@ fun BotonPerfil(modifier: Modifier = Modifier) {
                 Icon(
                     IconosWeb.Usuario,
                     contentDescription = "Mi perfil",
-                    tint = AzulMarinoPrimario,
+                    tint = if (sobreAzul) Color.White else AzulMarinoPrimario,
                     modifier = Modifier.size(20.dp)
                 )
             }

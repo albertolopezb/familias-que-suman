@@ -45,7 +45,7 @@ fun HeaderInicio(nombreFamilia: String?) {
     }
 }
 
-private fun saludoDelDia(): String = when (java.time.LocalTime.now().hour) {
+fun saludoDelDia(): String = when (java.time.LocalTime.now().hour) {
     in 5..11 -> "¡Buenos días!"
     in 12..18 -> "¡Buenas tardes!"
     else -> "¡Buenas noches!"

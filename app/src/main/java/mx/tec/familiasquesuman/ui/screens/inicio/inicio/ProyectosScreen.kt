@@ -51,6 +51,7 @@ import mx.tec.familiasquesuman.domain.Proyecto
 import mx.tec.familiasquesuman.domain.TipoSugerencia
 import mx.tec.familiasquesuman.ui.components.TarjetaSugerir
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
+import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoAzul
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.FilaDato
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TextoWeb
@@ -59,6 +60,7 @@ import mx.tec.familiasquesuman.ui.screens.actividades.componentes.fotoDeActivida
 import mx.tec.familiasquesuman.ui.theme.AzulCategoriaFondo
 import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
 import mx.tec.familiasquesuman.ui.theme.MarcaAzul
+import mx.tec.familiasquesuman.ui.theme.MarcaOro
 
 private val ColoresTarjetasAzul = listOf(
     Color(0xFFE0F2FE), // Azul cielo suave
@@ -113,47 +115,32 @@ fun ProyectosScreen(
                 .padding(innerPadding)
                 .background(Web.Fondo)
         ) {
-            EncabezadoApp()
+            EncabezadoAzul(
+                etiqueta = "Causas con objetivo",
+                titulo = if (esAdmin) "Proyectos (Admin)" else "Proyectos"
+            ) {
+                BuscadorEstiloMinimal(
+                    valor = busqueda,
+                    onValor = { busqueda = it },
+                    placeholder = "Buscar proyectos..."
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color.White.copy(alpha = 0.10f))
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    PestanaPill("Activos (${proyectos.count { it.activo }})", verActivos, { verActivos = true }, Modifier.weight(1f))
+                    PestanaPill("Anteriores (${proyectos.count { !it.activo }})", !verActivos, { verActivos = false }, Modifier.weight(1f))
+                }
+            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 80.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 80.dp),
                 verticalArrangement = Arrangement.Top
             ) {
-                item(key = "titulo") {
-                    Column(modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)) {
-                        Text(
-                            text = if (esAdmin) "Proyectos (Admin)" else "Proyectos",
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MarcaAzul
-                        )
-                    }
-                }
-
-                item(key = "pestanas") {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(Color(0xFFEEF2F6))
-                            .padding(4.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        PestanaPill("Activos (${proyectos.count { it.activo }})", verActivos, { verActivos = true }, Modifier.weight(1f))
-                        PestanaPill("Anteriores (${proyectos.count { !it.activo }})", !verActivos, { verActivos = false }, Modifier.weight(1f))
-                    }
-                }
-
-                item(key = "buscar") {
-                    BuscadorEstiloMinimal(
-                        valor = busqueda,
-                        onValor = { busqueda = it },
-                        placeholder = "Buscar proyectos..."
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
                 if (visibles.isEmpty()) {
                     item(key = "vacio") {
                         Text(
@@ -331,7 +318,7 @@ private fun PestanaPill(texto: String, activa: Boolean, onClick: () -> Unit, mod
     Box(
         modifier = modifier
             .clip(forma)
-            .background(if (activa) MarcaAzul else Color.Transparent)
+            .background(if (activa) MarcaOro else Color.Transparent)
             .clickable(onClick = onClick)
             .padding(vertical = 10.dp),
         contentAlignment = Alignment.Center
@@ -340,7 +327,7 @@ private fun PestanaPill(texto: String, activa: Boolean, onClick: () -> Unit, mod
             text = texto,
             fontSize = 14.sp,
             fontWeight = if (activa) FontWeight.Bold else FontWeight.Medium,
-            color = if (activa) Color.White else Web.TextoApagado
+            color = if (activa) Web.Primario else Color.White.copy(alpha = 0.85f)
         )
     }
 }
