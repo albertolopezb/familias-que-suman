@@ -1,0 +1,10 @@
+# Los tableros viven en el repo (monitoreo/grafana/tableros) y Grafana los carga al arrancar.
+apiVersion: 1
+providers:
+  - name: familias
+    folder: Familias que Suman
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards

@@ -1,0 +1,4 @@
+# Los reportes se generan cada vez; el último aprobado se guarda con otro nombre (ver la guía).
+reporte-zap.json
+zap.log
+zap.yaml

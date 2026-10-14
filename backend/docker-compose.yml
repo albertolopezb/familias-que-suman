@@ -1,18 +1,33 @@
-# Levantar desde backend/ (no hace falta nada más; el .env es opcional):
-#   docker compose up -d
-# Crea la base, aplica las migraciones, carga los datos de prueba y levanta el almacenamiento.
+# Backend de Familias que Suman. Desde backend/:
+#
+#   docker compose up -d --build            base, migraciones, datos de prueba, fotos, Redis, API,
+#                                           Prometheus y Grafana          → http://localhost:8000/v1/salud
+#   docker compose --profile tunel up -d    además, el túnel HTTPS de Cloudflare (internet)
+#   docker compose logs tunel               ahí aparece la dirección https://…trycloudflare.com
+#   docker compose --profile pruebas run --rm pruebas     las pruebas automáticas de la API
+#   docker compose --profile zap run --rm zap             el escaneo de OWASP ZAP → seguridad/zap/
+#
+# La guía completa (qué es cada pieza, cómo protege y por qué): ../docs/guia-backend.md
+#
+# Las contraseñas de abajo son SOLO de desarrollo. Para cambiarlas, copia .env.example a .env.
 
-# Nombre propio para que no se mezcle con los contenedores de otros proyectos.
 name: familias-que-suman
 
-# Valores de desarrollo. Si alguien necesita otros (por ejemplo, un puerto ocupado), los pone
-# en su propio backend/.env (ver .env.example) y esos ganan.
 x-db: &db
   POSTGRES_DB: ${POSTGRES_DB:-familias}
   POSTGRES_USER: ${POSTGRES_USER:-familias}
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cambia-esta-contrasena}
 
+# Lo que comparte cada contenedor que no necesita privilegios (OWASP Docker Top 10):
+# sin capacidades de Linux, sin poder ganar privilegios y con límites de memoria y procesos.
+x-endurecido: &endurecido
+  cap_drop: ["ALL"]
+  security_opt: ["no-new-privileges:true"]
+  pids_limit: 256
+
 services:
+
+  # ─── Datos ────────────────────────────────────────────────────────────────
 
   db:
     image: postgres:16
@@ -25,12 +40,13 @@ services:
       interval: 3s
       timeout: 3s
       retries: 20
-    # Solo accesible desde la propia máquina. Nunca se expone a internet.
-    ports:
-      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 512m
+    # Sin `ports`: la base no se publica ni en tu máquina. Para entrar:
+    #   docker compose exec db psql -U familias -d familias
+    networks: [datos]
 
-  # Aplica las migraciones de db/migrations y termina. Cada `docker compose up -d` aplica
-  # solo las que falten, así quien hace `git pull` recibe los cambios de los demás.
+  # Aplica las migraciones y, al final, afterMigrate.sql (el usuario de mínimo privilegio de la API).
   migrar:
     image: flyway/flyway:11
     depends_on:
@@ -42,12 +58,14 @@ services:
       FLYWAY_PASSWORD: ${POSTGRES_PASSWORD:-cambia-esta-contrasena}
       FLYWAY_LOCATIONS: filesystem:/flyway/sql
       FLYWAY_CONNECT_RETRIES: "10"
+      FLYWAY_PLACEHOLDERS_API_USUARIO: ${DB_API_USUARIO:-familias_api}
+      FLYWAY_PLACEHOLDERS_API_CONTRASENA: ${DB_API_CONTRASENA:-cambia-esta-contrasena-api}
     command: migrate
     volumes:
       - ./db/migrations:/flyway/sql:ro
+    networks: [datos]
 
-  # Datos de prueba (solo desarrollo). Corre después de las migraciones y termina. Se puede
-  # correr las veces que sea: no duplica nada.
+  # Datos de prueba (solo desarrollo). Corre después de las migraciones y termina.
   seed:
     image: postgres:16
     depends_on:
@@ -61,27 +79,252 @@ services:
     command: ["psql", "-q", "-v", "ON_ERROR_STOP=1", "-f", "/seed/dev.sql"]
     volumes:
       - ./db/seed:/seed:ro
+    networks: [datos]
 
-  almacenamiento:
-    # Fotos de testimonios (RF-12), protocolo S3.
-    # La imagen oficial minio/minio se archivó en abril de 2026 y ya no recibe
-    # parches. Esta es un fork comunitario compatible: VERIFICAR que siga
-    # mantenido. Cambiar de imagen no toca el código de la API: el protocolo es el mismo.
-    image: pgsty/minio:latest
+  # El almacén de fotos (S3). RustFS: compatible con S3, el mismo de la clase. La imagen
+  # oficial de MinIO se archivó en 2026 y ya no recibe parches de seguridad (OWASP A03/A06).
+  almacen:
+    image: rustfs/rustfs:1.0.1
     restart: unless-stopped
-    command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${STORAGE_ROOT_USER:-familias-storage}
-      MINIO_ROOT_PASSWORD: ${STORAGE_ROOT_PASSWORD:-cambia-esta-contrasena-tambien}
+      RUSTFS_ACCESS_KEY: ${STORAGE_ROOT_USER:-familias-almacen}
+      RUSTFS_SECRET_KEY: ${STORAGE_ROOT_PASSWORD:-cambia-esta-contrasena-almacen}
+      RUSTFS_CONSOLE_ENABLE: "true"
     volumes:
-      - storage-data:/data
+      - almacen-datos:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9000/health"]
+      interval: 3s
+      retries: 30
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 512m
+    # La consola web (9001) le habla a la API S3 (9000) desde tu navegador: por eso las dos.
+    # Solo en 127.0.0.1: nada del wifi llega. La app NUNCA habla con el almacén: todo pasa por `api`.
     ports:
-      - "127.0.0.1:${STORAGE_API_PORT:-9000}:9000"        # API S3
-      - "127.0.0.1:${STORAGE_CONSOLE_PORT:-9001}:9001"    # consola web, solo para el equipo
+      - "127.0.0.1:${STORAGE_API_PORT:-9000}:9000"
+      - "127.0.0.1:${STORAGE_CONSOLE_PORT:-9001}:9001"
+    networks: [datos, local]
 
-  # api:           PENDIENTE — ¿API propia o BFF sobre el backend existente?
-  # cloudflared:   se agrega cuando exista una API que exponer.
+  # Contadores del rate limit y sesiones cerradas. Con contraseña aunque esté en una red
+  # interna (defensa en profundidad), y sin desalojar llaves: una sesión cerrada no se "olvida".
+  redis:
+    image: redis:8.8-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_CONTRASENA: ${REDIS_CONTRASENA:-cambia-esta-contrasena-redis}
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_CONTRASENA\" --save 60 1 --maxmemory 128mb --maxmemory-policy noeviction"]
+    volumes:
+      - redis-datos:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_CONTRASENA\" --no-auth-warning ping | grep -q PONG"]
+      interval: 3s
+      retries: 20
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 192m
+    networks: [datos]
+
+  # ─── La API ───────────────────────────────────────────────────────────────
+
+  api:
+    build:
+      context: ./api
+      target: produccion
+    restart: unless-stopped
+    depends_on:
+      migrar:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      almacen:
+        condition: service_healthy
+    # SIN env_file a propósito: la API recibe solo SUS variables. Así nunca tiene, por ejemplo,
+    # la contraseña de dueño de la base (mínimo privilegio).
+    environment:
+      ENTORNO: ${ENTORNO:-desarrollo}
+      DATABASE_URL: postgresql+psycopg://${DB_API_USUARIO:-familias_api}:${DB_API_CONTRASENA:-cambia-esta-contrasena-api}@db:5432/${POSTGRES_DB:-familias}
+      REDIS_URL: redis://:${REDIS_CONTRASENA:-cambia-esta-contrasena-redis}@redis:6379/0
+      S3_ENDPOINT: http://almacen:9000
+      S3_ACCESS_KEY: ${STORAGE_ROOT_USER:-familias-almacen}
+      S3_SECRET_KEY: ${STORAGE_ROOT_PASSWORD:-cambia-esta-contrasena-almacen}
+      AUTH0_DOMINIO: ${AUTH0_DOMINIO:-}
+      AUTH0_AUDIENCIA: ${AUTH0_AUDIENCIA:-https://api.familiasquesuman}
+      AUTH0_CLIENTE_APP: ${AUTH0_CLIENTE_APP:-}
+      HMAC_SECRETO: ${HMAC_SECRETO:-cambia-este-secreto-hmac-de-desarrollo}
+      IP_TUNEL: ${IP_TUNEL:-172.31.250.10}
+      HOSTS_PERMITIDOS: ${HOSTS_PERMITIDOS:-localhost,127.0.0.1,10.0.2.2,api,*.trycloudflare.com}
+      ENLACES_BASE: ${ENLACES_BASE:-}
+      APP_HUELLAS_SHA256: ${APP_HUELLAS_SHA256:-}
+      # Peticiones por minuto por IP en todo lo que no tiene un límite propio. Para el escaneo de
+      # ZAP se sube un rato (ver la guía): si no, ZAP solo vería 429 y no probaría la lógica.
+      LIMITE_GLOBAL: ${LIMITE_GLOBAL:-120/minute}
+    <<: *endurecido
+    read_only: true                   # nadie puede escribir en el sistema de archivos del contenedor…
+    tmpfs: ["/tmp:size=64m"]          # …salvo /tmp, en memoria (ahí se reciben las fotos)
+    mem_limit: 512m
+    cpus: 1.0
+    # Solo en 127.0.0.1: tu máquina y el emulador (10.0.2.2) llegan; internet entra por el túnel.
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    networks: [borde, datos, monitoreo]
+
+  # El túnel de Cloudflare: la única puerta desde internet. Sale de tu máquina hacia Cloudflare
+  # (no abre puertos en tu router); el teléfono habla HTTPS (TLS 1.3) con Cloudflare, y
+  # Cloudflare manda la petición por el túnel cifrado hasta `api`.
+  tunel:
+    image: cloudflare/cloudflared:2026.10.0
+    profiles: ["tunel"]
+    restart: unless-stopped
+    # http2 porque muchas redes bloquean QUIC (UDP). --metrics publica /quicktunnel (de donde la
+    # API lee su dirección pública para los enlaces) y /metrics (para Prometheus).
+    command: ["tunnel", "--no-autoupdate", "--protocol", "http2", "--metrics", "0.0.0.0:2000", "--url", "http://api:8000"]
+    depends_on:
+      api:
+        condition: service_healthy
+    <<: *endurecido
+    read_only: true
+    mem_limit: 128m
+    networks:
+      borde:
+        # IP fija: la API solo le cree el encabezado CF-Connecting-IP a esta dirección.
+        ipv4_address: ${IP_TUNEL:-172.31.250.10}
+      monitoreo: {}
+
+  # Con dominio propio en Cloudflare: un túnel con nombre (dirección fija). Ver la guía.
+  tunel-nombrado:
+    image: cloudflare/cloudflared:2026.10.0
+    profiles: ["tunel-nombrado"]
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "--protocol", "http2", "--metrics", "0.0.0.0:2000", "run"]
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    depends_on:
+      api:
+        condition: service_healthy
+    <<: *endurecido
+    read_only: true
+    mem_limit: 128m
+    networks:
+      borde:
+        ipv4_address: ${IP_TUNEL:-172.31.250.10}
+      monitoreo: {}
+
+  # ─── Monitoreo ────────────────────────────────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:v3.15.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+    volumes:
+      - ./monitoreo/prometheus:/etc/prometheus:ro
+      - prometheus-datos:/prometheus
+    <<: *endurecido
+    mem_limit: 384m
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    networks: [monitoreo, local]
+
+  grafana:
+    image: grafana/grafana:13.2.4
+    restart: unless-stopped
+    depends_on: [prometheus]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USUARIO:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_CONTRASENA:-cambia-esta-contrasena-grafana}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SECURITY_DISABLE_GRAVATAR: "true"
+      GF_SECURITY_COOKIE_SAMESITE: "strict"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      GF_PLUGINS_PREINSTALL_DISABLED: "true"
+    volumes:
+      - ./monitoreo/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoreo/grafana/tableros:/var/lib/grafana/dashboards:ro
+      - grafana-datos:/var/lib/grafana
+    <<: *endurecido
+    mem_limit: 384m
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+    networks: [monitoreo, local]
+
+  # ─── Seguridad y pruebas (se corren a mano) ───────────────────────────────
+
+  # OWASP ZAP: ataca la API como lo haría alguien de afuera (SQLi, XSS, encabezados, …) usando
+  # el inventario de OpenAPI, y deja el reporte en seguridad/zap/.
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    profiles: ["zap"]
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      OBJETIVO: http://api:8000
+      REPORTES: /zap/wrk
+    # El mismo plan que se puede correr con ZAP instalado (seguridad/zap/plan-zap.yaml).
+    command: ["zap.sh", "-cmd", "-autorun", "/zap/wrk/plan-zap.yaml"]
+    volumes:
+      - ./seguridad/zap:/zap/wrk:rw
+    networks: [borde]
+
+  # Las pruebas automáticas: una base aparte (familias_pruebas) que se crea de cero cada vez.
+  pruebas:
+    build:
+      context: ./api
+      target: pruebas
+    profiles: ["pruebas"]
+    depends_on:
+      migrar:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      almacen:
+        condition: service_healthy
+    environment:
+      DUENO_URL: postgresql://${POSTGRES_USER:-familias}:${POSTGRES_PASSWORD:-cambia-esta-contrasena}@db:5432/postgres
+      DB_API_USUARIO: ${DB_API_USUARIO:-familias_api}
+      DB_API_CONTRASENA: ${DB_API_CONTRASENA:-cambia-esta-contrasena-api}
+      DATABASE_URL: postgresql+psycopg://${DB_API_USUARIO:-familias_api}:${DB_API_CONTRASENA:-cambia-esta-contrasena-api}@db:5432/familias_pruebas
+      REDIS_URL: redis://:${REDIS_CONTRASENA:-cambia-esta-contrasena-redis}@redis:6379/1
+      S3_ENDPOINT: http://almacen:9000
+      S3_ACCESS_KEY: ${STORAGE_ROOT_USER:-familias-almacen}
+      S3_SECRET_KEY: ${STORAGE_ROOT_PASSWORD:-cambia-esta-contrasena-almacen}
+      S3_BUCKET: familias-pruebas
+      AUTH0_DOMINIO: pruebas.auth0.invalid
+      AUTH0_AUDIENCIA: https://api.familiasquesuman
+      HOSTS_PERMITIDOS: testserver,localhost
+      METRICAS_ACTIVAS: "false"
+      # Todas las pruebas llegan desde la misma "IP"; el límite global se sube solo aquí.
+      # Los límites por flujo (sugerir, inscribir…) se prueban tal cual.
+      LIMITE_GLOBAL: "100000/minute"
+    volumes:
+      - ./db/migrations:/migraciones:ro
+      - ./api/app:/code/app:ro
+      - ./api/tests:/code/tests:ro
+    <<: *endurecido
+    networks: [datos]
+
+networks:
+  # Lo que da a internet: la API y el túnel. Subred fija para saber cuál es la IP del túnel.
+  borde:
+    ipam:
+      config:
+        - subnet: ${RED_BORDE:-172.31.250.0/24}
+  # La base, el almacén y Redis: red INTERNA, sin salida a internet ni entrada desde fuera.
+  datos:
+    internal: true
+  # Prometheus, Grafana y lo que vigilan: también interna.
+  monitoreo:
+    internal: true
+  # Solo para publicar consolas en 127.0.0.1 (Grafana, Prometheus, consola del almacén).
+  local: {}
 
 volumes:
   db-data:
-  storage-data:
+  almacen-datos:
+  redis-datos:
+  prometheus-datos:
+  grafana-datos:

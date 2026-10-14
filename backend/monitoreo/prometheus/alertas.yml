@@ -1,0 +1,75 @@
+# Alertas (OWASP A09 · registro y ALERTAS). Se ven en Prometheus (http://localhost:9090/alerts)
+# y en el tablero de Grafana. Cada una dice qué podría estar pasando y qué revisar.
+
+groups:
+  - name: seguridad
+    rules:
+      - alert: MuchosTokensInvalidos
+        expr: sum(increase(familias_eventos_seguridad_total{tipo=~"token_invalido|token_expirado|sesion_cerrada"}[5m])) > 20
+        labels: {severidad: alta}
+        annotations:
+          resumen: "Más de 20 tokens inválidos o vencidos en 5 minutos"
+          descripcion: "Alguien podría estar probando tokens robados o falsificados. Revisa la bitácora de la API (ip_hmac)."
+
+      - alert: MuchosAccesosProhibidos
+        expr: sum(increase(familias_eventos_seguridad_total{tipo=~"prohibido|sin_permiso"}[5m])) > 20
+        labels: {severidad: alta}
+        annotations:
+          resumen: "Más de 20 respuestas 403 en 5 minutos"
+          descripcion: "Posible intento de entrar a funciones de administración (OWASP API5) o a datos ajenos."
+
+      - alert: RateLimitDisparado
+        expr: sum(increase(familias_eventos_seguridad_total{tipo="limite_excedido"}[5m])) > 50
+        labels: {severidad: media}
+        annotations:
+          resumen: "El rate limit frenó más de 50 solicitudes en 5 minutos"
+          descripcion: "Un bot o un intento de denegación de servicio. Mira qué rutas y desde cuántas ip_hmac."
+
+      - alert: ArchivosRechazados
+        expr: sum(increase(familias_eventos_seguridad_total{tipo=~"archivo_rechazado|cuerpo_muy_grande"}[15m])) > 10
+        labels: {severidad: media}
+        annotations:
+          resumen: "Se rechazaron más de 10 archivos en 15 minutos"
+          descripcion: "Alguien está subiendo archivos que no son fotos o demasiado grandes (CWE-434)."
+
+      - alert: EntradasInvalidas
+        expr: sum(increase(familias_eventos_seguridad_total{tipo="entrada_invalida"}[5m])) > 100
+        labels: {severidad: baja}
+        annotations:
+          resumen: "Más de 100 entradas inválidas en 5 minutos"
+          descripcion: "Típico de un escáner automático (como ZAP o sqlmap) probando la API."
+
+      - alert: HostInvalido
+        expr: sum(increase(familias_eventos_seguridad_total{tipo="host_invalido"}[10m])) > 10
+        labels: {severidad: baja}
+        annotations:
+          resumen: "Peticiones con un Host que no es nuestro"
+          descripcion: "Escaneos o intentos de envenenar enlaces."
+
+  - name: disponibilidad
+    rules:
+      - alert: APICaida
+        expr: up{job="api"} == 0
+        for: 1m
+        labels: {severidad: alta}
+        annotations:
+          resumen: "La API no responde"
+          descripcion: "Prometheus no puede leer las métricas de la API desde hace un minuto."
+
+      - alert: ErroresDelServidor
+        expr: |
+          sum(rate(familias_http_peticiones_total{estado=~"5.."}[5m]))
+            / clamp_min(sum(rate(familias_http_peticiones_total[5m])), 0.001) > 0.05
+        for: 2m
+        labels: {severidad: alta}
+        annotations:
+          resumen: "Más del 5 % de las respuestas son errores 5xx"
+          descripcion: "Revisa la bitácora de la API: cada error trae su id de solicitud."
+
+      - alert: LatenciaAlta
+        expr: histogram_quantile(0.95, sum by (le) (rate(familias_http_duracion_segundos_bucket[5m]))) > 1
+        for: 5m
+        labels: {severidad: media}
+        annotations:
+          resumen: "El 5 % más lento tarda más de 1 s"
+          descripcion: "La base, el almacén o Auth0 están lentos, o hay demasiada carga."

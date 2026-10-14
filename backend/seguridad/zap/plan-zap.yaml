@@ -1,0 +1,74 @@
+# Plan de OWASP ZAP (Automation Framework). Lo mismo sirve dentro de Docker o con ZAP instalado:
+#
+#   Docker:  docker compose --profile zap run --rm zap          (usa OBJETIVO=http://api:8000)
+#   Local:   OBJETIVO=http://127.0.0.1:8000 zap.bat -cmd -autorun <ruta>/plan-zap.yaml
+#
+# Qué hace: importa el inventario de la API (OpenAPI), espera el escaneo PASIVO (revisa cada
+# respuesta: encabezados, fugas de información, cookies…), corre el escaneo ACTIVO (ataca cada
+# parámetro con SQLi, XSS, inyección de comandos, path traversal, SSRF…) y escribe los reportes.
+env:
+  contexts:
+    - name: familias
+      urls:
+        - ${OBJETIVO}
+      includePaths:
+        - ${OBJETIVO}.*
+  parameters:
+    failOnError: true
+    failOnWarning: false
+    progressToStdout: true
+
+jobs:
+  - type: openapi
+    parameters:
+      apiUrl: ${OBJETIVO}/openapi.json
+      targetUrl: ${OBJETIVO}
+      context: familias
+
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+
+  - type: activeScan
+    parameters:
+      context: familias
+      maxRuleDurationInMins: 3
+      maxScanDurationInMins: 30
+      threadPerHost: 4
+    policyDefinition:
+      defaultStrength: medium
+      defaultThreshold: medium
+
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+
+  - type: report
+    parameters:
+      template: traditional-html
+      reportDir: ${REPORTES}
+      reportFile: reporte-zap
+      reportTitle: "OWASP ZAP · API de Familias que Suman"
+    risks: [high, medium, low, info]
+
+  - type: report
+    parameters:
+      template: traditional-md
+      reportDir: ${REPORTES}
+      reportFile: reporte-zap
+      reportTitle: "OWASP ZAP · API de Familias que Suman"
+    risks: [high, medium, low, info]
+
+  - type: report
+    parameters:
+      template: traditional-json
+      reportDir: ${REPORTES}
+      reportFile: reporte-zap
+    risks: [high, medium, low, info]
+
+  # "✓ OK" del pizarrón, como regla: si hay una alerta ALTA el escaneo falla (código 1); si hay
+  # una MEDIA, avisa (código 2). Así se puede poner en un pipeline de integración continua.
+  - type: exitStatus
+    parameters:
+      errorLevel: High
+      warnLevel: Medium

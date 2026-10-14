@@ -1,0 +1,35 @@
+[project]
+name = "familias-api"
+version = "1.0.0"
+description = "API de Familias que Suman: catálogo, cuentas, inscripciones, testimonios y donaciones. FastAPI + PostgreSQL + S3 (RustFS) + Redis, con identidad en Auth0."
+requires-python = ">=3.13"
+# Versiones exactas: lo que se probó es lo que corre (OWASP A03, cadena de suministro).
+# uv.lock además guarda el hash de cada paquete: si alguien cambia un paquete publicado, no se instala.
+dependencies = [
+    "fastapi==0.143.0",
+    "uvicorn[standard]==0.54.0",
+    "sqlalchemy==2.0.54",
+    "psycopg[binary]==3.3.6",
+    "pyjwt[crypto]==2.15.1",
+    "pydantic-settings==2.15.0",
+    "python-multipart==0.0.32",
+    "boto3==1.43.113",
+    "slowapi==0.1.10",
+    "redis==8.1.0",
+    "prometheus-client==0.26.0",
+    "pillow==12.3.0",
+    "tzdata==2026.5",  # las zonas horarias (America/Monterrey…) aunque la imagen no las traiga
+]
+
+# Solo para probar. La imagen de producción NO las lleva (ver el Dockerfile, etapa `produccion`).
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "httpx2==2.13.1",  # el TestClient de FastAPI lo usa por debajo
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra"
+filterwarnings = ["ignore::DeprecationWarning"]
