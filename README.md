@@ -20,7 +20,7 @@ familias-que-suman/          ← se abre esta carpeta en Android Studio
 ├── app/                     ← el módulo Android
 │   └── src/main/java/mx/tec/familiasquesuman/
 │       ├── domain/          ← modelos, Kotlin puro
-│       ├── data/            ← repositorios (hoy en memoria)
+│       ├── data/            ← repositorios (API) y sesión (Auth0)
 │       ├── ui/theme/        ← colores y tipografías de la marca
 │       ├── ui/state/        ← ViewModels, UiState, Factory
 │       ├── ui/screens/      ← una carpeta por tarea
@@ -28,7 +28,7 @@ familias-que-suman/          ← se abre esta carpeta en Android Studio
 │       ├── ui/navigation/   ← rutas y barra inferior
 │       ├── FamiliasApplication.kt
 │       └── MainActivity.kt
-├── backend/                 ← docker-compose. Gradle lo ignora
+├── backend/                 ← API, base, monitoreo y seguridad (Docker). Gradle lo ignora
 ├── gradle/  build.gradle.kts  settings.gradle.kts  gradlew
 ├── .gitignore
 ├── .env.example
@@ -38,8 +38,8 @@ familias-que-suman/          ← se abre esta carpeta en Android Studio
 ## Etapas
 
 - [ ] **1. Pantallas** — toda la app navegable con datos de prueba
-- [ ] **2. Servidor** — base de datos y API; las pantallas leen datos reales
-- [ ] **3. Cuenta y sesión** — registro, inicio de sesión e inscripciones
+- [x] **2. Servidor** — base de datos y API; las pantallas leen datos reales
+- [x] **3. Cuenta y sesión** — registro, inicio de sesión (Auth0) e inscripciones
 - [ ] **4. Notificaciones** — recordatorios y avisos de favoritos
 - [ ] **5. Pruebas y entrega** — pruebas con familias reales y ajustes finales
 
@@ -51,6 +51,7 @@ Una rama por tarea, con el RF en el nombre: feat/RF-04-actividades.
 
 - **Diseño:** [Figma](https://www.figma.com/design/MHJNZRX0wO86ZFuWTJiwzR/Familias-que-Suman-%E2%80%94-Prototipo)
 - **Arquitectura:** (https://drive.google.com/file/d/1nym5BV6J6c_PGZgso-x5DDpPbicDLGjZ/view?usp=sharing)
+- **Backend (guía completa y seguridad):** [docs/guia-backend.md](docs/guia-backend.md)
 - **Decisiones del equipo:** https://docs.google.com/document/d/1E9YGMQR1R2KuULSeeNgVbwip-9pn6ljhmjwBu2FMb7o/edit?usp=sharing
 - **Tareas:** En Teams
 
