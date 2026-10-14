@@ -2,7 +2,9 @@ package mx.tec.familiasquesuman.ui.screens.campanas
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
+import mx.tec.familiasquesuman.data.red.ApiExcepcion
+import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -64,11 +66,11 @@ class DetalleCampanaViewModel(
     /**
      * Solo para pruebas: en true, el siguiente apartado falla como si otras familias se
      * hubieran llevado casi todo (P-14). Se apaga sola después de dispararse una vez.
-     * Cámbiala a true aquí para verlo. Borrar cuando llegue el backend.
+     * Cámbiala a true aquí para verlo sin servidor.
      */
     var simularAgotado: Boolean = false
 
-    /** La campaña vive en memoria: los apartados suben la barra hasta que se cierre la app. */
+    /** La campaña y sus metas salen del servidor; lo apartado por otras familias ya viene sumado. */
     fun cargar(id: String) {
         if (idCargado == id && _estado.value is UiState.Exito) return
         idCargado = id
@@ -122,45 +124,63 @@ class DetalleCampanaViewModel(
         apartar(h.articulo.id, h.cantidad)
     }
 
+    /** El id de este intento de apartar: si se reintenta por la red, el servidor no lo cuenta dos veces. */
+    private var intento: String = UUID.randomUUID().toString()
+
     /**
-     * Espera 800 ms (la ventana donde puede fallar) y suma en memoria. Si [simularAgotado]
-     * está prendido, en vez de sumar deja la hoja en "ya no alcanza" con lo que sí queda.
+     * Le pide al servidor apartar [cantidad]. El servidor bloquea el artículo mientras cuenta lo
+     * que falta: si otras familias ya apartaron una parte, responde "ya no alcanza" con lo que de
+     * verdad queda, y la hoja pasa a P-14. [simularAgotado] lo muestra sin servidor (demostración).
      */
     fun apartar(articuloId: String, cantidad: Int) {
         val campana = (_estado.value as? UiState.Exito)?.datos ?: return
         val articulo = campana.articulos.firstOrNull { it.id == articuloId } ?: return
         viewModelScope.launch {
             _hoja.value = HojaApartar(articulo, cantidad, ModoApartar.Apartando)
-            delay(800)
 
             if (simularAgotado && articulo.faltan > 0) {
                 simularAgotado = false
                 val otras = (articulo.faltan - 1).coerceAtLeast(0)
                 val actualizado = articulo.copy(apartados = articulo.apartados + otras)
                 _estado.value = UiState.Exito(campana.reemplazando(actualizado))
-                _hoja.value = HojaApartar(
-                    articulo = actualizado,
-                    cantidad = 1.coerceAtMost(actualizado.faltan.coerceAtLeast(1)),
-                    modo = ModoApartar.YaNoAlcanza,
-                    otrasApartaron = otras
-                )
+                _hoja.value = HojaApartar(actualizado, 1.coerceAtMost(actualizado.faltan.coerceAtLeast(1)), ModoApartar.YaNoAlcanza, otras)
                 return@launch
             }
 
-            val cantidadReal = cantidad.coerceAtMost(articulo.faltan)
-            val actualizado = articulo.copy(apartados = articulo.apartados + cantidadReal)
-            val nueva = campana.reemplazando(actualizado).let {
-                it.copy(completados = (it.completados + cantidadReal).coerceAtMost(it.metaTotal))
+            try {
+                val r = repo.apartar(articuloId, cantidad, intento)
+                intento = UUID.randomUUID().toString()
+                val nueva = campana.reemplazando(r.articulo).copy(completados = r.completadosCampana)
+                _ultimoApartado.value = ApartadoHecho(articuloNombre = articulo.nombre, cantidad = r.cantidad, progresoAntes = campana.progreso)
+                _estado.value = UiState.Exito(nueva)
+                _hoja.value = null
+                _irAConfirmado.value = true
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: ApiExcepcion) {
+                // Si el servidor contestó, este intento ya terminó. Si NO hubo conexión, se conserva el
+                // mismo id: al reintentar, el servidor reconoce la aportación y no la cuenta dos veces.
+                if (!e.sinConexion) intento = UUID.randomUUID().toString()
+                val faltan = e.datoEntero("faltan")
+                if (e.codigo == "ya_no_alcanza" && faltan != null) {
+                    val actualizado = articulo.copy(apartados = (articulo.meta - faltan).coerceAtLeast(0))
+                    _estado.value = UiState.Exito(campana.reemplazando(actualizado))
+                    _hoja.value = HojaApartar(actualizado, 1.coerceAtMost(faltan.coerceAtLeast(1)), ModoApartar.YaNoAlcanza,
+                        otrasApartaron = (actualizado.apartados - articulo.apartados).coerceAtLeast(0))
+                } else {
+                    _hoja.value = HojaApartar(articulo, cantidad, ModoApartar.Normal)
+                    _mensaje.value = e.message
+                }
             }
-            _ultimoApartado.value = ApartadoHecho(
-                articuloNombre = articulo.nombre,
-                cantidad = cantidadReal,
-                progresoAntes = campana.progreso
-            )
-            _estado.value = UiState.Exito(nueva)
-            _hoja.value = null
-            _irAConfirmado.value = true
         }
+    }
+
+    private val _mensaje = MutableStateFlow<String?>(null)
+    /** Lo que respondió el servidor si no se pudo apartar (campaña cerrada, sin conexión…). */
+    val mensaje: StateFlow<String?> = _mensaje.asStateFlow()
+
+    fun mensajeVisto() {
+        _mensaje.value = null
     }
 
     private fun Campana.reemplazando(nuevo: ArticuloMeta): Campana =

@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import mx.tec.familiasquesuman.ui.screens.inscripcion.componentes.AvisoError
 import mx.tec.familiasquesuman.ui.screens.inscripcion.componentes.BarraAccionesInferior
 import mx.tec.familiasquesuman.ui.screens.inscripcion.componentes.BarraConRegreso
 import mx.tec.familiasquesuman.ui.screens.inscripcion.componentes.BotonAgregarPunteado
@@ -62,6 +63,7 @@ fun AcompanantesScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            ui.mensaje?.let { AvisoError("No se pudo confirmar", it) }
             Text(
                 "${a.titulo} · ${fechaCorta(a.fecha)}, ${horaDeInicio(a.horario)}",
                 style = MaterialTheme.typography.bodyMedium,

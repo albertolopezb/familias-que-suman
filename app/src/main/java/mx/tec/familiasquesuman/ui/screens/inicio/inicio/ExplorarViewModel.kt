@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
+import mx.tec.familiasquesuman.ui.state.intentar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,7 +42,7 @@ class ExplorarViewModel(
 
     fun cargar() {
         viewModelScope.launch {
-            _todasAsociaciones.value = actividadRepository.getAsociaciones()
+            intentar { actividadRepository.getAsociaciones() }.onSuccess { _todasAsociaciones.value = it }
         }
     }
 
@@ -57,7 +58,7 @@ class ExplorarViewModel(
                 whatsapp = v[5].trim(),
                 correo = v[6].trim()
             )
-            if (id == null) actividadRepository.agregarAsociacion(asociacion) else actividadRepository.editarAsociacion(asociacion)
+            intentar { if (id == null) actividadRepository.agregarAsociacion(asociacion) else actividadRepository.editarAsociacion(asociacion) }
             cargar()
             onListo()
         }
@@ -65,7 +66,7 @@ class ExplorarViewModel(
 
     fun borrarAsociacion(id: String, onListo: () -> Unit = {}) {
         viewModelScope.launch {
-            actividadRepository.borrarAsociacion(id)
+            intentar { actividadRepository.borrarAsociacion(id) }
             cargar()
             onListo()
         }

@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
+import mx.tec.familiasquesuman.ui.state.intentar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,13 +17,13 @@ class TestimoniosViewModel(private val repositorio: TestimonioRepository) : View
     val testimonios: StateFlow<List<Testimonio>> = _testimonios.asStateFlow()
 
     fun cargar() {
-        viewModelScope.launch { _testimonios.value = repositorio.getTodos() }
+        viewModelScope.launch { intentar { repositorio.getTodos() }.onSuccess { _testimonios.value = it } }
     }
 
     fun eliminar(id: String, correo: String?, esAdmin: Boolean) {
         viewModelScope.launch {
-            repositorio.eliminar(id, correo, esAdmin)
-            _testimonios.value = repositorio.getTodos()
+            intentar { repositorio.eliminar(id, correo, esAdmin) }
+            intentar { repositorio.getTodos() }.onSuccess { _testimonios.value = it }
         }
     }
 }

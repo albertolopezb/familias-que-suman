@@ -2,12 +2,15 @@ package mx.tec.familiasquesuman.ui.screens.inscripcion
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import mx.tec.familiasquesuman.data.ActividadRepository
+import mx.tec.familiasquesuman.data.CuentaRepository
+import mx.tec.familiasquesuman.data.ResultadoInscripcion
+import mx.tec.familiasquesuman.data.red.ApiExcepcion
 import mx.tec.familiasquesuman.domain.Acompanante
 import mx.tec.familiasquesuman.domain.Actividad
 import mx.tec.familiasquesuman.domain.Sexo
@@ -47,7 +50,9 @@ data class AcompanantesUi(
     val enviando: Boolean = false,
     val sinLugares: SinLugaresUi? = null,
     val avisoRegistrado: Boolean = false,
-    val confirmada: Boolean = false
+    val confirmada: Boolean = false,
+    /** Lo que respondió el servidor si no aceptó la inscripción (edad mínima, ya empezó…). */
+    val mensaje: String? = null
 ) {
     private val edadMinima: Int? get() = actividad.edadMinima
 
@@ -80,7 +85,10 @@ data class AcompanantesUi(
  * P-06 · P-06b · P-08. Lista de acompañantes que crece y se achica, validación de
  * nombre y fecha de nacimiento, cálculo de lugares, y `confirmar()` con la espera simulada.
  */
-class AcompanantesViewModel(private val actividadRepository: ActividadRepository) : ViewModel() {
+class AcompanantesViewModel(
+    private val actividadRepository: ActividadRepository,
+    private val cuentaRepository: CuentaRepository
+) : ViewModel() {
 
     private val _ui = MutableStateFlow<UiState<AcompanantesUi>>(UiState.Cargando)
     val ui: StateFlow<UiState<AcompanantesUi>> = _ui.asStateFlow()
@@ -116,6 +124,8 @@ class AcompanantesViewModel(private val actividadRepository: ActividadRepository
                 )
             } catch (e: NoSuchElementException) {
                 UiState.Error("No encontramos esa actividad. Puede que ya no esté publicada.")
+            } catch (e: ApiExcepcion) {
+                UiState.Error(e.message)
             }
         }
     }
@@ -141,9 +151,9 @@ class AcompanantesViewModel(private val actividadRepository: ActividadRepository
         val datos = (_ui.value as? UiState.Exito)?.datos ?: return
         if (!datos.puedeConfirmar) return
         viewModelScope.launch {
-            editar { it.copy(enviando = true) }
-            delay(1000)
+            editar { it.copy(enviando = true, mensaje = null) }
             if (simularSinCupo) {
+                // Solo para la demostración del admin: P-08 sin tocar el servidor.
                 editar {
                     it.copy(
                         enviando = false,
@@ -151,8 +161,27 @@ class AcompanantesViewModel(private val actividadRepository: ActividadRepository
                         sinLugares = SinLugaresUi(it.lugaresDisponibles, 0, it.actividad.cupoTotal)
                     )
                 }
-            } else {
-                editar { it.copy(enviando = false, confirmada = true) }
+                return@launch
+            }
+            // El SERVIDOR decide: revisa el cupo (con candado, para que dos familias no ganen el
+            // mismo lugar), la edad mínima y el consentimiento. Lo de aquí arriba solo ayuda a llenar.
+            val resultado = try {
+                cuentaRepository.inscribirse(datos.actividad.id, datos.acompanantes, datos.consentimiento)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                ResultadoInscripcion.Rechazada((e as? ApiExcepcion)?.message ?: "No se pudo confirmar. Intenta de nuevo.")
+            }
+            when (resultado) {
+                is ResultadoInscripcion.Lista -> editar { it.copy(enviando = false, confirmada = true) }
+                is ResultadoInscripcion.SinLugares -> editar {
+                    it.copy(
+                        enviando = false,
+                        lugaresDisponibles = resultado.lugaresDisponibles,
+                        sinLugares = SinLugaresUi(it.lugaresDisponibles, resultado.lugaresDisponibles, it.actividad.cupoTotal)
+                    )
+                }
+                is ResultadoInscripcion.Rechazada -> editar { it.copy(enviando = false, mensaje = resultado.mensaje) }
             }
         }
     }

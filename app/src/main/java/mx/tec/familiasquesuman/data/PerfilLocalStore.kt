@@ -5,46 +5,33 @@ import android.net.Uri
 import java.io.File
 
 /**
- * Lo que la familia personaliza en su teléfono: la foto de perfil y cuántas veces ha invitado
- * a otras familias a una actividad. Se guarda por correo, igual que los favoritos; con el
- * backend la foto se sube al almacenamiento de fotos y esto queda como caché.
+ * Una copia de la foto de perfil en el teléfono, para no descargarla cada vez. La original vive
+ * en el servidor (la API la limpia y la guarda en el almacén S3).
  */
 class PerfilLocalStore(contexto: Context) {
 
     private val app = contexto.applicationContext
-    private val prefs = app.getSharedPreferences("perfil_local", Context.MODE_PRIVATE)
     private val carpeta = File(app.filesDir, "perfil")
 
-    private fun clave(correo: String) = correo.trim().lowercase()
+    private fun archivo(correo: String) = File(carpeta, "foto_${correo.trim().lowercase().hashCode().toUInt()}.jpg")
 
-    /** Ruta del archivo de la foto, o null si la cuenta no tiene. */
-    fun foto(correo: String): String? =
-        prefs.getString("foto:${clave(correo)}", null)?.takeIf { File(it).exists() }
+    /** Ruta del archivo de la foto, o null si no hay copia. */
+    fun foto(correo: String): String? = archivo(correo).takeIf { it.exists() && it.length() > 0 }?.absolutePath
 
-    /**
-     * Copia la foto elegida al almacenamiento de la app (el permiso del selector es temporal) y
-     * la deja como foto de la cuenta. Se llama fuera del hilo principal.
-     */
-    fun guardarFoto(correo: String, origen: Uri): String? = runCatching {
+    /** Guarda la copia. Se llama fuera del hilo principal. */
+    fun guardarFoto(correo: String, bytes: ByteArray): String? = runCatching {
         carpeta.mkdirs()
-        foto(correo)?.let { File(it).delete() }
-        val destino = File(carpeta, "foto_${clave(correo).hashCode()}_${System.currentTimeMillis()}.img")
-        val entrada = app.contentResolver.openInputStream(origen) ?: return null
-        entrada.use { de -> destino.outputStream().use { a -> de.copyTo(a) } }
-        prefs.edit().putString("foto:${clave(correo)}", destino.absolutePath).apply()
+        val destino = archivo(correo)
+        destino.writeBytes(bytes)
         destino.absolutePath
     }.getOrNull()
 
     fun quitarFoto(correo: String) {
-        foto(correo)?.let { File(it).delete() }
-        prefs.edit().remove("foto:${clave(correo)}").apply()
+        archivo(correo).delete()
     }
 
-    fun invitaciones(correo: String): Int = prefs.getInt("inv:${clave(correo)}", 0)
-
-    fun sumarInvitacion(correo: String): Int {
-        val total = invitaciones(correo) + 1
-        prefs.edit().putInt("inv:${clave(correo)}", total).apply()
-        return total
-    }
+    /** Los bytes de la foto elegida en el selector (el permiso del selector es temporal). */
+    fun leer(uri: Uri): ByteArray? = runCatching {
+        app.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+    }.getOrNull()
 }

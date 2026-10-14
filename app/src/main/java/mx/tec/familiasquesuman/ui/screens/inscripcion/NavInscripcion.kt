@@ -170,6 +170,7 @@ fun NavGraphBuilder.grafoInscripcion(nav: NavController) {
     composable(RutasInscripcion.CREAR_CUENTA) {
         val cuenta = cuentaViewModel()
         val ui by cuenta.crear.collectAsStateWithLifecycle()
+        val actividadActual = LocalActivity.current
         LaunchedEffect(ui.lista) {
             if (ui.lista) {
                 cuenta.crearAtendida()
@@ -181,9 +182,8 @@ fun NavGraphBuilder.grafoInscripcion(nav: NavController) {
             estadoValidacion = ui.validacion,
             onNombreChange = cuenta::onNombreChange,
             onCorreoChange = cuenta::onCorreoChange,
-            onContrasenaChange = cuenta::onContrasenaChange,
             onAceptaAvisoChange = cuenta::onAceptaAvisoChange,
-            onCrearCuenta = cuenta::crearCuenta,
+            onCrearCuenta = { actividadActual?.let(cuenta::crearCuenta) },
             onIniciarSesion = {
                 nav.navigate(RutasInscripcion.INICIAR_SESION) { popUpTo(RutasInscripcion.CREAR_CUENTA) { inclusive = true } }
             },
@@ -195,6 +195,7 @@ fun NavGraphBuilder.grafoInscripcion(nav: NavController) {
     composable(RutasInscripcion.INICIAR_SESION) {
         val cuenta = cuentaViewModel()
         val ui by cuenta.entrar.collectAsStateWithLifecycle()
+        val actividadActual = LocalActivity.current
         val regreso by cuenta.regreso.collectAsStateWithLifecycle()
         val actividades by cuenta.actividades.collectAsStateWithLifecycle()
         val regresoA = regreso?.let { r ->
@@ -210,8 +211,7 @@ fun NavGraphBuilder.grafoInscripcion(nav: NavController) {
             ui = ui,
             regresoA = regresoA,
             onCorreoChange = cuenta::onCorreoEntrarChange,
-            onContrasenaChange = cuenta::onContrasenaEntrarChange,
-            onEntrar = cuenta::iniciarSesion,
+            onEntrar = { actividadActual?.let(cuenta::iniciarSesion) },
             onOlvideContrasena = {
                 cuenta.precargarCorreoRecuperar()
                 nav.navigate(RutasInscripcion.RECUPERAR)
@@ -336,7 +336,9 @@ fun NavGraphBuilder.grafoInscripcion(nav: NavController) {
         LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { refrescar++ }
         LaunchedEffect(refrescar, sesion?.correo) {
             encuestaContestada = sesion?.correo?.let { correo ->
-                encuestas.getDeFamilia(correo).any { it.actividadId == actividadId && it.momento == MomentoEncuesta.ANTES }
+                runCatching {
+                    encuestas.getDeFamilia(correo).any { it.actividadId == actividadId && it.momento == MomentoEncuesta.ANTES }
+                }.getOrDefault(false)
             } ?: false
         }
         ConfirmacionScreen(

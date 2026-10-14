@@ -110,8 +110,9 @@ object AppViewModelProvider {
             val c = familiasApplication().container
             CuentaViewModel(
                 c.actividadRepository,
-                c.perfilRepository,
                 c.campanaRepository,
+                c.cuentaRepository,
+                c.sesion,
                 mx.tec.familiasquesuman.data.FavoritosStore(familiasApplication()),
                 mx.tec.familiasquesuman.data.PerfilLocalStore(familiasApplication()),
                 mx.tec.familiasquesuman.data.CuentasStore(familiasApplication()),
@@ -119,7 +120,9 @@ object AppViewModelProvider {
                 c.preferenciasStore
             )
         }
-        initializer { AcompanantesViewModel(familiasApplication().container.actividadRepository) }
+        initializer {
+            AcompanantesViewModel(familiasApplication().container.actividadRepository, familiasApplication().container.cuentaRepository)
+        }
 
         // Sugerencias de actividades, campañas, proyectos y centros
         initializer { SugerenciasViewModel(familiasApplication().container.sugerenciaRepository) }

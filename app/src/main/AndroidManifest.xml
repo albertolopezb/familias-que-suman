@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- La API vive en internet (o en tu máquina, con el emulador). -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <!-- Parte 3: notificaciones reales. Android 13+ lo pide en tiempo de ejecución. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
@@ -14,17 +16,39 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.FamiliasQueSuman"
+        android:networkSecurityConfig="@xml/seguridad_red"
         android:name=".FamiliasApplication">
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.FamiliasQueSuman"
+            android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- El botón "Abrir en la app" de la página de invitación: familiasquesuman://actividad/<id>.
+                 Cualquier app podría lanzar este enlace, así que la app no confía en él: el id se
+                 manda a la API, que lo valida (UUID) y responde 404 si no existe. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="familiasquesuman" android:host="actividad" />
+            </intent-filter>
+
+            <!-- App Links: con dominio propio, https://<dominio>/a/<id> abre la app directo. Android lo
+                 verifica al instalar con https://<dominio>/.well-known/assetlinks.json (lo sirve la API).
+                 Sin dominio propio el host es "*.invalid" y este filtro no hace nada. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="${enlacesDominio}" android:pathPrefix="/a/" />
             </intent-filter>
         </activity>
 

@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.actividades.componentes
 
+import mx.tec.familiasquesuman.FamiliasApplication
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -50,6 +51,12 @@ fun DialogoInvitacion(
     onCompartida: () -> Unit
 ) {
     val contexto = LocalContext.current
+    // El enlace lo arma la API (con la dirección pública del túnel o el dominio propio): al
+    // tocarlo, abre esta actividad en la app. Si no hay red, se comparte sin él.
+    val enlace by produceState<String?>(null, item.actividad.id) {
+        val repositorio = (contexto.applicationContext as FamiliasApplication).container.actividadRepository
+        value = runCatching { repositorio.enlaceDe(item.actividad.id) }.getOrNull()
+    }
     val imagen by produceState<Bitmap?>(null, item.actividad.id, familia, lugares) {
         value = withContext(Dispatchers.Default) {
             runCatching { dibujarInvitacion(contexto, item, familia, lugares) }.getOrNull()
@@ -96,8 +103,8 @@ fun DialogoInvitacion(
                     Button(
                         onClick = {
                             val lista = imagen
-                            if (lista != null) compartirInvitacion(contexto, lista, item, familia, lugares)
-                            else compartirActividad(contexto, item, familia, lugares)
+                            if (lista != null) compartirInvitacion(contexto, lista, item, familia, lugares, enlace)
+                            else compartirActividad(contexto, item, familia, lugares, enlace)
                             onCompartida()
                         },
                         shape = RoundedCornerShape(12.dp),

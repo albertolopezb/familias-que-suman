@@ -43,7 +43,7 @@ import mx.tec.familiasquesuman.domain.Participacion
 import mx.tec.familiasquesuman.domain.ActividadConAsociacion
 import mx.tec.familiasquesuman.ui.state.familiasApplication
 import mx.tec.familiasquesuman.domain.Usuario
-import mx.tec.familiasquesuman.domain.UsuariosHardcodeados
+import mx.tec.familiasquesuman.ui.screens.inscripcion.comoUsuario
 import mx.tec.familiasquesuman.ui.navigation.Rutas
 import mx.tec.familiasquesuman.ui.screens.actividades.RutasActividades
 import mx.tec.familiasquesuman.ui.screens.campanas.RutasCampanas
@@ -145,7 +145,7 @@ private fun EncuestaDestino(
 
 fun NavGraphBuilder.grafoPerfil(
     nav: NavController,
-    usuarioActual: () -> Usuario = { UsuariosHardcodeados.USUARIO_NORMAL },
+    usuarioActual: () -> Usuario = { Usuario.INVITADO },
     onSwitchCuenta: (Boolean) -> Unit
 ) {
     composable(RutasPerfil.ENCUESTA_PREVIA, arguments = argumentosEncuesta) { entrada ->
@@ -277,10 +277,8 @@ fun NavGraphBuilder.grafoPerfil(
         LaunchedEffect(sesionActual?.correo) { vm.cargar(sesionActual?.correo) }
         val selectorFoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia(), cuentaVm::cambiarFoto)
 
-        // 2. Determinamos si es Admin o Usuario Normal según el correo en sesión
-        val base = UsuariosHardcodeados.obtenerPorCorreo(sesionActual?.correo)
-        // El nombre y el correo son los de la cuenta con la que se entró, no los de ejemplo.
-        val usuarioCalculado = sesionActual?.let { base.copy(correo = it.correo, nombreFamilia = it.familia) } ?: base
+        // Quién es (y si es admin) lo dice el servidor, no el correo.
+        val usuarioCalculado = sesionActual.comoUsuario()
 
         PerfilScreen(
             estado = estado,

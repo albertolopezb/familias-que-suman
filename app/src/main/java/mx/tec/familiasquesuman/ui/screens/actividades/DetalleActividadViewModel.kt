@@ -26,11 +26,14 @@ class DetalleActividadViewModel(
         idCargado = id
         viewModelScope.launch {
             _estado.value = UiState.Cargando
-            delay(450)
             _estado.value = try {
                 UiState.Exito(actividadRepository.getActividadConAsociacion(id))
             } catch (e: NoSuchElementException) {
                 UiState.Error("Esta actividad ya no existe. Vuelve a la lista.")
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                UiState.Error("No pudimos cargar la actividad. Revisa tu conexión.")
             }
         }
     }

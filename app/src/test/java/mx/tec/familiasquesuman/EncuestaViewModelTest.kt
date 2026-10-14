@@ -1,6 +1,6 @@
 package mx.tec.familiasquesuman
 
-import mx.tec.familiasquesuman.data.EncuestaRepository
+import mx.tec.familiasquesuman.data.EncuestaRepositoryEnMemoria
 import mx.tec.familiasquesuman.domain.MomentoEncuesta
 import mx.tec.familiasquesuman.ui.screens.perfil.*
 import org.junit.Assert.*
@@ -8,7 +8,7 @@ import org.junit.Test
 
 class EncuestaViewModelTest {
     private fun vm(definicion: DefinicionEncuesta = EncuestaFinal, momento: MomentoEncuesta = MomentoEncuesta.DESPUES) =
-        EncuestaViewModel(definicion, momento, EncuestaRepository())
+        EncuestaViewModel(definicion, momento, EncuestaRepositoryEnMemoria())
 
     @Test fun lasEncuestasDeAntesYDespuesEstanCompletas() {
         assertEquals((1..3).toList(), EncuestaPrevia.preguntas.map { it.numero })

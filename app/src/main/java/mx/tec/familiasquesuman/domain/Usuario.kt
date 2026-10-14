@@ -1,35 +1,18 @@
 package mx.tec.familiasquesuman.domain
 
+/**
+ * Quién usa la app, como lo ven las pantallas. `esAdmin` lo decide el SERVIDOR (los permisos que
+ * Auth0 pone en el token); la app solo lo usa para enseñar u ocultar botones. Antes se adivinaba
+ * por el correo (cualquier correo con "admin" era administrador): eso ya no existe.
+ */
 data class Usuario(
     val correo: String,
     val esAdmin: Boolean,
     val nombreFamilia: String,
     val ciudad: String
-)
-
-// En domain/Usuario.kt
-object UsuariosHardcodeados {
-    val USUARIO_NORMAL = Usuario(
-        correo = "ana.rodriguez@correo.com",
-        esAdmin = false,
-        nombreFamilia = "Familia Rodríguez",
-        ciudad = "Monterrey"
-    )
-
-    val USUARIO_ADMIN = Usuario(
-        correo = "admin@correo.com",
-        esAdmin = true,
-        nombreFamilia = "Administrador General",
-        ciudad = "Monterrey"
-    )
-
-    fun obtenerPorCorreo(correo: String?): Usuario {
-        if (correo == null) return USUARIO_NORMAL
-        val correoLimpio = correo.trim().lowercase()
-        return if (correoLimpio == USUARIO_ADMIN.correo || correoLimpio.contains("admin")) {
-            USUARIO_ADMIN
-        } else {
-            USUARIO_NORMAL
-        }
+) {
+    companion object {
+        /** Sin sesión: nadie es admin. */
+        val INVITADO = Usuario(correo = "", esAdmin = false, nombreFamilia = "", ciudad = "Monterrey")
     }
 }

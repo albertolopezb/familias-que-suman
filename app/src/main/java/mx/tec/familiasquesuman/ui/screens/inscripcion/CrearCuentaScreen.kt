@@ -14,7 +14,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -29,14 +28,16 @@ import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
 import mx.tec.familiasquesuman.ui.theme.Fondo
 import mx.tec.familiasquesuman.ui.theme.TintaSuave
 
-/** P-05 · Crear cuenta. Con `estadoValidacion` dibuja P-05b (campo en rojo y franja del servidor). */
+/**
+ * P-05 · Crear cuenta. Con `estadoValidacion` dibuja P-05b (campo en rojo y franja del servidor).
+ * La contraseña se pone en la página segura de Auth0, que se abre al tocar el botón.
+ */
 @Composable
 fun CrearCuentaScreen(
     ui: CrearCuentaUi,
     estadoValidacion: EstadoValidacion,
     onNombreChange: (String) -> Unit,
     onCorreoChange: (String) -> Unit,
-    onContrasenaChange: (String) -> Unit,
     onAceptaAvisoChange: (Boolean) -> Unit,
     onCrearCuenta: () -> Unit,
     onIniciarSesion: () -> Unit,
@@ -54,7 +55,7 @@ fun CrearCuentaScreen(
             if (estadoValidacion.errorServidor) {
                 AvisoError(
                     "No se pudo crear la cuenta",
-                    "Revisa tu conexión e inténtalo otra vez. Lo que escribiste no se borró."
+                    ui.mensaje ?: "Revisa tu conexión e inténtalo otra vez. Lo que escribiste no se borró."
                 )
             }
             Text(
@@ -71,7 +72,7 @@ fun CrearCuentaScreen(
                 habilitado = !ui.enviando
             )
             CampoTexto(
-                etiqueta = "Correo",
+                etiqueta = "Correo (opcional)",
                 valor = ui.correo,
                 onValorChange = onCorreoChange,
                 placeholder = "familia@correo.com",
@@ -79,16 +80,10 @@ fun CrearCuentaScreen(
                 tipoTeclado = KeyboardType.Email,
                 habilitado = !ui.enviando
             )
-            CampoTexto(
-                etiqueta = "Contraseña",
-                valor = ui.contrasena,
-                onValorChange = onContrasenaChange,
-                placeholder = "Mínimo 8 caracteres",
-                error = estadoValidacion.errorContrasena,
-                tipoTeclado = KeyboardType.Password,
-                accionTeclado = ImeAction.Done,
-                esContrasena = true,
-                habilitado = !ui.enviando
+            Text(
+                "Al continuar te llevamos a la página segura de registro, donde eliges tu contraseña. La app nunca la ve.",
+                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 13.sp),
+                color = TintaSuave
             )
         }
         // La casilla va junto al botón: así sube con el teclado y se acepta sin tener que cerrarlo.
@@ -100,7 +95,7 @@ fun CrearCuentaScreen(
                 habilitada = !ui.enviando
             )
             BotonPrimario(
-                texto = if (ui.enviando) "Creando tu cuenta…" else "Crear cuenta",
+                texto = if (ui.enviando) "Creando tu cuenta…" else "Continuar",
                 onClick = onCrearCuenta,
                 habilitado = ui.puedeEnviar,
                 cargando = ui.enviando
@@ -115,13 +110,13 @@ fun CrearCuentaScreen(
 @Preview(showBackground = true, heightDp = 780, name = "P-05 · Crear cuenta")
 @Composable
 private fun CrearCuentaPreview() {
-    val ui = CrearCuentaUi("Familia Rodríguez", "ana.rodriguez@correo.com", "", aceptaAviso = true)
-    FamiliasQueSumanTheme { CrearCuentaScreen(ui, ui.validacion, {}, {}, {}, {}, {}, {}, {}) }
+    val ui = CrearCuentaUi("Familia Rodríguez", "ana.rodriguez@correo.com", aceptaAviso = true)
+    FamiliasQueSumanTheme { CrearCuentaScreen(ui, ui.validacion, {}, {}, {}, {}, {}, {}) }
 }
 
 @Preview(showBackground = true, heightDp = 780, name = "P-05b · Validación y error")
 @Composable
 private fun CrearCuentaErrorPreview() {
-    val ui = CrearCuentaUi("Familia Rodríguez", "ana.rodriguez@correo", "", errorServidor = true)
-    FamiliasQueSumanTheme { CrearCuentaScreen(ui, ui.validacion, {}, {}, {}, {}, {}, {}, {}) }
+    val ui = CrearCuentaUi("Familia Rodríguez", "ana.rodriguez@correo", errorServidor = true)
+    FamiliasQueSumanTheme { CrearCuentaScreen(ui, ui.validacion, {}, {}, {}, {}, {}, {}) }
 }

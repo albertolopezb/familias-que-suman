@@ -48,12 +48,17 @@ private fun horasDe(horario: String): List<LocalTime> =
  * true si la actividad ya terminó: fue otro día, o es hoy y ya pasó su hora de fin (o la de
  * inicio, si no trae fin). Sin fecha legible no se puede saber y cuenta como pendiente.
  */
-fun yaTermino(actividad: Actividad, ahora: LocalDateTime = LocalDateTime.now()): Boolean =
-    yaPasoLaHora(actividad, ahora, horaDeFin(actividad.horario) ?: horaDeInicio(actividad.horario))
+fun yaTermino(actividad: Actividad, ahora: LocalDateTime = LocalDateTime.now()): Boolean {
+    val fin = actividad.fin ?: actividad.inicio
+    if (fin != null) return !ahora.isBefore(fin)
+    return yaPasoLaHora(actividad, ahora, horaDeFin(actividad.horario) ?: horaDeInicio(actividad.horario))
+}
 
 /** true si la actividad ya empezó (o terminó): ya no tiene caso recordarla ni invitar a ella. */
-fun yaEmpezo(actividad: Actividad, ahora: LocalDateTime = LocalDateTime.now()): Boolean =
-    yaPasoLaHora(actividad, ahora, horaDeInicio(actividad.horario))
+fun yaEmpezo(actividad: Actividad, ahora: LocalDateTime = LocalDateTime.now()): Boolean {
+    actividad.inicio?.let { return !ahora.isBefore(it) }
+    return yaPasoLaHora(actividad, ahora, horaDeInicio(actividad.horario))
+}
 
 private fun yaPasoLaHora(actividad: Actividad, ahora: LocalDateTime, hora: LocalTime?): Boolean {
     val hoy = ahora.toLocalDate()

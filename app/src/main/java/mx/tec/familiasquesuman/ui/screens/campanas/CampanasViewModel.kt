@@ -2,7 +2,6 @@ package mx.tec.familiasquesuman.ui.screens.campanas
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -12,6 +11,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import mx.tec.familiasquesuman.ui.state.intentar
 import mx.tec.familiasquesuman.data.ActividadRepository
 import mx.tec.familiasquesuman.data.CampanaRepository
 import mx.tec.familiasquesuman.domain.Campana
@@ -102,8 +102,7 @@ class CampanasViewModel(
 
     fun cargar() {
         viewModelScope.launch {
-            carga.value = UiState.Cargando
-            delay(700) // Se nota el estado de carga; con el backend se quita.
+            if (carga.value !is UiState.Exito) carga.value = UiState.Cargando
             carga.value = try {
                 UiState.Exito(repo.getCampanas())
             } catch (e: Exception) {
@@ -112,7 +111,7 @@ class CampanasViewModel(
         }
     }
 
-    // ---- Administración (solo en memoria) ----
+    // ---- Administración (el servidor revisa el permiso) ----
 
     fun guardarCampana(original: Campana?, v: List<String>) {
         viewModelScope.launch {
@@ -132,15 +131,15 @@ class CampanasViewModel(
                 ciudad = v[7].trim().ifBlank { base.ciudad },
                 urgente = v[8] == "true"
             )
-            if (original == null) repo.agregarCampana(nueva) else repo.editarCampana(nueva)
-            carga.value = UiState.Exito(repo.getCampanas())
+            intentar { if (original == null) repo.agregarCampana(nueva) else repo.editarCampana(nueva) }
+            intentar { repo.getCampanas() }.onSuccess { carga.value = UiState.Exito(it) }
         }
     }
 
     fun borrarCampana(id: String) {
         viewModelScope.launch {
-            repo.borrarCampana(id)
-            carga.value = UiState.Exito(repo.getCampanas())
+            intentar { repo.borrarCampana(id) }
+            intentar { repo.getCampanas() }.onSuccess { carga.value = UiState.Exito(it) }
         }
     }
 

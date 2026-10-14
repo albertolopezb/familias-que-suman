@@ -13,7 +13,9 @@ data class Testimonio(
     val experiencia: String,
     /** Ruta del archivo de la foto en el almacenamiento de la app; null si no trae. */
     val foto: String?,
-    val fecha: String
+    val fecha: String,
+    /** Lo dice el servidor: la cuenta con sesión es la que lo escribió. */
+    val esMio: Boolean = false
 )
 
 /**
@@ -21,7 +23,7 @@ data class Testimonio(
  * Ninguna otra cuenta, ni sin sesión.
  */
 fun Testimonio.puedeEliminarlo(correoDeQuienPide: String?, esAdmin: Boolean): Boolean =
-    esAdmin || (correoDeQuienPide != null && correoDeQuienPide.equals(correo, ignoreCase = true))
+    esAdmin || esMio || (correoDeQuienPide != null && correo.isNotBlank() && correoDeQuienPide.equals(correo, ignoreCase = true))
 
 enum class MomentoEncuesta(val etiqueta: String) {
     ANTES("Antes de la actividad"),

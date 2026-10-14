@@ -26,7 +26,7 @@ import java.io.File
  * Invitar a otra familia a una actividad (para que más personas se sumen e instalen la app).
  * Se arma una tarjeta vertical, del tamaño de una historia de Instagram o un estado de WhatsApp,
  * con la actividad, la fecha, los lugares que quedan y quién invita; se comparte junto con un
- * texto. Todo se genera en el teléfono: no sale nada a ningún servidor.
+ * texto y el enlace que abre la actividad en la app. La imagen se dibuja en el teléfono.
  */
 
 private const val ANCHO = 1080
@@ -46,8 +46,11 @@ fun encabezadoInvitacion(familia: String?): String {
     }
 }
 
-/** El texto que acompaña a la imagen: se lee bien solo, por si la imagen no se abre. */
-fun textoInvitacion(item: ActividadConAsociacion, familia: String?, lugares: Int?): String {
+/**
+ * El texto que acompaña a la imagen: se lee bien solo, por si la imagen no se abre. [enlace] es el
+ * que da la API: al tocarlo abre la actividad en la app. Sin él, se manda al sitio.
+ */
+fun textoInvitacion(item: ActividadConAsociacion, familia: String?, lugares: Int?, enlace: String? = null): String {
     val actividad = item.actividad
     val lugar = actividad.direccion.ifBlank { actividad.municipio }
     val nombre = familia?.trim().orEmpty()
@@ -64,7 +67,8 @@ fun textoInvitacion(item: ActividadConAsociacion, familia: String?, lugares: Int
             appendLine(if (lugares == 1) "Queda 1 lugar." else "Quedan $lugares lugares.")
         }
         appendLine()
-        append("¿Se suman? Búsquenla en la app Familias que Suman o en https://familiasquesuman.com/actividades")
+        if (enlace != null) append("¿Se suman? Ábranla en la app Familias que Suman: $enlace")
+        else append("¿Se suman? Búsquenla en la app Familias que Suman o en https://familiasquesuman.com/actividades")
     }
 }
 
@@ -165,7 +169,7 @@ fun dibujarInvitacion(contexto: Context, item: ActividadConAsociacion, familia: 
 }
 
 /** Abre la hoja de compartir de Android con la imagen y el texto de la invitación. */
-fun compartirInvitacion(contexto: Context, imagen: Bitmap, item: ActividadConAsociacion, familia: String?, lugares: Int?) {
+fun compartirInvitacion(contexto: Context, imagen: Bitmap, item: ActividadConAsociacion, familia: String?, lugares: Int?, enlace: String? = null) {
     val carpeta = File(contexto.cacheDir, "compartir").apply { mkdirs() }
     carpeta.listFiles()?.forEach { it.delete() } // solo se guarda la última
     val archivo = File(carpeta, "invitacion_${item.actividad.id}.png")
@@ -175,7 +179,7 @@ fun compartirInvitacion(contexto: Context, imagen: Bitmap, item: ActividadConAso
         type = "image/png"
         putExtra(Intent.EXTRA_STREAM, uri)
         putExtra(Intent.EXTRA_SUBJECT, item.actividad.titulo)
-        putExtra(Intent.EXTRA_TEXT, textoInvitacion(item, familia, lugares))
+        putExtra(Intent.EXTRA_TEXT, textoInvitacion(item, familia, lugares, enlace))
         clipData = ClipData.newRawUri(null, uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
@@ -183,11 +187,11 @@ fun compartirInvitacion(contexto: Context, imagen: Bitmap, item: ActividadConAso
 }
 
 /** Compartir solo con texto (cuando no hay imagen, por ejemplo si falló al dibujarla). */
-fun compartirActividad(contexto: Context, item: ActividadConAsociacion, familia: String? = null, lugares: Int? = null) {
+fun compartirActividad(contexto: Context, item: ActividadConAsociacion, familia: String? = null, lugares: Int? = null, enlace: String? = null) {
     val intento = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
         putExtra(Intent.EXTRA_SUBJECT, item.actividad.titulo)
-        putExtra(Intent.EXTRA_TEXT, textoInvitacion(item, familia, lugares))
+        putExtra(Intent.EXTRA_TEXT, textoInvitacion(item, familia, lugares, enlace))
     }
     contexto.startActivity(Intent.createChooser(intento, "Compartir actividad"))
 }

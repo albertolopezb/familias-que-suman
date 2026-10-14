@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.sugerencias
 
+import mx.tec.familiasquesuman.ui.screens.inscripcion.componentes.AvisoError
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -91,6 +92,7 @@ fun SugerirScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            f.error?.let { AvisoError("No se pudo enviar", it) }
             Text(
                 "¿Conoces algo que debería estar en Familias que Suman? Cuéntanos y el equipo lo " +
                     "revisa antes de publicarlo.",

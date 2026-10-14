@@ -1,5 +1,7 @@
 package mx.tec.familiasquesuman.ui.screens.sugerencias
 
+import mx.tec.familiasquesuman.ui.state.intentar
+import mx.tec.familiasquesuman.ui.state.mensajeParaPersona
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
@@ -29,7 +31,9 @@ data class FormularioSugerencia(
     val tuContacto: String = "",
     val intentoEnviar: Boolean = false,  // los errores solo salen después del primer intento
     val enviando: Boolean = false,
-    val enviada: Boolean = false
+    val enviada: Boolean = false,
+    /** Lo que respondió el servidor si no se pudo enviar (por ejemplo, demasiadas seguidas). */
+    val error: String? = null
 ) {
     val errorNombre: String? get() = if (intentoEnviar && nombre.trim().length < 3) "Escribe el nombre" else null
     val errorDescripcion: String?
@@ -76,9 +80,8 @@ class SugerenciasViewModel(private val repositorio: SugerenciaRepository) : View
             return
         }
         viewModelScope.launch {
-            _formulario.update { it.copy(enviando = true, intentoEnviar = true) }
-            delay(600) // como si fuera al servidor
-            repositorio.enviar(
+            _formulario.update { it.copy(enviando = true, intentoEnviar = true, error = null) }
+            val envio = intentar { repositorio.enviar(
                 Sugerencia(
                     id = "sg${System.currentTimeMillis()}",
                     tipo = f.tipo,
@@ -92,8 +95,11 @@ class SugerenciasViewModel(private val repositorio: SugerenciaRepository) : View
                     contactoDeQuienSugiere = f.tuContacto.trim(),
                     fecha = LocalDate.now().format(FormatoFecha)
                 )
-            )
-            _formulario.update { it.copy(enviando = false, enviada = true) }
+            ) }
+            _formulario.update {
+                if (envio.isSuccess) it.copy(enviando = false, enviada = true)
+                else it.copy(enviando = false, error = envio.exceptionOrNull()?.mensajeParaPersona())
+            }
         }
     }
 
@@ -105,13 +111,13 @@ class SugerenciasViewModel(private val repositorio: SugerenciaRepository) : View
     // ── Bandeja del admin ──
 
     fun cargarBandeja() {
-        viewModelScope.launch { _sugerencias.value = repositorio.getSugerencias() }
+        viewModelScope.launch { intentar { repositorio.getSugerencias() }.onSuccess { _sugerencias.value = it } }
     }
 
     fun cambiarEstado(id: String, estado: EstadoSugerencia) {
         viewModelScope.launch {
-            repositorio.cambiarEstado(id, estado)
-            _sugerencias.value = repositorio.getSugerencias()
+            intentar { repositorio.cambiarEstado(id, estado) }
+            intentar { repositorio.getSugerencias() }.onSuccess { _sugerencias.value = it }
         }
     }
 

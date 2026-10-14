@@ -1,6 +1,7 @@
 package mx.tec.familiasquesuman.ui.screens.actividades
 
 import mx.tec.familiasquesuman.domain.lugaresConAjuste
+import mx.tec.familiasquesuman.BuildConfig
 import mx.tec.familiasquesuman.FamiliasApplication
 import mx.tec.familiasquesuman.data.ciudadConEstado
 import androidx.compose.runtime.LaunchedEffect
@@ -146,7 +147,7 @@ fun NavGraphBuilder.grafoActividades(
                 familia = sesionLista?.familia,
                 lugares = cuentaLista.lugaresDisponibles(item.actividad),
                 onCerrar = { porCompartir = null },
-                onCompartida = { cuentaLista.registrarInvitacion(); porCompartir = null }
+                onCompartida = { cuentaLista.registrarInvitacion(item.actividad.id); porCompartir = null }
             )
         }
 
@@ -249,8 +250,13 @@ fun NavGraphBuilder.grafoActividades(
 
     composable(
         RutasActividades.DETALLE,
-        // La notificación de recordatorio abre el detalle de la actividad.
-        deepLinks = listOf(navDeepLink { uriPattern = Notificaciones.URI_ACTIVIDAD + "{actividadId}" })
+        // Abren el detalle: la notificación de recordatorio, el botón "Abrir en la app" de la página
+        // de invitación (familiasquesuman://actividad/<id>) y, con dominio propio, el enlace https
+        // verificado por Android (App Links). El id se valida en el servidor como UUID.
+        deepLinks = listOf(
+            navDeepLink { uriPattern = Notificaciones.URI_ACTIVIDAD + "{actividadId}" },
+            navDeepLink { uriPattern = "https://${BuildConfig.ENLACES_DOMINIO}/a/{actividadId}" }
+        )
     ) { entrada ->
         val id = entrada.arguments?.getString(RutasActividades.ARG_ACTIVIDAD_ID).orEmpty()
         val vm: DetalleActividadViewModel = viewModel(factory = AppViewModelProvider.Factory)
@@ -302,7 +308,7 @@ fun NavGraphBuilder.grafoActividades(
                 familia = sesion?.familia,
                 lugares = cuenta.lugaresDisponibles(item.actividad),
                 onCerrar = { porCompartir = null },
-                onCompartida = { cuenta.registrarInvitacion(); porCompartir = null }
+                onCompartida = { cuenta.registrarInvitacion(item.actividad.id); porCompartir = null }
             )
         }
     }

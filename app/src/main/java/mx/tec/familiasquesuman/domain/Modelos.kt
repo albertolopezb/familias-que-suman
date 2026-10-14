@@ -1,10 +1,12 @@
 package mx.tec.familiasquesuman.domain
 
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 // Kotlin puro: ningún import de Android, Retrofit ni Room en este archivo.
 // Si falta un campo, se agrega aquí en un PR aparte; nadie define su propia versión.
-// Las fechas son texto mientras todo está en memoria; con el backend pasan a LocalDate.
+// Las fechas siguen como texto para las pantallas ("sábado, 3 de octubre"); con el backend llegan
+// además la fecha y hora reales (inicio/fin, en la hora de la ciudad) y son las que mandan.
 
 data class Asociacion(
     val id: String,
@@ -42,7 +44,11 @@ data class Actividad(
     val foto: String? = null,       // nombre del drawable, sin extensión
     val yaPaso: Boolean = false,
     // La ciudad de Familias que Suman donde se hace ("Monterrey", "Hermosillo"). Filtra las listas.
-    val ciudad: String = "Monterrey"
+    val ciudad: String = "Monterrey",
+    // Lo que manda el servidor: cuándo empieza y termina (hora de la ciudad) y dónde está.
+    val inicio: LocalDateTime? = null,
+    val fin: LocalDateTime? = null,
+    val coordenada: Coordenada? = null
 ) {
     val ocupados: Int get() = cupoTotal - lugaresDisponibles
     val sinLugares: Boolean get() = lugaresDisponibles <= 0
@@ -108,7 +114,8 @@ data class Campana(
     val comoAyudar: String = "",
     val opcionesDonacion: List<OpcionDonacion> = emptyList(),
     val puntosEntrega: List<PuntoEntrega> = emptyList(),
-    val instagram: String? = null             // enlace completo
+    val instagram: String? = null,            // enlace completo
+    val coordenada: Coordenada? = null        // dónde sale en el mapa del Inicio
 ) {
     val progreso: Float get() = if (metaTotal == 0) 0f else completados.toFloat() / metaTotal
 
@@ -204,7 +211,8 @@ data class Proyecto(
     val comoAyudar: String = "",                      // si no hay formas, un solo "¿Cómo ayudar?"
     val telefono: String? = null,                     // solo dígitos
     val whatsapp: String? = null,                     // solo dígitos
-    val instagram: String? = null                     // enlace completo
+    val instagram: String? = null,                    // enlace completo
+    val coordenada: Coordenada? = null                // dónde sale en el mapa del Inicio
 )
 
 /** Una de las tarjetas de "Elige tu forma de apoyar". Tocarla abre WhatsApp con su título. */

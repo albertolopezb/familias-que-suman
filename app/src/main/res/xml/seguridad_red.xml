@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Seguridad de red de la app (versión de entrega).
+  · Nada de HTTP en claro: todo viaja con TLS (HTTPS).
+  · Solo se confía en las autoridades certificadoras del SISTEMA, no en las que instale la
+    persona: un certificado "de proxy" instalado a mano no puede espiar el tráfico (MitM).
+  La versión de depuración (src/debug/res/xml/seguridad_red.xml) además deja hablar por HTTP con
+  la API en tu máquina (10.0.2.2 desde el emulador). Esa excepción NO existe en la de entrega.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

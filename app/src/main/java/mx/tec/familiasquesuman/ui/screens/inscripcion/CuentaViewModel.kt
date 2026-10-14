@@ -1,95 +1,109 @@
 package mx.tec.familiasquesuman.ui.screens.inscripcion
 
+import android.app.Activity
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.delay
+import com.auth0.android.authentication.AuthenticationException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import mx.tec.familiasquesuman.data.ActividadRepository
 import mx.tec.familiasquesuman.data.AvisosStore
-import mx.tec.familiasquesuman.data.PreferenciasStore
-import mx.tec.familiasquesuman.domain.Campana
-import mx.tec.familiasquesuman.data.FavoritosStore
 import mx.tec.familiasquesuman.data.CampanaRepository
-import mx.tec.familiasquesuman.data.CuentaLocal
+import mx.tec.familiasquesuman.data.CuentaRepository
 import mx.tec.familiasquesuman.data.CuentasStore
-import mx.tec.familiasquesuman.data.cifrarContrasena
-import mx.tec.familiasquesuman.data.contrasenaCoincide
+import mx.tec.familiasquesuman.data.FavoritosStore
+import mx.tec.familiasquesuman.data.Fotos
 import mx.tec.familiasquesuman.data.PerfilLocalStore
-import mx.tec.familiasquesuman.data.PerfilRepository
-import android.net.Uri
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import mx.tec.familiasquesuman.data.PreferenciasStore
+import mx.tec.familiasquesuman.data.red.ApiExcepcion
+import mx.tec.familiasquesuman.data.red.YoDto
+import mx.tec.familiasquesuman.data.red.aAcompanante
+import mx.tec.familiasquesuman.data.sesion.ServicioSesion
 import mx.tec.familiasquesuman.domain.Acompanante
 import mx.tec.familiasquesuman.domain.Actividad
 import mx.tec.familiasquesuman.domain.Asociacion
 import mx.tec.familiasquesuman.domain.Aviso
+import mx.tec.familiasquesuman.domain.Campana
 import mx.tec.familiasquesuman.domain.QueAvisar
+import mx.tec.familiasquesuman.domain.Usuario
 import mx.tec.familiasquesuman.domain.avisoBienvenida
 import mx.tec.familiasquesuman.domain.avisoCancelacion
 import mx.tec.familiasquesuman.domain.avisoInscripcion
 import mx.tec.familiasquesuman.domain.avisosDelDia
 import mx.tec.familiasquesuman.domain.juntarAvisos
-import mx.tec.familiasquesuman.domain.lugaresConAjuste
 import java.time.LocalDateTime
 
-/** Quién tiene la sesión abierta. En la etapa 2 sale del servidor. */
-data class Sesion(val familia: String, val correo: String, val titular: Acompanante)
+/**
+ * Quién tiene la sesión abierta, tal como lo dice el servidor (/v1/yo). [esAdmin] sale de los
+ * permisos que Auth0 puso en el token: la app solo lo usa para enseñar botones.
+ */
+data class Sesion(
+    val familia: String,
+    val correo: String,
+    val titular: Acompanante,
+    val esAdmin: Boolean = false,
+    val ciudad: String = "Monterrey",
+    val id: String = ""
+)
+
+/** Lo que ven las pantallas como "usuario actual". Sin sesión, nadie es admin. */
+fun Sesion?.comoUsuario(): Usuario =
+    this?.let { Usuario(correo = it.correo, esAdmin = it.esAdmin, nombreFamilia = it.familia, ciudad = it.ciudad) } ?: Usuario.INVITADO
 
 /** Lo que P-05b necesita para pintar en rojo. `null` = ese campo está bien o sigue vacío. */
 data class EstadoValidacion(
     val errorNombre: String? = null,
     val errorCorreo: String? = null,
-    val errorContrasena: String? = null,
     val errorServidor: Boolean = false
 )
 
+/**
+ * P-05 · Crear cuenta. La CONTRASEÑA ya no se escribe aquí: se escribe en la página segura de
+ * Auth0. Aquí solo va el nombre de la familia, el correo (para rellenar la página) y la
+ * aceptación del aviso de privacidad, que se guarda en el servidor con su fecha.
+ */
 data class CrearCuentaUi(
     val nombre: String = "",
     val correo: String = "",
-    val contrasena: String = "",
     val aceptaAviso: Boolean = false,
     val enviando: Boolean = false,
     val errorServidor: Boolean = false,
-    /** "Ese correo ya tiene cuenta": lo dice el servidor, no la validación en vivo. */
-    val correoOcupado: Boolean = false,
+    val mensaje: String? = null,
     val lista: Boolean = false
 ) {
-    /** Validación en vivo: un campo vacío todavía no es error, uno mal escrito sí. */
     val validacion: EstadoValidacion
         get() = EstadoValidacion(
             errorNombre = if (nombre.isNotEmpty() && nombre.trim().length < 3) "Escribe el nombre de tu familia" else null,
-            errorCorreo = when {
-                correoOcupado -> "Ese correo ya tiene cuenta. Inicia sesión con él."
-                correo.isNotEmpty() && !esCorreoValido(correo) -> "Escribe un correo válido, por ejemplo familia@correo.com"
-                else -> null
-            },
-            errorContrasena = if (contrasena.isNotEmpty() && contrasena.length < 8) "Usa mínimo 8 caracteres" else null,
+            errorCorreo = if (correo.isNotEmpty() && !esCorreoValido(correo)) "Escribe un correo válido, por ejemplo familia@correo.com" else null,
             errorServidor = errorServidor
         )
 
-    /** El botón se prende solo con los tres campos válidos y la casilla marcada. */
+    /** El botón se prende con el nombre y la casilla. El correo es opcional (Auth0 lo vuelve a pedir). */
     val puedeEnviar: Boolean
-        get() = !enviando && !correoOcupado && nombre.trim().length >= 3 &&
-            esCorreoValido(correo) && contrasena.length >= 8 && aceptaAviso
+        get() = !enviando && nombre.trim().length >= 3 && (correo.isBlank() || esCorreoValido(correo)) && aceptaAviso
 }
 
+/** P-26 · Iniciar sesión: un botón que abre la página de Auth0. El correo, si se escribe, la rellena. */
 data class IniciarSesionUi(
     val correo: String = "",
-    val contrasena: String = "",
     val enviando: Boolean = false,
-    val error: Boolean = false,
+    val error: String? = null,
     val lista: Boolean = false
 ) {
     val errorCorreo: String?
         get() = if (correo.isNotEmpty() && !esCorreoValido(correo)) "Escribe un correo válido, por ejemplo familia@correo.com" else null
-    val puedeEnviar: Boolean get() = !enviando && esCorreoValido(correo) && contrasena.isNotEmpty()
+    val puedeEnviar: Boolean get() = !enviando && (correo.isBlank() || esCorreoValido(correo))
 }
 
 data class RecuperarUi(val correo: String = "", val enviando: Boolean = false, val enviado: Boolean = false) {
@@ -104,38 +118,28 @@ data class CancelacionUi(
     val actividadId: String,
     val cancelando: Boolean = true,
     val liberados: Int? = null,
-    val antes: Int? = null
+    val antes: Int? = null,
+    val error: String? = null
 )
 
 /**
- * La cuenta mientras no hay servidor: sesión, formularios, a dónde regresar e inscripciones.
+ * La cuenta: sesión, formularios, a dónde regresar, inscripciones, favoritos y avisos.
  *
- * Vive a nivel Activity (ver `cuentaViewModel()` en NavInscripcion) para que todas las
- * pantallas vean la misma sesión. Las cuentas, la sesión, la familia y las inscripciones se
- * guardan en el teléfono ([CuentasStore]): al volver a abrir la app la sesión sigue abierta, y
- * una cuenta creada aquí puede volver a entrar después de cerrar sesión.
+ * Vive a nivel Activity (ver `cuentaViewModel()` en NavInscripcion) para que todas las pantallas
+ * vean la misma sesión. Lo que manda es el SERVIDOR: aquí se guarda una copia para pintar rápido
+ * y para el RevisarAvisosWorker, y se vuelve a pedir al abrir la app.
  */
 class CuentaViewModel(
     private val actividadRepository: ActividadRepository,
-    private val perfilRepository: PerfilRepository,
     private val campanaRepository: CampanaRepository,
+    private val cuentaRepository: CuentaRepository,
+    private val servicioSesion: ServicioSesion,
     private val favoritosStore: FavoritosStore,
     private val perfilLocal: PerfilLocalStore? = null,
     private val cuentasStore: CuentasStore? = null,
     private val avisosStore: AvisosStore? = null,
     private val preferenciasStore: PreferenciasStore? = null
 ) : ViewModel() {
-
-    private data class CuentaGuardada(
-        /** La contraseña cifrada con [cifrarContrasena]. */
-        val clave: String,
-        val sesion: Sesion,
-        val acompanantes: List<Acompanante>,
-        val inscripciones: Map<String, List<Acompanante>>,
-        val favoritas: Set<String> = emptySet()
-    )
-
-    private val cuentas = mutableMapOf<String, CuentaGuardada>()
 
     private val _sesion = MutableStateFlow<Sesion?>(null)
     val sesion: StateFlow<Sesion?> = _sesion.asStateFlow()
@@ -158,23 +162,27 @@ class CuentaViewModel(
     private val _campanas = MutableStateFlow<List<Campana>>(emptyList())
     val campanas: StateFlow<List<Campana>> = _campanas.asStateFlow()
 
-    /** Ruta de la foto de perfil de la cuenta con sesión; null = sin foto (se ven las iniciales). */
+    /** Ruta de la copia local de la foto de perfil; null = sin foto (se ven las iniciales). */
     private val _foto = MutableStateFlow<String?>(null)
     val foto: StateFlow<String?> = _foto.asStateFlow()
 
-    /** Cuántas veces la cuenta ha invitado a otras familias a una actividad. */
+    /** Cuántas veces la cuenta ha invitado a otras familias a una actividad (lo cuenta el servidor). */
     private val _invitaciones = MutableStateFlow(0)
     val invitaciones: StateFlow<Int> = _invitaciones.asStateFlow()
 
     /** El corazón que se tocó sin sesión: se pone solo al entrar. */
     private var favoritoPendiente: String? = null
 
+    /** Todas las asociaciones, también las que solo organizan: para poner el nombre de quién organiza. */
     private val _asociaciones = MutableStateFlow<List<Asociacion>>(emptyList())
     val asociaciones: StateFlow<List<Asociacion>> = _asociaciones.asStateFlow()
 
-    /** Cuántos lugares movieron las inscripciones y cancelaciones de esta sesión. */
-    private val _ajusteLugares = MutableStateFlow<Map<String, Int>>(emptyMap())
-    val ajusteLugares: StateFlow<Map<String, Int>> = _ajusteLugares.asStateFlow()
+    /**
+     * Antes se llevaba la cuenta de los lugares que movía cada inscripción en el teléfono. Ahora
+     * los lugares los cuenta el servidor y la lista se vuelve a pedir después de cada cambio,
+     * así que no hay nada que ajustar. Se queda vacío por compatibilidad con las pantallas.
+     */
+    val ajusteLugares: StateFlow<Map<String, Int>> = MutableStateFlow<Map<String, Int>>(emptyMap()).asStateFlow()
 
     private val _crear = MutableStateFlow(CrearCuentaUi())
     val crear: StateFlow<CrearCuentaUi> = _crear.asStateFlow()
@@ -201,56 +209,34 @@ class CuentaViewModel(
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
     init {
-        // Lo guardado en el teléfono va primero y sin esperar: si quedó una sesión abierta, la app
-        // abre ya con ella en lugar de enseñar un momento "Iniciar sesión".
-        cuentasStore?.todas()?.forEach { cuentas[it.correo] = it.aGuardada() }
-        _ajusteLugares.value = cuentasStore?.ajusteLugares().orEmpty()
-        cuentasStore?.correoSesion()?.let { cuentas[it] }?.let { abrirSesion(it) }
-
         viewModelScope.launch {
-            _actividades.value = actividadRepository.getActividades()
-            _asociaciones.value = actividadRepository.getAsociaciones()
-            _campanas.value = campanaRepository.getCampanas()
-            val familia = perfilRepository.getFamilia()
-
-            // Las cuentas de prueba solo se agregan si el teléfono no tiene ya su versión guardada
-            // (con la familia y las inscripciones que se le hayan cambiado).
-            // 1. Cuenta Normal Hardcodeada (Ana Rodríguez)
-            if (familia.correo !in cuentas) cuentas[familia.correo] = CuentaGuardada(
-                withContext(Dispatchers.Default) { cifrarContrasena(CuentaDePrueba.CONTRASENA) }, // "familia123"
-                Sesion(familia.nombre, familia.correo, CuentaDePrueba.titular),
-                CuentaDePrueba.acompanantes,
-                CuentaDePrueba.inscripciones,
-                favoritosStore.cargar(familia.correo) ?: perfilRepository.getFavoritas().map { it.id }.toSet()
-            )
-
-            // 2. Cuenta de Administrador Hardcodeada
-            val correoAdmin = "admin@correo.com"
-            if (correoAdmin !in cuentas) cuentas[correoAdmin] = CuentaGuardada(
-                clave = withContext(Dispatchers.Default) { cifrarContrasena("admin123") }, // Contraseña para la cuenta de admin
-                sesion = Sesion(
-                    familia = "Administrador General",
-                    correo = correoAdmin,
-                    titular = Acompanante("Administrador General", edad = 30)
-                ),
-                acompanantes = emptyList(),
-                inscripciones = emptyMap(),
-                favoritas = emptySet()
-            )
-
-            // Con el catálogo ya cargado se ve si hoy toca algún aviso.
+            cargarCatalogo()
+            // Si quedó una sesión guardada (cifrada por Auth0), se retoma sin pedir contraseña.
+            if (servicioSesion.hayCredenciales()) runCatching { refrescarCuenta() } else olvidarSesionLocal()
             revisarAvisos()
         }
-        // Prender o apagar un aviso en Ajustes (o cambiar de ciudad) se nota en la bandeja.
-        viewModelScope.launch { preferenciasStore?.preferencias?.collect { revisarAvisos() } }
+        // Prender o apagar un aviso en Ajustes (o cambiar de ciudad) se nota en la bandeja y se
+        // guarda también en el servidor.
+        viewModelScope.launch {
+            preferenciasStore?.preferencias?.drop(1)?.collect { prefs ->
+                revisarAvisos()
+                if (_sesion.value != null) runCatching {
+                    cuentaRepository.guardarPreferencias(prefs.recordatorioActividades, prefs.avisosFavoritos, prefs.urgenciasCiudad)
+                }
+            }
+        }
     }
 
-    /** El admin cambió el directorio: se vuelve a leer para que Inicio y Favoritos no queden viejos. */
+    private suspend fun cargarCatalogo() {
+        runCatching { _actividades.value = actividadRepository.getActividades() }
+        runCatching { _asociaciones.value = actividadRepository.getTodasLasAsociaciones() }
+        runCatching { _campanas.value = campanaRepository.getCampanas() }
+    }
+
+    /** El admin cambió el directorio, o cambió algún lugar: se vuelve a leer. */
     fun recargarCatalogo() {
         viewModelScope.launch {
-            _actividades.value = actividadRepository.getActividades()
-            _asociaciones.value = actividadRepository.getAsociaciones()
-            _campanas.value = campanaRepository.getCampanas()
+            cargarCatalogo()
             revisarAvisos()
         }
     }
@@ -258,8 +244,9 @@ class CuentaViewModel(
     fun actividad(id: String): Actividad? = _actividades.value.firstOrNull { it.id == id }
     fun asociacion(id: String): Asociacion? = _asociaciones.value.firstOrNull { it.id == id }
 
-    /** Lo que dice el repositorio más lo que cambió en esta sesión. */
-    fun lugaresDisponibles(actividad: Actividad): Int = lugaresConAjuste(actividad, _ajusteLugares.value)
+    /** Los lugares que dijo el servidor la última vez que se pidió la lista. */
+    fun lugaresDisponibles(actividad: Actividad): Int =
+        (actividad(actividad.id) ?: actividad).lugaresDisponibles.coerceIn(0, actividad.cupoTotal.coerceAtLeast(0))
 
     // ── A dónde regresar ──
 
@@ -281,66 +268,74 @@ class CuentaViewModel(
     /** Devuelve el regreso pendiente y lo olvida, para que no se use dos veces. */
     fun tomarRegreso(): Regreso? = _regreso.value.also { _regreso.value = null }
 
-    // ── P-05 · Crear cuenta ──
+    // ── La sesión ──
 
-    fun onNombreChange(v: String) = _crear.update { it.copy(nombre = v, errorServidor = false) }
-    fun onCorreoChange(v: String) = _crear.update { it.copy(correo = v, correoOcupado = false, errorServidor = false) }
-    fun onContrasenaChange(v: String) = _crear.update { it.copy(contrasena = v, errorServidor = false) }
-    fun onAceptaAvisoChange(v: Boolean) = _crear.update { it.copy(aceptaAviso = v) }
+    private fun mensajeSinAuth0() =
+        "El inicio de sesión todavía no está configurado en esta copia de la app (falta Auth0 en local.properties)."
 
-    /** Para ver la franja roja de P-05b, usa un correo que empiece con "error" (error@correo.com). */
-    fun crearCuenta() {
-        val f = _crear.value
-        if (!f.puedeEnviar) return
-        viewModelScope.launch {
-            _crear.update { it.copy(enviando = true, errorServidor = false) }
-            delay(1000)
-            val correo = f.correo.trim().lowercase()
-            when {
-                correo.startsWith("error") -> _crear.update { it.copy(enviando = false, errorServidor = true) }
-                correo in cuentas -> _crear.update { it.copy(enviando = false, correoOcupado = true) }
-                else -> {
-                    val sesion = Sesion(f.nombre.trim(), correo, Acompanante(f.nombre.trim(), edad = 0))
-                    val clave = withContext(Dispatchers.Default) { cifrarContrasena(f.contrasena) }
-                    cuentas[correo] = CuentaGuardada(clave, sesion, emptyList(), emptyMap())
-                    abrirSesion(cuentas.getValue(correo))
-                    recibirAvisos(listOf(avisoBienvenida()), reemplazar = true)
-                    _crear.value = CrearCuentaUi(lista = true)
-                }
-            }
-        }
+    /** Lo que se ve si algo sale mal al entrar. Cancelar la página de Auth0 no es un error. */
+    private fun mensajeDe(e: Throwable): String? = when {
+        e is AuthenticationException && e.isCanceled -> null
+        e is AuthenticationException -> "No pudimos entrar con Auth0. Revisa tu conexión e intenta de nuevo."
+        e is ApiExcepcion -> e.message
+        else -> "No pudimos entrar. Intenta de nuevo."
     }
 
-    fun crearAtendida() = _crear.update { it.copy(lista = false) }
-
-    // ── P-26 · Iniciar sesión ──
-
-    fun onCorreoEntrarChange(v: String) = _entrar.update { it.copy(correo = v, error = false) }
-    fun onContrasenaEntrarChange(v: String) = _entrar.update { it.copy(contrasena = v, error = false) }
-
-    fun iniciarSesion() {
-        val f = _entrar.value
-        if (!f.puedeEnviar) return
-        viewModelScope.launch {
-            _entrar.update { it.copy(enviando = true, error = false) }
-            delay(800)
-            val cuenta = cuentas[f.correo.trim().lowercase()]
-            val coincide = cuenta != null &&
-                withContext(Dispatchers.Default) { contrasenaCoincide(f.contrasena, cuenta.clave) }
-            if (cuenta == null || !coincide) {
-                _entrar.update { it.copy(enviando = false, error = true) }
-            } else {
-                abrirSesion(cuenta)
-                _entrar.value = IniciarSesionUi(lista = true)
-            }
+    /** Lee la cuenta del servidor y deja todo listo. Si el token ya no sirve, cierra la sesión local. */
+    private suspend fun refrescarCuenta(): YoDto? = try {
+        val yo = cuentaRepository.yo()
+        abrirSesion(yo)
+        yo
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: ApiExcepcion) {
+        if (e.estado == 401 || e.codigo == "correo_sin_verificar") {
+            servicioSesion.cerrar()
+            olvidarSesionLocal()
+            if (e.codigo == "correo_sin_verificar") throw e
         }
+        null    // sin conexión: se queda lo que había y se reintenta la próxima vez
     }
 
-    fun entrarAtendida() = _entrar.update { it.copy(lista = false) }
+    private suspend fun abrirSesion(yo: YoDto) {
+        val titular = yo.titular.aAcompanante()
+        _sesion.value = Sesion(yo.nombreFamilia, yo.correo, titular, yo.esAdmin, yo.ciudad, yo.id)
+        _invitaciones.value = yo.invitaciones
+        cuentasStore?.guardarSesion(yo.correo)
+        _avisos.value = avisosStore?.cargar(yo.correo).orEmpty()
 
-    /** Cierra la sesión. La cuenta y lo que tiene se quedan guardados para la próxima vez que entre. */
-    fun cerrarSesion() {
-        guardarCuentaActual()
+        runCatching { _acompanantes.value = cuentaRepository.acompanantes() }
+        runCatching {
+            _inscripciones.value = cuentaRepository.inscripciones()
+            cuentasStore?.guardarInscritas(yo.correo, _inscripciones.value.keys)
+        }
+        runCatching {
+            var marcadas = cuentaRepository.favoritos()
+            favoritoPendiente?.let { pendiente ->
+                cuentaRepository.marcarFavorito(pendiente, true)
+                marcadas = marcadas + pendiente
+            }
+            favoritoPendiente = null
+            _favoritas.value = marcadas
+            favoritosStore.guardar(yo.correo, marcadas)
+        }
+        _foto.value = if (!yo.tieneFoto) {
+            perfilLocal?.quitarFoto(yo.correo)
+            null
+        } else {
+            perfilLocal?.foto(yo.correo) ?: runCatching {
+                val bytes = cuentaRepository.descargarFoto()
+                withContext(Dispatchers.IO) { perfilLocal?.guardarFoto(yo.correo, bytes) }
+            }.getOrNull()
+        }
+        revisarAvisos()
+    }
+
+    private fun olvidarSesionLocal() {
+        _sesion.value?.correo?.let { correo ->
+            cuentasStore?.olvidar(correo)
+            perfilLocal?.quitarFoto(correo)
+        }
         cuentasStore?.guardarSesion(null)
         _sesion.value = null
         _acompanantes.value = emptyList()
@@ -351,71 +346,130 @@ class CuentaViewModel(
         _avisos.value = emptyList()
     }
 
-    private fun abrirSesion(cuenta: CuentaGuardada) {
-        _sesion.value = cuenta.sesion
-        _acompanantes.value = cuenta.acompanantes
-        _inscripciones.value = cuenta.inscripciones
-        val guardadas = favoritosStore.cargar(cuenta.sesion.correo) ?: cuenta.favoritas
-        val pendiente = favoritoPendiente
-        favoritoPendiente = null
-        _favoritas.value = if (pendiente != null) guardadas + pendiente else guardadas
-        // También los de ejemplo: así siguen ahí cuando la sesión se abre sola al volver a la app.
-        favoritosStore.guardar(cuenta.sesion.correo, _favoritas.value)
-        _foto.value = perfilLocal?.foto(cuenta.sesion.correo)
-        _invitaciones.value = perfilLocal?.invitaciones(cuenta.sesion.correo) ?: 0
-        cuentasStore?.guardarSesion(cuenta.sesion.correo)
-        guardarCuentaActual()
-        _avisos.value = avisosStore?.cargar(cuenta.sesion.correo).orEmpty()
-        revisarAvisos()
+    // ── P-05 · Crear cuenta ──
+
+    fun onNombreChange(v: String) = _crear.update { it.copy(nombre = v, errorServidor = false, mensaje = null) }
+    fun onCorreoChange(v: String) = _crear.update { it.copy(correo = v, errorServidor = false, mensaje = null) }
+    fun onAceptaAvisoChange(v: Boolean) = _crear.update { it.copy(aceptaAviso = v) }
+
+    /**
+     * Abre la página de registro de Auth0. Al regresar, se guarda en el servidor el nombre de la
+     * familia y la aceptación del aviso de privacidad.
+     */
+    fun crearCuenta(actividad: Activity) {
+        val f = _crear.value
+        if (!f.puedeEnviar) return
+        if (!servicioSesion.configurada) {
+            _crear.update { it.copy(errorServidor = true, mensaje = mensajeSinAuth0()) }
+            return
+        }
+        viewModelScope.launch {
+            _crear.update { it.copy(enviando = true, errorServidor = false, mensaje = null) }
+            try {
+                servicioSesion.iniciar(actividad, registro = true, correo = f.correo.ifBlank { null })
+                cuentaRepository.completarPerfil(nombreFamilia = f.nombre.trim(), titular = null, aceptarAviso = true)
+                refrescarCuenta()
+                recibirAvisos(listOf(avisoBienvenida()), reemplazar = true)
+                _crear.value = CrearCuentaUi(lista = true)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                val mensaje = mensajeDe(e)
+                _crear.update { it.copy(enviando = false, errorServidor = mensaje != null, mensaje = mensaje) }
+            }
+        }
     }
 
-    /** Lo de la cuenta con sesión queda guardado en cuanto cambia, sin esperar a cerrar sesión. */
-    private fun guardarCuentaActual() {
-        val s = _sesion.value ?: return
-        val cuenta = cuentas[s.correo]
-            ?.copy(acompanantes = _acompanantes.value, inscripciones = _inscripciones.value, favoritas = _favoritas.value)
-            ?: return
-        cuentas[s.correo] = cuenta
-        cuentasStore?.guardar(CuentaLocal(s.correo, s.familia, s.titular, cuenta.clave, cuenta.acompanantes, cuenta.inscripciones))
+    fun crearAtendida() = _crear.update { it.copy(lista = false) }
+
+    // ── P-26 · Iniciar sesión ──
+
+    fun onCorreoEntrarChange(v: String) = _entrar.update { it.copy(correo = v, error = null) }
+
+    fun iniciarSesion(actividad: Activity) {
+        val f = _entrar.value
+        if (!f.puedeEnviar) return
+        if (!servicioSesion.configurada) {
+            _entrar.update { it.copy(error = mensajeSinAuth0()) }
+            return
+        }
+        viewModelScope.launch {
+            _entrar.update { it.copy(enviando = true, error = null) }
+            try {
+                servicioSesion.iniciar(actividad, registro = false, correo = f.correo.ifBlank { null })
+                if (refrescarCuenta() == null) throw ApiExcepcion(0, "sin_conexion", "Entraste, pero no pudimos leer tu cuenta. Revisa tu conexión.")
+                _entrar.value = IniciarSesionUi(lista = true)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _entrar.update { it.copy(enviando = false, error = mensajeDe(e)) }
+            }
+        }
     }
 
-    private fun guardarAjusteLugares() {
-        cuentasStore?.guardarAjusteLugares(_ajusteLugares.value)
-    }
+    fun entrarAtendida() = _entrar.update { it.copy(lista = false) }
 
-    private fun CuentaLocal.aGuardada() = CuentaGuardada(clave, Sesion(familia, correo, titular), acompanantes, inscripciones)
+    /**
+     * Cierra la sesión en TODOS lados: el servidor deja de aceptar el token, Auth0 revoca el
+     * refresh token y el teléfono borra los tokens y la copia de los datos de la familia.
+     */
+    fun cerrarSesion() {
+        viewModelScope.launch {
+            cuentaRepository.cerrarSesion()
+            servicioSesion.cerrar()
+            olvidarSesionLocal()
+        }
+    }
 
     // ── Foto de perfil e invitaciones ──
 
-    /** Guarda la foto elegida en el selector como foto de la cuenta. */
+    /** Sube la foto elegida (reducida y sin metadatos) y deja una copia en el teléfono. */
     fun cambiarFoto(uri: Uri?) {
         val correo = _sesion.value?.correo ?: return
         if (uri == null) return // Cancelar el selector deja la foto como estaba.
         viewModelScope.launch {
-            val ruta = withContext(Dispatchers.IO) { perfilLocal?.guardarFoto(correo, uri) }
-            if (ruta != null) _foto.value = ruta
+            runCatching {
+                val jpeg = withContext(Dispatchers.IO) {
+                    val bytes = perfilLocal?.leer(uri) ?: error("No se pudo leer la foto")
+                    Fotos.prepararParaSubir(bytes)
+                }
+                cuentaRepository.subirFoto(jpeg)
+                withContext(Dispatchers.IO) { perfilLocal?.guardarFoto(correo, jpeg) }
+            }.onSuccess { ruta -> if (ruta != null) _foto.value = ruta }
         }
     }
 
     fun quitarFoto() {
         val correo = _sesion.value?.correo ?: return
-        perfilLocal?.quitarFoto(correo)
-        _foto.value = null
+        viewModelScope.launch {
+            runCatching { cuentaRepository.quitarFoto() }.onSuccess {
+                perfilLocal?.quitarFoto(correo)
+                _foto.value = null
+            }
+        }
     }
 
     /** La familia compartió una invitación a una actividad. */
-    fun registrarInvitacion() {
-        val correo = _sesion.value?.correo ?: return
-        _invitaciones.value = perfilLocal?.sumarInvitacion(correo) ?: (_invitaciones.value + 1)
+    fun registrarInvitacion(actividadId: String) {
+        if (_sesion.value == null) return
+        viewModelScope.launch {
+            runCatching { cuentaRepository.registrarInvitacion(actividadId) }.onSuccess { _invitaciones.value = it }
+        }
     }
 
-    /** Pone o quita el corazón. Solo con sesión: quien llama decide qué hacer si no la hay. */
+    /** Pone o quita el corazón. Se ve de inmediato y, si el servidor no lo guarda, se regresa. */
     fun alternarFavorita(id: String) {
         val correo = _sesion.value?.correo ?: return
-        _favoritas.update { if (id in it) it - id else it + id }
+        val marcar = id !in _favoritas.value
+        _favoritas.update { if (marcar) it + id else it - id }
         favoritosStore.guardar(correo, _favoritas.value)
-        guardarCuentaActual()
         revisarAvisos()
+        viewModelScope.launch {
+            runCatching { cuentaRepository.marcarFavorito(id, marcar) }.onFailure {
+                _favoritas.update { actuales -> if (marcar) actuales - id else actuales + id }
+                favoritosStore.guardar(correo, _favoritas.value)
+            }
+        }
     }
 
     /** Sin sesión el corazón pide entrar; al hacerlo, queda marcado. */
@@ -432,71 +486,78 @@ class CuentaViewModel(
 
     fun onCorreoRecuperarChange(v: String) = _recuperar.update { it.copy(correo = v, enviado = false) }
 
-    /** Responde lo mismo exista o no el correo: así nadie averigua quién tiene cuenta. */
+    /**
+     * Auth0 manda el correo para poner una contraseña nueva. Se responde lo mismo exista o no el
+     * correo (y aunque falle): así nadie averigua quién tiene cuenta.
+     */
     fun enviarEnlace() {
-        if (!esCorreoValido(_recuperar.value.correo)) return
+        val correo = _recuperar.value.correo
+        if (!esCorreoValido(correo)) return
         viewModelScope.launch {
             _recuperar.update { it.copy(enviando = true) }
-            delay(800)
+            runCatching { if (servicioSesion.configurada) servicioSesion.recuperar(correo) }
             _recuperar.update { it.copy(enviando = false, enviado = true) }
         }
     }
 
     // ── Mi Perfil · Mi familia ──
 
-    /**
-     * Registra a una persona de la familia. Desde ese momento aparece sola en P-06 al inscribirse
-     * a cualquier actividad, y ahí se puede quitar a quien no va.
-     */
+    /** Registra a una persona de la familia. Mismo nombre = misma persona: se reemplaza. */
     fun agregarFamiliar(persona: Acompanante) {
+        val nombre = persona.nombre.trim()
         _acompanantes.update { actuales ->
-            val nombre = persona.nombre.trim()
-            // Mismo nombre = misma persona: se reemplaza para no duplicarla.
             actuales.filterNot { it.nombre.trim().equals(nombre, ignoreCase = true) } + persona.copy(nombre = nombre)
         }
-        guardarCuentaActual()
+        viewModelScope.launch {
+            runCatching { cuentaRepository.agregarAcompanante(persona.copy(nombre = nombre)) }
+            runCatching { _acompanantes.value = cuentaRepository.acompanantes() }
+        }
     }
 
     /** Lo quita de la familia registrada. Las inscripciones que ya hizo no cambian. */
     fun quitarFamiliar(persona: Acompanante) {
         _acompanantes.update { it - persona }
-        guardarCuentaActual()
+        viewModelScope.launch {
+            runCatching { cuentaRepository.quitarAcompanante(persona) }
+            runCatching { _acompanantes.value = cuentaRepository.acompanantes() }
+        }
     }
 
     // ── P-07 · Inscripciones ──
 
+    /**
+     * El servidor YA aceptó la inscripción (ver AcompanantesViewModel.confirmar): aquí solo se
+     * pone al día lo que ve la app y se avisa.
+     */
     fun registrarInscripcion(actividadId: String, acompanantes: List<Acompanante>) {
-        val anteriores = _inscripciones.value[actividadId]
-        // Si ya estaban inscritos, sus lugares viejos se devuelven antes de tomar los nuevos.
-        val cambio = -(1 + acompanantes.size) + (anteriores?.let { 1 + it.size } ?: 0)
         _inscripciones.update { it + (actividadId to acompanantes) }
-        // Mismo nombre = misma persona, aunque su edad ya haya cambiado desde que se registró.
         _acompanantes.update { guardados ->
             guardados + acompanantes.filter { nuevo -> guardados.none { it.nombre.trim().equals(nuevo.nombre.trim(), ignoreCase = true) } }
         }
-        _ajusteLugares.update { it + (actividadId to (it[actividadId] ?: 0) + cambio) }
-        guardarAjusteLugares()
-        guardarCuentaActual()
+        _sesion.value?.correo?.let { cuentasStore?.guardarInscritas(it, _inscripciones.value.keys) }
         actividad(actividadId)?.let { recibirAvisos(listOf(avisoInscripcion(it, 1 + acompanantes.size)), reemplazar = true) }
-        revisarAvisos()
+        recargarCatalogo()
     }
 
     // ── P-20 → P-32 · Cancelar ──
 
     fun cancelarInscripcion(actividadId: String) {
-        val acompanantes = _inscripciones.value[actividadId] ?: return
+        if (actividadId !in _inscripciones.value) return
         val actividad = actividad(actividadId) ?: return
         viewModelScope.launch {
             _cancelacion.value = CancelacionUi(actividadId)
-            delay(800)
-            val antes = lugaresDisponibles(actividad)
-            val liberados = 1 + acompanantes.size
-            _inscripciones.update { it - actividadId }
-            _ajusteLugares.update { it + (actividadId to (it[actividadId] ?: 0) + liberados) }
-            guardarAjusteLugares()
-            guardarCuentaActual()
-            recibirAvisos(listOf(avisoCancelacion(actividad, liberados)), reemplazar = true)
-            _cancelacion.value = CancelacionUi(actividadId, cancelando = false, liberados = liberados, antes = antes)
+            try {
+                val r = cuentaRepository.cancelar(actividadId)
+                _inscripciones.update { it - actividadId }
+                _sesion.value?.correo?.let { cuentasStore?.guardarInscritas(it, _inscripciones.value.keys) }
+                recibirAvisos(listOf(avisoCancelacion(actividad, r.liberados)), reemplazar = true)
+                _cancelacion.value = CancelacionUi(actividadId, cancelando = false, liberados = r.liberados, antes = r.antes)
+                recargarCatalogo()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _cancelacion.value = CancelacionUi(actividadId, cancelando = false, error = (e as? ApiExcepcion)?.message ?: "No se pudo cancelar.")
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
+import mx.tec.familiasquesuman.ui.state.intentar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,8 +30,7 @@ class InicioViewModel(
 
     private fun cargarDestacados() {
         viewModelScope.launch {
-            val lista = actividadRepository.getAsociaciones()
-            _asociacionDestacada.value = lista.firstOrNull()
+            intentar { actividadRepository.getAsociaciones() }.onSuccess { _asociacionDestacada.value = it.firstOrNull() }
         }
     }
 }

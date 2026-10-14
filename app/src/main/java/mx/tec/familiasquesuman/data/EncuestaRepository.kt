@@ -1,42 +1,58 @@
 package mx.tec.familiasquesuman.data
 
+import mx.tec.familiasquesuman.data.red.EncuestaCuerpo
+import mx.tec.familiasquesuman.data.red.RespuestaDto
+import mx.tec.familiasquesuman.data.red.aDominio
+import mx.tec.familiasquesuman.data.red.llamar
 import mx.tec.familiasquesuman.domain.MomentoEncuesta
 import mx.tec.familiasquesuman.domain.RespuestaEncuesta
-import mx.tec.familiasquesuman.domain.RespuestaPregunta
 
 /**
- * Las respuestas de las encuestas de antes y después (RF-13), ligadas a la actividad.
- * Viven en memoria; con el backend serán un POST y un GET por actividad o por familia.
+ * Las respuestas de las encuestas de antes y después (RF-13). La de antes se liga a la actividad;
+ * la de después, a la participación (en la app, su `actividadId` es el id de la participación).
  */
-class EncuestaRepository {
+interface EncuestaRepository {
+    /** Las de todas las familias: solo para quien tiene permiso de moderar (el servidor lo revisa). */
+    suspend fun getTodas(): List<RespuestaEncuesta>
+    suspend fun getDeFamilia(correo: String): List<RespuestaEncuesta>
+    suspend fun getPorActividad(actividadId: String): List<RespuestaEncuesta>
+    /** Si la misma familia ya había contestado esa encuesta, se reemplazan sus respuestas. */
+    suspend fun guardar(nueva: RespuestaEncuesta)
+}
 
-    private val respuestas = mutableListOf(
-        RespuestaEncuesta(
-            id = "e1", actividadId = "p3", actividadTitulo = "Regalando Estrellas Visita al Materno Infantil",
-            correo = "ana.rodriguez@correo.com", familia = "Familia Rodríguez", momento = MomentoEncuesta.DESPUES,
-            respuestas = listOf(
-                RespuestaPregunta(1, "¿Cómo se sintieron en la actividad?", "Muy bien, volveríamos"),
-                RespuestaPregunta(2, "¿Qué aprendieron tus hijos en esta actividad?", "Entendieron mejor cómo viven otras familias"),
-                RespuestaPregunta(3, "¿Qué tan clara fue la organización del día?", "Muy clara"),
-                RespuestaPregunta(4, "¿Volverían a participar en otra actividad?", "Sí, pronto")
-            ),
-            fecha = "2 ago 2026"
-        )
-    )
+class EncuestaRepositoryApi : EncuestaRepository {
 
-    suspend fun getTodas(): List<RespuestaEncuesta> = respuestas.toList()
+    override suspend fun getTodas(): List<RespuestaEncuesta> = llamar { todasLasEncuestas() }.map { it.aDominio("") }
 
-    suspend fun getDeFamilia(correo: String): List<RespuestaEncuesta> =
+    override suspend fun getDeFamilia(correo: String): List<RespuestaEncuesta> = llamar { misEncuestas() }.map { it.aDominio(correo) }
+
+    override suspend fun getPorActividad(actividadId: String): List<RespuestaEncuesta> =
+        llamar { todasLasEncuestas(actividadId) }.map { it.aDominio("") }
+
+    override suspend fun guardar(nueva: RespuestaEncuesta) {
+        val cuerpo = EncuestaCuerpo(nueva.respuestas.map { RespuestaDto(it.numero, it.pregunta, it.respuesta) })
+        when (nueva.momento) {
+            MomentoEncuesta.ANTES -> llamar { encuestaPrevia(nueva.actividadId, cuerpo) }
+            MomentoEncuesta.DESPUES -> llamar { encuestaFinal(nueva.actividadId, cuerpo) }
+        }
+    }
+}
+
+/** En memoria, para las pruebas unitarias. */
+class EncuestaRepositoryEnMemoria(iniciales: List<RespuestaEncuesta> = emptyList()) : EncuestaRepository {
+    private val respuestas = iniciales.toMutableList()
+
+    override suspend fun getTodas(): List<RespuestaEncuesta> = respuestas.toList()
+
+    override suspend fun getDeFamilia(correo: String): List<RespuestaEncuesta> =
         respuestas.filter { it.correo.equals(correo, ignoreCase = true) }
 
-    suspend fun getPorActividad(actividadId: String): List<RespuestaEncuesta> =
+    override suspend fun getPorActividad(actividadId: String): List<RespuestaEncuesta> =
         respuestas.filter { it.actividadId == actividadId }
 
-    /** Guarda las respuestas; si la misma familia ya había contestado esa encuesta, se reemplazan. */
-    suspend fun guardar(nueva: RespuestaEncuesta) {
+    override suspend fun guardar(nueva: RespuestaEncuesta) {
         respuestas.removeAll {
-            it.correo.equals(nueva.correo, ignoreCase = true) &&
-                it.actividadId == nueva.actividadId && it.momento == nueva.momento
+            it.correo.equals(nueva.correo, ignoreCase = true) && it.actividadId == nueva.actividadId && it.momento == nueva.momento
         }
         respuestas.add(0, nueva)
     }

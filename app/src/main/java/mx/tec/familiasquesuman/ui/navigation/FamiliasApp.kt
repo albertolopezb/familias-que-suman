@@ -1,5 +1,10 @@
 package mx.tec.familiasquesuman.ui.navigation
 
+import android.content.Intent
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
+import androidx.compose.runtime.DisposableEffect
+import androidx.core.util.Consumer
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -46,7 +51,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import mx.tec.familiasquesuman.domain.UsuariosHardcodeados
+import mx.tec.familiasquesuman.ui.screens.inscripcion.comoUsuario
 import mx.tec.familiasquesuman.ui.components.DestinoPerfil
 import mx.tec.familiasquesuman.ui.components.LocalIrAPerfil
 import mx.tec.familiasquesuman.ui.screens.actividades.RutasActividades
@@ -83,12 +88,18 @@ fun FamiliasApp() {
     val cuenta = cuentaViewModel()
     val sesion by cuenta.sesion.collectAsStateWithLifecycle()
 
-    // Manejo del usuario actual sincronizado con la sesión
-    var usuarioActualOverride by remember<MutableState<Usuario?>> { mutableStateOf(null) }
+    // Un enlace (o una notificación) que llega con la app ya abierta entra por onNewIntent
+    // (launchMode singleTop): se le pasa a la navegación para abrir la pantalla que pide.
+    val actividadActual = LocalActivity.current as? ComponentActivity
+    DisposableEffect(nav, actividadActual) {
+        val escucha = Consumer<Intent> { intento -> nav.handleDeepLink(intento) }
+        actividadActual?.addOnNewIntentListener(escucha)
+        onDispose { actividadActual?.removeOnNewIntentListener(escucha) }
+    }
 
-    // Si la sesión cambia o se actualiza, obtenemos el usuario correspondiente al correo activo
-    val usuarioActual = usuarioActualOverride
-        ?: UsuariosHardcodeados.obtenerPorCorreo(sesion?.correo)
+    // Quién es y si es admin lo dice el SERVIDOR (permisos de Auth0 en el token). La app solo lo
+    // usa para enseñar u ocultar botones; cada acción de admin la vuelve a revisar la API.
+    val usuarioActual = sesion.comoUsuario()
 
     val abrirConSesion: (String) -> Unit = { ruta ->
         if (cuenta.sesion.value == null) {
@@ -101,8 +112,6 @@ fun FamiliasApp() {
 
     // Al cerrar sesión, lo que era solo de la familia desaparece y se vuelve al Inicio.
     LaunchedEffect(sesion) {
-        // Limpiamos la sobreescritura manual si el usuario cierra o cambia de sesión
-        usuarioActualOverride = null
         if (sesion == null && rutaActual in rutasConSesion) {
             nav.navigate(RutasInicio.INICIO) {
                 popUpTo(RutasInicio.INICIO) { inclusive = false }
@@ -141,10 +150,7 @@ fun FamiliasApp() {
                     nav.navigate(RutasInscripcion.CREAR_CUENTA) { launchSingleTop = true }
                 }
 
-                DestinoPerfil.CERRAR_SESION -> {
-                    usuarioActualOverride = null
-                    cuenta.cerrarSesion()
-                }
+                DestinoPerfil.CERRAR_SESION -> cuenta.cerrarSesion()
             }
         }
     ) {
@@ -170,14 +176,8 @@ fun FamiliasApp() {
                 grafoPerfil(
                     nav = nav,
                     usuarioActual = { usuarioActual },
-                    onSwitchCuenta = { esAdmin ->
-                        // Cambiamos usuarioActualOverride (la variable var) en lugar de usuarioActual
-                        usuarioActualOverride = if (esAdmin) {
-                            UsuariosHardcodeados.USUARIO_ADMIN
-                        } else {
-                            UsuariosHardcodeados.USUARIO_NORMAL
-                        }
-                    }
+                    // Ya no se puede "cambiar a admin" desde el teléfono.
+                    onSwitchCuenta = {}
                 )
 
                 grafoInicio(

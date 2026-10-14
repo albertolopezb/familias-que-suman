@@ -1,5 +1,7 @@
 package mx.tec.familiasquesuman.ui.screens.perfil
 
+import mx.tec.familiasquesuman.ui.state.intentar
+import mx.tec.familiasquesuman.ui.state.mensajeParaPersona
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -110,7 +112,7 @@ class EncuestaViewModel(
         if (contestadas.size != actual.definicion.preguntas.size) return
         _estado.value = actual.copy(guardando = true)
         viewModelScope.launch {
-            repositorio.guardar(
+            val guardado = intentar { repositorio.guardar(
                 RespuestaEncuesta(
                     id = "e${System.currentTimeMillis()}",
                     actividadId = actividadId,
@@ -121,9 +123,13 @@ class EncuestaViewModel(
                     respuestas = contestadas,
                     fecha = LocalDate.now().format(FormatoFecha)
                 )
-            )
-            _estado.value = _estado.value.copy(guardando = false)
-            alTerminar()
+            ) }
+            if (guardado.isSuccess) {
+                _estado.value = _estado.value.copy(guardando = false)
+                alTerminar()
+            } else {
+                _estado.value = _estado.value.copy(guardando = false, mensaje = guardado.exceptionOrNull()?.mensajeParaPersona())
+            }
         }
     }
 

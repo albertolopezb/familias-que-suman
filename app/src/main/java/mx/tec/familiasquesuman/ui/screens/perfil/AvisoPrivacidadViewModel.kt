@@ -1,5 +1,7 @@
 package mx.tec.familiasquesuman.ui.screens.perfil
 
+import mx.tec.familiasquesuman.ui.state.intentar
+import mx.tec.familiasquesuman.ui.state.mensajeParaPersona
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
@@ -28,7 +30,7 @@ class AvisoPrivacidadViewModel(private val repositorio: PerfilRepository) : View
     fun cargar(correo: String?) {
         if (correo == null) return
         viewModelScope.launch {
-            repositorio.getSolicitudEliminacion(correo)?.let { folio -> _estado.update { it.copy(folio = folio) } }
+            intentar { repositorio.getSolicitudEliminacion(correo) }.getOrNull()?.let { folio -> _estado.update { it.copy(folio = folio) } }
         }
     }
 
@@ -40,9 +42,9 @@ class AvisoPrivacidadViewModel(private val repositorio: PerfilRepository) : View
         if (_estado.value.enviando) return
         viewModelScope.launch {
             _estado.update { it.copy(confirmando = false, enviando = true) }
-            delay(900)
-            val folio = repositorio.solicitarEliminacion(correo)
-            _estado.update { it.copy(enviando = false, folio = folio) }
+            intentar { repositorio.solicitarEliminacion(correo) }
+                .onSuccess { folio -> _estado.update { it.copy(enviando = false, folio = folio) } }
+                .onFailure { e -> _estado.update { it.copy(enviando = false, mensaje = e.mensajeParaPersona()) } }
         }
     }
 }

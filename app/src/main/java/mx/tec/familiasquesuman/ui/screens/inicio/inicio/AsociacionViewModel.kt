@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
+import mx.tec.familiasquesuman.ui.state.intentar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +18,7 @@ class AsociacionViewModel(
 
     fun cargarAsociacion(id: String) {
         viewModelScope.launch {
-            _asociacion.value = actividadRepository.getAsociacion(id)
+            intentar { actividadRepository.getAsociacion(id) }.onSuccess { _asociacion.value = it }
         }
     }
 }

@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.perfil
 
+import mx.tec.familiasquesuman.ui.state.intentar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,7 @@ class RespuestasEncuestasViewModel(private val repositorio: EncuestaRepository) 
     /** @param actividadId si viene, solo las de esa actividad. */
     fun cargar(correo: String?, actividadId: String?) {
         viewModelScope.launch {
-            val todas = if (correo != null) repositorio.getDeFamilia(correo) else repositorio.getTodas()
+            val todas = intentar { if (correo != null) repositorio.getDeFamilia(correo) else repositorio.getTodas() }.getOrDefault(emptyList())
             _respuestas.value = if (actividadId.isNullOrBlank()) todas else todas.filter { it.actividadId == actividadId }
         }
     }

@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import mx.tec.familiasquesuman.domain.UsuariosHardcodeados
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
 import mx.tec.familiasquesuman.ui.theme.AmbarAcento
 import mx.tec.familiasquesuman.ui.theme.AzulMarinoPrimario
@@ -56,7 +55,7 @@ fun BotonPerfil(modifier: Modifier = Modifier, sobreAzul: Boolean = false) {
     val foto by cuenta.foto.collectAsStateWithLifecycle()
     val sinLeer by cuenta.sinLeer.collectAsStateWithLifecycle()
     val conSesion = sesion != null
-    val esAdmin = UsuariosHardcodeados.obtenerPorCorreo(sesion?.correo).esAdmin
+    val esAdmin = sesion?.esAdmin == true
 
     var abierto by remember { mutableStateOf(false) }
     val irA = LocalIrAPerfil.current

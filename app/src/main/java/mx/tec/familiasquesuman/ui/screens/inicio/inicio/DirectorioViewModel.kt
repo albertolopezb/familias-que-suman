@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
+import mx.tec.familiasquesuman.ui.state.intentar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,8 +28,8 @@ class DirectorioViewModel(
 
     private fun cargar() {
         viewModelScope.launch {
-            _proyectos.value = actividadRepository.getProyectos()
-            _centros.value = actividadRepository.getCentros()
+            intentar { actividadRepository.getProyectos() }.onSuccess { _proyectos.value = it }
+            intentar { actividadRepository.getCentros() }.onSuccess { _centros.value = it }
         }
     }
 
@@ -47,14 +48,14 @@ class DirectorioViewModel(
                 vigencia = v[4].trim().ifBlank { null },
                 activo = v[5] == "true"
             )
-            if (original == null) actividadRepository.agregarProyecto(nuevo) else actividadRepository.editarProyecto(nuevo)
+            intentar { if (original == null) actividadRepository.agregarProyecto(nuevo) else actividadRepository.editarProyecto(nuevo) }
             cargar()
         }
     }
 
     fun borrarProyecto(id: String) {
         viewModelScope.launch {
-            actividadRepository.borrarProyecto(id)
+            intentar { actividadRepository.borrarProyecto(id) }
             cargar()
         }
     }
@@ -73,14 +74,14 @@ class DirectorioViewModel(
                 direccion = v[5].trim(),
                 verificado = v[6] == "true"
             )
-            if (original == null) actividadRepository.agregarCentro(nuevo) else actividadRepository.editarCentro(nuevo)
+            intentar { if (original == null) actividadRepository.agregarCentro(nuevo) else actividadRepository.editarCentro(nuevo) }
             cargar()
         }
     }
 
     fun borrarCentro(id: String) {
         viewModelScope.launch {
-            actividadRepository.borrarCentro(id)
+            intentar { actividadRepository.borrarCentro(id) }
             cargar()
         }
     }

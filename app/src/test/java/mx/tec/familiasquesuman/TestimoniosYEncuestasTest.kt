@@ -1,8 +1,8 @@
 package mx.tec.familiasquesuman
 
 import kotlinx.coroutines.runBlocking
-import mx.tec.familiasquesuman.data.EncuestaRepository
-import mx.tec.familiasquesuman.data.TestimonioRepository
+import mx.tec.familiasquesuman.data.EncuestaRepositoryEnMemoria
+import mx.tec.familiasquesuman.data.TestimonioRepositoryEnMemoria
 import mx.tec.familiasquesuman.domain.MomentoEncuesta
 import mx.tec.familiasquesuman.domain.RespuestaEncuesta
 import mx.tec.familiasquesuman.domain.RespuestaPregunta
@@ -21,13 +21,13 @@ class TestimoniosYEncuestasTest {
     // ── RF-12: se publica al enviar y se puede eliminar, solo por su autora o autor o por el admin ──
 
     @Test fun unTestimonioSePublicaAlEnviarse() = runBlocking {
-        val repo = TestimonioRepository()
+        val repo = TestimonioRepositoryEnMemoria()
         repo.publicar(testimonio(participacion = "p9"))
         assertTrue(repo.getTodos().any { it.participacionId == "p9" })
     }
 
     @Test fun publicarDeNuevoLaMismaParticipacionLaReemplaza() = runBlocking {
-        val repo = TestimonioRepository()
+        val repo = TestimonioRepositoryEnMemoria()
         repo.publicar(testimonio(id = "a", participacion = "p9"))
         repo.publicar(testimonio(id = "b", participacion = "p9").copy(experiencia = "Ahora lo conté mejor, con más detalle."))
         val propios = repo.getDeFamilia("a@correo.com").filter { it.participacionId == "p9" }
@@ -36,7 +36,7 @@ class TestimoniosYEncuestasTest {
     }
 
     @Test fun laAutoraPuedeEliminarSuTestimonio() = runBlocking {
-        val repo = TestimonioRepository()
+        val repo = TestimonioRepositoryEnMemoria()
         repo.publicar(testimonio(participacion = "p9"))
         val id = repo.getDeFamilia("a@correo.com").single { it.participacionId == "p9" }.id
         assertTrue(repo.eliminar(id, "A@Correo.com", esAdmin = false))
@@ -44,7 +44,7 @@ class TestimoniosYEncuestasTest {
     }
 
     @Test fun otraFamiliaOUnVisitanteNoPuedenEliminarTestimoniosAjenos() = runBlocking {
-        val repo = TestimonioRepository()
+        val repo = TestimonioRepositoryEnMemoria()
         repo.publicar(testimonio(participacion = "p9"))
         val id = repo.getDeFamilia("a@correo.com").single { it.participacionId == "p9" }.id
         assertFalse(repo.eliminar(id, "otra@correo.com", esAdmin = false))
@@ -53,7 +53,7 @@ class TestimoniosYEncuestasTest {
     }
 
     @Test fun elAdminPuedeEliminarCualquierTestimonio() = runBlocking {
-        val repo = TestimonioRepository()
+        val repo = TestimonioRepositoryEnMemoria()
         repo.publicar(testimonio(participacion = "p9"))
         val id = repo.getDeFamilia("a@correo.com").single { it.participacionId == "p9" }.id
         assertTrue(repo.eliminar(id, "admin@correo.com", esAdmin = true))
@@ -61,14 +61,14 @@ class TestimoniosYEncuestasTest {
     }
 
     @Test fun eliminarUnoQueNoExisteNoHaceNada() = runBlocking {
-        val repo = TestimonioRepository()
+        val repo = TestimonioRepositoryEnMemoria()
         val antes = repo.getTodos().size
         assertFalse(repo.eliminar("no-existe", "admin@correo.com", esAdmin = true))
         assertEquals(antes, repo.getTodos().size)
     }
 
     @Test fun despuesDeEliminarSePuedeCompartirOtroDeLaMismaActividad() = runBlocking {
-        val repo = TestimonioRepository()
+        val repo = TestimonioRepositoryEnMemoria()
         repo.publicar(testimonio(participacion = "p9"))
         val id = repo.getDeFamilia("a@correo.com").single { it.participacionId == "p9" }.id
         repo.eliminar(id, "a@correo.com", esAdmin = false)
@@ -94,7 +94,7 @@ class TestimoniosYEncuestasTest {
         )
 
     @Test fun lasRespuestasSeConsultanPorActividadYPorFamilia() = runBlocking {
-        val repo = EncuestaRepository()
+        val repo = EncuestaRepositoryEnMemoria()
         repo.guardar(respuesta("act9", MomentoEncuesta.ANTES))
         repo.guardar(respuesta("act9", MomentoEncuesta.DESPUES))
         repo.guardar(respuesta("act9", MomentoEncuesta.ANTES, correo = "b@correo.com"))
@@ -105,7 +105,7 @@ class TestimoniosYEncuestasTest {
     }
 
     @Test fun contestarDeNuevoLaMismaEncuestaLaReemplaza() = runBlocking {
-        val repo = EncuestaRepository()
+        val repo = EncuestaRepositoryEnMemoria()
         repo.guardar(respuesta("act7", MomentoEncuesta.ANTES, texto = "Sí"))
         repo.guardar(respuesta("act7", MomentoEncuesta.ANTES, texto = "No"))
         val guardadas = repo.getPorActividad("act7")

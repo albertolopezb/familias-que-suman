@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.actividades
 
+import mx.tec.familiasquesuman.ui.state.intentar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
@@ -49,11 +50,14 @@ class MisActividadesViewModel(
         viewModelScope.launch {
             if (primeraCarga) {
                 _estado.value = UiState.Cargando
-                delay(500)
                 primeraCarga = false
             }
-            val testimonios = correoDeLaCuenta?.let { testimonioRepository.getDeFamilia(it) }.orEmpty()
-            val respuestas = correoDeLaCuenta?.let { encuestaRepository.getDeFamilia(it) }.orEmpty()
+            val testimonios = correoDeLaCuenta?.let { c -> intentar { testimonioRepository.getDeFamilia(c) }.getOrNull() }.orEmpty()
+            val respuestas = correoDeLaCuenta?.let { c -> intentar { encuestaRepository.getDeFamilia(c) }.getOrNull() }.orEmpty()
+            val historial = intentar { perfilRepository.getHistorial(correoDeLaCuenta) }.getOrElse {
+                if (_estado.value !is UiState.Exito) _estado.value = UiState.Error("No pudimos cargar tus actividades. Revisa tu conexión.")
+                return@launch
+            }
             val despues = respuestas.filter { it.momento == MomentoEncuesta.DESPUES }.map { it.actividadId }.toSet()
             _estado.value = UiState.Exito(
                 MisActividades(
@@ -62,7 +66,7 @@ class MisActividadesViewModel(
                         runCatching { actividadRepository.getActividadConAsociacion(id) }.getOrNull()
                     }.filter { !it.actividad.yaPaso }
                         .sortedBy { fechaDeTexto(it.actividad.fecha) ?: java.time.LocalDate.MAX },
-                    historial = perfilRepository.getHistorial(correoDeLaCuenta).map { p ->
+                    historial = historial.map { p ->
                         p.copy(estado = estadoDe(p, testimonios.any { it.participacionId == p.id }, p.id in despues))
                     },
                     conEncuestaPrevia = respuestas.filter { it.momento == MomentoEncuesta.ANTES }.map { it.actividadId }.toSet(),

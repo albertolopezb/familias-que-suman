@@ -75,7 +75,7 @@ fun PerfilScreen(
     onFavoritosClick: () -> Unit,
     onInsigniasClick: () -> Unit,
     modifier: Modifier = Modifier,
-    usuarioActual: Usuario = mx.tec.familiasquesuman.domain.UsuariosHardcodeados.USUARIO_NORMAL,
+    usuarioActual: Usuario = Usuario.INVITADO,
     onMisActividadesClick: () -> Unit = {},
     onSwitchCuenta: (Boolean) -> Unit = {},
     accesosDisponibles: Boolean = true,
