@@ -3,7 +3,8 @@
 #   · pruebas    → lo mismo + las dependencias de desarrollo y las pruebas.
 # docker-compose.yml elige la etapa con `target:`.
 
-FROM python:3.13-slim-bookworm AS base
+# 3.12: Oso (el motor de políticas ABAC) publica sus paquetes compilados hasta esa versión.
+FROM python:3.12-slim-bookworm AS base
 COPY --from=ghcr.io/astral-sh/uv:0.12.9 /uv /bin/uv
 
 ENV UV_LINK_MODE=copy \

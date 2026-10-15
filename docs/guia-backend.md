@@ -15,7 +15,7 @@ está (archivo y línea, o contenedor) y por qué se decidió así.
 1. [Resumen en una página](#1-resumen-en-una-página)
 2. [La arquitectura: del pizarrón a los contenedores](#2-la-arquitectura-del-pizarrón-a-los-contenedores)
 3. [Cómo levantarlo, paso a paso](#3-cómo-levantarlo-paso-a-paso)
-4. [Auth0: configuración completa del tenant](#4-auth0-configuración-completa-del-tenant)
+4. [Identidad y autorización con JWT](#4-identidad-y-autorización-con-jwt)
 5. [Cada componente a detalle](#5-cada-componente-a-detalle)
 6. [La API: inventario de endpoints](#6-la-api-inventario-de-endpoints)
 7. [Catálogo de medidas de seguridad (S-01 … S-40)](#7-catálogo-de-medidas-de-seguridad)
@@ -34,7 +34,7 @@ está (archivo y línea, o contenedor) y por qué se decidió así.
 
 ## 1. Resumen en una página
 
-**Qué es:** una API REST hecha con **FastAPI** (Python 3.13) que sirve todo lo que muestra la app:
+**Qué es:** una API REST hecha con **FastAPI** (Python 3.12) que sirve todo lo que muestra la app:
 catálogo (actividades, asociaciones, campañas, proyectos, centros), la cuenta de cada familia
 (perfil, acompañantes, favoritos, foto), inscripciones con cupo, historial, testimonios con foto,
 encuestas, aportaciones a campañas, sugerencias, privacidad y administración.
@@ -47,17 +47,18 @@ encuestas, aportaciones a campañas, sugerencias, privacidad y administración.
 | Base de datos | PostgreSQL 16 | Los datos |
 | Migraciones | Flyway 11 | Crear y cambiar las tablas en orden, versionado en Git |
 | Fotos | RustFS (compatible con S3) | Fotos de perfil y de testimonios |
-| Contadores | Redis 8.8 | Rate limit y sesiones cerradas |
-| Identidad | **Auth0** (servicio en la nube) | Registro, inicio de sesión, contraseñas, emisión de JWT RS256 |
+| Contadores | Redis 8.8 | Rate limit, intentos fallidos de inicio de sesión y sesiones cerradas |
+| Identidad | **JWT propio** (PyJWT, HS256) + **Argon2id** | Registro, inicio de sesión, hash de contraseñas, emisión y verificación de tokens |
+| Autorización | **Oso** (reglas en Polar) | Políticas ABAC declarativas con los atributos del token |
 | Salida a internet | Cloudflare Tunnel (`cloudflared`) | HTTPS público sin abrir puertos |
 | Monitoreo | Prometheus 3.15 + Grafana 13.2 | Métricas, alertas de seguridad, tablero |
 | Escaneo | OWASP ZAP 2.17 | Ataque automático a la API |
-| Pruebas | pytest | 104 pruebas contra la base, Redis y el almacén reales |
+| Pruebas | pytest | 147 pruebas contra la base, Redis y el almacén reales |
 
 **Números de esta entrega:**
 
-- **66 operaciones** documentadas en OpenAPI (más la página pública de invitación y `assetlinks.json`).
-- **104 pruebas automáticas** de la API, todas en verde (§12).
+- **69 operaciones** documentadas en OpenAPI (más la página pública de invitación y `assetlinks.json`).
+- **147 pruebas automáticas** de la API, todas en verde (§12).
 - **OWASP ZAP: 0 alertas altas, 0 medias, 0 bajas** (1 informativa) (§13).
 - **40 medidas de seguridad** catalogadas (§7), mapeadas a OWASP Top 10 2025, OWASP API Top 10
   2023 y CWE Top 25 (§8).
@@ -78,7 +79,6 @@ docker compose up -d --build
 ```mermaid
 flowchart LR
     tel["App Android"] -- "HTTPS (TLS 1.3)" --> cf(("Cloudflare"))
-    tel -- "Inicio de sesión (Universal Login + PKCE)" --> a0[("Auth0")]
     cf -- "túnel cifrado (saliente)" --> tunel
     zap["OWASP ZAP"] -. "escaneo" .-> api
     subgraph Docker
@@ -86,11 +86,11 @@ flowchart LR
         api --> db[("PostgreSQL")]
         api --> s3[("RustFS · S3")]
         api --> redis[("Redis")]
+        api -- "politicas.polar" --> oso["Oso (ABAC)"]
         prom["Prometheus"] -- "lee métricas :9100" --> api
         graf["Grafana"] --> prom
         migrar["Flyway"] --> db
     end
-    api -- "llaves públicas (JWKS) y /userinfo" --> a0
     monitor["Navegador del equipo\n127.0.0.1:3000"] --> graf
 ```
 
@@ -101,8 +101,8 @@ flowchart LR
 | **Docker** (el recuadro) | Todo el backend corre en contenedores, con un solo comando | `backend/docker-compose.yml` |
 | **DB** | PostgreSQL 16 | servicio `db` (línea 32 del compose) |
 | **S3** | Almacén de objetos compatible con S3: RustFS | servicio `almacen` (línea 86) |
-| **Auth0** (la flecha a DB) | Auth0 emite los tokens. La flecha a la DB es el **alta automática**: la primera vez que alguien entra, la API crea su cuenta local ligada a su `sub` de Auth0 | Auth0 vive en la nube; la parte que verifica está en `backend/api/app/identidad.py` |
-| La **cajita sin nombre** | Redis: contadores del rate limit y sesiones cerradas | servicio `redis` (línea 110) |
+| **Auth** (la flecha a DB) | La identidad la lleva la propia API: compara la contraseña contra el hash Argon2id de la DB y firma el JWT. Ya no hay servicio externo | `backend/api/app/identidad.py` y `routers/sesion.py` |
+| La **cajita sin nombre** | Redis: contadores del rate limit, intentos fallidos y sesiones cerradas | servicio `redis` (línea 110) |
 | **FastAPI** | La API | servicio `api` (línea 128), código en `backend/api/app/` |
 | **Tunnel** | Cloudflare Tunnel | servicio `tunel` (línea 173, perfil `tunel`) |
 | La **nube** junto al túnel | La red de Cloudflare (termina el TLS, absorbe DDoS) | — |
@@ -117,11 +117,11 @@ flowchart LR
 | Pizarrón | Qué se hizo | Medidas (§7) |
 |---|---|---|
 | **SQLi ⇒ PS, ORM** | Todas las consultas pasan por SQLAlchemy (ORM) y viajan como consultas parametrizadas (*prepared statements*). Cero SQL armado con texto. | S-01, S-02, S-03, S-15 |
-| **AA ⇒ JWT** | Autenticación con JWT RS256 de Auth0, verificados con sus llaves públicas | S-04, S-18 |
+| **AA ⇒ JWT** | Identificación con JWT HS256 que emite y verifica la API (`POST /v1/sesion/iniciar`, como el `/login` de s23) | S-04, S-18 |
 | **AA ⇒ UUID** | Todos los identificadores son UUID v4 | S-05 |
-| **AA ⇒ ABAC (políticas)** | Autorización por atributos, con las políticas en un solo archivo | S-06, S-07 |
-| **AA ⇒ Hashed Pw DB** | Las contraseñas viven con hash (bcrypt) en la base de usuarios de Auth0; en nuestra base ya no queda ni el hash; la app nunca ve la contraseña | S-08 |
-| **BF ⇒ Rate limit** | Rate limit global por IP y por flujo/cuenta (slowapi + Redis); protección de fuerza bruta de Auth0 en el login | S-09 |
+| **AA ⇒ ABAC (políticas)** | Autorización por atributos con Oso: las reglas en Polar (`politicas.polar`), los atributos del sujeto salen del JWT | S-06, S-07 |
+| **AA ⇒ Hashed Pw DB** | Las contraseñas viven en nuestra base **solo** como hash Argon2id con sal; la app no las guarda | S-08 |
+| **BF ⇒ Rate limit** | Rate limit global por IP y por flujo/cuenta (slowapi + Redis); en el login además bloqueo por correo tras 5 fallos | S-09 |
 | **Sec ⇒ HTTP Sec** | Encabezados de seguridad en cada respuesta, HSTS, CSP | S-10, S-12 |
 | **OWASP ZAP ⇒ ✓ OK** | Escaneo activo: 0 alertas altas, medias o bajas | S-11 |
 
@@ -162,7 +162,6 @@ de datos, Redis ni el almacén, porque no comparte red con ellos. Es *defensa en
 - Docker Desktop (con espacio en disco: el disco virtual de Docker crece con las imágenes; si tu
   C: anda justo, en *Settings → Resources → Advanced → Disk image location* muévelo a otra unidad).
 - Para la app: Android Studio.
-- Para iniciar sesión: un tenant de Auth0 (gratis), §4.
 
 ### 3.2 Primer arranque
 
@@ -175,7 +174,7 @@ docker compose up -d --build
 Qué pasa, en orden (`depends_on` del compose):
 
 1. `db` arranca y espera a estar sano (`pg_isready`).
-2. `migrar` (Flyway) aplica `V1…V6` y después `afterMigrate.sql` (crea/actualiza el usuario de
+2. `migrar` (Flyway) aplica `V1…V7` y después `afterMigrate.sql` (crea/actualiza el usuario de
    mínimo privilegio de la API). Termina.
 3. `seed` carga los datos de prueba. Termina.
 4. `almacen` (RustFS) y `redis` arrancan con su *healthcheck*.
@@ -202,7 +201,8 @@ Todas están explicadas en `backend/.env.example`. Las importantes:
 | `ENTORNO` | `desarrollo` o `produccion` | En producción la API **no arranca** con secretos de ejemplo (S-17) y no publica `/docs` |
 | `POSTGRES_USER/PASSWORD` | Dueño de la base | Lo usan Flyway y el seed. **La API nunca lo recibe** |
 | `DB_API_USUARIO/CONTRASENA` | El usuario con el que entra la API | Mínimo privilegio (S-15) |
-| `AUTH0_DOMINIO`, `AUTH0_AUDIENCIA`, `AUTH0_CLIENTE_APP` | Tu tenant de Auth0 | §4 |
+| `JWT_SECRETO` | El secreto con que la API firma los tokens (HS256) | Mínimo 32 caracteres en producción y distinto de `HMAC_SECRETO` (§4.10) |
+| `JWT_MINUTOS` | Cuánto dura una sesión | `1440` (un día) |
 | `STORAGE_ROOT_USER/PASSWORD` | Llaves del almacén | |
 | `REDIS_CONTRASENA` | Contraseña de Redis | |
 | `HMAC_SECRETO` | Llave para seudonimizar IPs | Mínimo 32 caracteres en producción |
@@ -231,87 +231,133 @@ dos testimonios, una encuesta y una aportación.
 - Las fechas de las actividades se calculan **desde hoy** (función `pg_temp.fecha`), así siempre
   hay actividades próximas y otras pasadas.
 - El catálogo se **actualiza** en cada `up`; lo de la familia de prueba solo se agrega si no existe.
-- Las contraseñas ya no están aquí: la cuenta de Ana se crea en Auth0 y se **vincula** (§4.9).
+- Las cuentas de prueba entran con contraseña: `ana.rodriguez@correo.com` / `familia123` y
+  `admin@correo.com` / `admin123` (§4.8). En la base solo queda su hash Argon2id.
 
 ### 3.6 Si vienes de la versión anterior
 
-La V6 cambia mucho el esquema (las contraseñas salen de la base) y el seed cambió sus datos. Para
+**De la versión con Auth0:** basta con `docker compose up -d --build`. La V7 agrega
+`contrasena_hash`, `permisos` y `tokens_validos_desde`, quita `auth0_sub`, y el seed les pone
+contraseña a las cuentas de prueba. Si en tu `.env` quedaron `AUTH0_*`, ya no se usan: bórralas y
+agrega `JWT_SECRETO`.
+
+**De antes de la V6:** la V6 cambia mucho el esquema (las contraseñas salen de la base) y el seed cambió sus datos. Para
 empezar limpio en tu máquina: `docker compose down -v` y después `docker compose up -d --build`
 (borra los datos locales). El servicio de fotos ahora se llama `almacen` y usa RustFS; el
 contenedor viejo `almacenamiento` (MinIO) se quita con `docker compose up -d --remove-orphans`.
 
 ---
 
-## 4. Auth0: configuración completa del tenant
+## 4. Identidad y autorización con JWT
 
-### 4.1 Qué es Auth0 y por qué
+Es el esquema de la guía de clase **s23 · "Stateless Identity: JWT Authentication in FastAPI"** y
+**"Integrating JWT with ABAC"**, aplicado a la app: la API **emite** y **verifica** sus propios
+tokens; no hay ningún servicio externo de identidad que configurar.
 
-**Auth0** (de Okta) es un servicio de identidad: registra personas, guarda sus contraseñas, las
-protege contra ataques y emite **tokens** que dicen quién es cada quien. Es la caja "Auth0" del
-pizarrón.
+### 4.1 Por qué así
 
-Por qué así:
+- **Lo que pide la guía.** Identificación con un `POST /login` que valida credenciales y regresa un
+  JWT firmado; una dependencia que extrae y verifica el `Bearer` en cada petición
+  (`get_current_user`); y la **autorización** con los atributos del token evaluados por Oso con
+  reglas escritas en Polar.
+- **Nunca confiar en un encabezado sin firma.** Un `x-user: admin` lo escribe cualquiera; un JWT
+  no se puede alterar sin el secreto (s23 §3).
+- **Sin estado.** La API no guarda sesiones: cada petición trae su token firmado y cualquier copia
+  de la API lo puede verificar. Lo único que se guarda (en Redis) es la lista de tokens que se
+  cerraron antes de vencer (S-18).
 
-- **No reinventar la criptografía de contraseñas.** Auth0 guarda las contraseñas con bcrypt, revisa
-  contraseñas filtradas, bloquea fuerza bruta y frena IPs sospechosas. Hacerlo bien uno mismo es
-  difícil (OWASP A07, "Authentication Failures").
-- **Firmas asimétricas (RS256).** Auth0 firma con su llave **privada**; la API solo tiene la
-  **pública**. Con la pública se verifica pero no se firma: aunque alguien robara la API completa,
-  no podría fabricar tokens (s22, "Choosing the right algorithm": HS256 vs RS256).
-- **Estándares.** OAuth 2.0, OpenID Connect y PKCE, los que usa la industria.
-
-**Lo que NO queda en Docker:** Auth0 es un servicio en la nube; no existe una imagen oficial para
-correrlo en tu máquina. En Docker queda la parte que **verifica** (`identidad.py`) y la base donde
-se guarda la cuenta local de cada familia.
+> **Historia:** la entrega anterior usaba Auth0 (Universal Login + JWT RS256). Se quitó porque iba
+> un paso adelante de lo que se pedía y obligaba a configurar un tenant en la nube para poder
+> entrar. Ver `docs/bitacora.md` (2026-10-15).
 
 ### 4.2 El flujo completo
 
 ```mermaid
 sequenceDiagram
     participant App
-    participant Auth0
     participant API
+    participant Redis
     participant DB as PostgreSQL
-    App->>App: genera code_verifier (al azar) y code_challenge = SHA-256(verifier)
-    App->>Auth0: abre Universal Login (Custom Tab) con code_challenge
-    Note over Auth0: la persona escribe correo y contraseña<br/>EN LA PÁGINA DE AUTH0 (la app no la ve)
-    Auth0->>App: regresa con un código (familiasquesuman-auth://…/callback)
-    App->>Auth0: código + code_verifier
-    Auth0->>App: access token (JWT RS256) + refresh token + id token
-    App->>App: guarda los tokens cifrados (Android Keystore)
-    App->>API: GET /v1/yo · Authorization: Bearer <access token>
-    API->>Auth0: (1 vez por hora) llaves públicas JWKS
-    API->>API: verifica firma, alg, iss, aud, exp, sesión no cerrada
-    API->>Auth0: (solo la primera vez) /userinfo → correo
-    API->>DB: crea o encuentra la cuenta de ese sub
-    API->>App: el perfil
+    App->>API: POST /v1/sesion/iniciar {correo, contrasena} (HTTPS)
+    API->>Redis: ¿este correo está bloqueado por intentos fallidos?
+    API->>DB: busca la cuenta por correo
+    API->>API: Argon2id: ¿la contraseña coincide con el hash? (con hash señuelo si no existe)
+    API->>API: firma el JWT (HS256) con sub, rol, permisos, iat, exp, jti
+    API->>App: {access_token, token_type: "bearer", expira_en}
+    App->>App: guarda el token cifrado (AES-GCM, llave del Android Keystore)
+    App->>API: GET /v1/yo · Authorization: Bearer <token>
+    API->>API: verifica alg, firma, iss, aud, exp, claims
+    API->>Redis: ¿se cerró esta sesión?
+    API->>DB: la cuenta existe y el token es posterior a tokens_validos_desde
+    API->>API: Oso evalúa politicas.polar con los atributos del token y del recurso
+    API->>App: el perfil (o 401 / 403 / 404)
 ```
 
-### 4.3 Crear el tenant
+### 4.3 Las rutas de sesión
 
-1. Crea una cuenta en https://auth0.com (plan gratuito) y un **tenant** (por ejemplo
-   `familias-que-suman`, región US). Tu **dominio** será algo como
-   `familias-que-suman.us.auth0.com`.
-2. *Settings → General → Languages*: idioma por omisión **Spanish**.
+| Método | Ruta | Qué hace | Límite |
+|---|---|---|---|
+| POST | `/v1/sesion/registro` | Crea la cuenta (`correo`, `contrasena`, `nombre_familia`, `acepta_aviso`) y responde el token: la familia queda dentro | 10/h por IP |
+| POST | `/v1/sesion/iniciar` | Correo y contraseña → token. Es el `/login` de la guía | 10/min y 60/h por IP + bloqueo por correo |
+| POST | `/v1/sesion/cerrar` | 🔑 El token deja de servir desde ya | |
+| POST | `/v1/sesion/recuperar` | Pedir ayuda con la contraseña. Responde **202 siempre** | 5/h por IP |
+| GET | `/v1/yo` | 🔑 El `/me` de la guía: quién soy según el token | |
 
-### 4.4 Registrar la API (el "Resource Server")
+La respuesta de `registro` e `iniciar` es la misma del `/login` de la guía, más la duración:
 
-*Applications → APIs → Create API*:
+```json
+{ "access_token": "eyJhbGciOiJIUzI1NiIs…", "token_type": "bearer", "expira_en": 86400 }
+```
 
-| Campo | Valor | Por qué |
-|---|---|---|
-| Name | `API Familias que Suman` | |
-| Identifier | `https://api.familiasquesuman` | Es la **audiencia** (`aud`) de los tokens. Debe ser igual a `AUTH0_AUDIENCIA` y a `auth0.audiencia` |
-| Signing Algorithm | **RS256** | Asimétrico (ver 4.1). La API rechaza cualquier otro |
+Código: `backend/api/app/routers/sesion.py`.
 
-En la pestaña *Settings* de esa API:
+### 4.4 El token por dentro
 
-- **Token Expiration**: `3600` (1 hora). Un token robado sirve poco tiempo.
-- **Allow Offline Access**: **activado** (permite refresh tokens).
-- **RBAC Settings → Enable RBAC**: **activado**.
-- **Add Permissions in the Access Token**: **activado** (así el token trae `permissions`).
+```text
+encabezado  {"alg": "HS256", "typ": "JWT"}
+contenido   {"iss": "familias-que-suman-api", "aud": "familias-que-suman-app",
+             "sub": "c0000000-0000-0000-0000-000000000002", "rol": "familia", "permisos": [],
+             "iat": 1792049642.62, "exp": 1792136042, "jti": "e68b7abd…"}
+firma       HMAC-SHA256(encabezado.contenido, JWT_SECRETO)
+```
 
-En la pestaña *Permissions*, agrega:
+| Claim | Para qué |
+|---|---|
+| `iss` / `aud` | Quién lo emitió (esta API) y para quién es (la app). Se exigen al verificar |
+| `sub` | El id (UUID) de la cuenta. **Nada de correo ni nombre**: el contenido de un JWT se puede leer (solo es Base64) |
+| `rol`, `permisos` | Los **atributos del sujeto** que usan las políticas ABAC (como `department` y `clearance_level` en la guía) |
+| `iat`, `exp` | Cuándo se emitió y cuándo vence (24 h por omisión, `JWT_MINUTOS`). `iat` lleva fracciones de segundo para que un cambio de contraseña invalide los tokens anteriores sin ventana |
+| `jti` | Id único: dos tokens nunca son iguales |
+
+Código: `identidad.emitir_token` y `identidad.verificar_token` (`backend/api/app/identidad.py`).
+
+### 4.5 Contraseñas
+
+- Se guardan **solo** como hash **Argon2id** (`cuentas.contrasena_hash`, migración V7), con sal al
+  azar por cuenta y parámetros de OWASP (19 MiB de memoria, 2 pasadas): probar contraseñas contra
+  una tabla robada cuesta memoria y tiempo, incluso con tarjetas gráficas. La base además exige con
+  un `CHECK` que lo guardado empiece con `$argon2id$`.
+- Al registrarse: mínimo 8 y máximo 128 caracteres, al menos 4 caracteres distintos, no una de las
+  más comunes (`12345678`, `password`, `contraseña`…) y no igual al correo.
+- Al entrar, la comparación se hace **siempre**, aunque el correo no exista (contra un hash señuelo):
+  tarda lo mismo y la respuesta es la misma, así nadie averigua qué correos tienen cuenta.
+- La app **no guarda** la contraseña: la manda una vez y se queda con el token.
+
+### 4.6 Fuerza bruta
+
+Dos frenos que se suman (`limites.py` e `identidad.SesionesCerradas`):
+
+1. **Por IP:** 10 intentos por minuto y 60 por hora en `/v1/sesion/iniciar`.
+2. **Por correo:** tras **5** contraseñas equivocadas seguidas, ese correo queda bloqueado
+   **15 minutos** desde cualquier IP (`429 demasiados_intentos` con `Retry-After`). Frena a quien
+   usa muchas IPs contra una sola cuenta. En Redis se guarda el SHA-256 del correo, no el correo.
+
+Además, la alerta `FuerzaBrutaInicioSesion` de Prometheus avisa si hay más de 30 contraseñas
+equivocadas en 5 minutos (§11).
+
+### 4.7 Permisos (quién es admin)
+
+Los cuatro permisos viven en la cuenta (`cuentas.permisos`, V7) y **viajan dentro del JWT**:
 
 | Permiso | Qué deja hacer |
 |---|---|
@@ -320,88 +366,89 @@ En la pestaña *Permissions*, agrega:
 | `registrar:asistencias` | Registrar que una familia asistió (arma el historial) |
 | `atender:privacidad` | Ver y atender solicitudes de eliminación de datos |
 
-### 4.5 Registrar la app Android
+- **Nadie se hace admin desde la app:** el registro siempre crea familias y el cuerpo no acepta
+  campos como `permisos` o `rol` (422, S-22).
+- Se dan desde el servidor (hay que tener acceso a Docker):
 
-*Applications → Applications → Create Application* → tipo **Native**:
+  ```bash
+  docker compose exec api python -m app.herramientas permisos ana.rodriguez@correo.com todos
+  docker compose exec api python -m app.herramientas permisos ana.rodriguez@correo.com registrar:asistencias
+  docker compose exec api python -m app.herramientas permisos ana.rodriguez@correo.com ninguno
+  ```
 
-- **Allowed Callback URLs** y **Allowed Logout URLs**:
-  `familiasquesuman-auth://TU_DOMINIO/android/mx.tec.familiasquesuman/callback`
-  (con tu dominio, por ejemplo `familiasquesuman-auth://familias-que-suman.us.auth0.com/android/mx.tec.familiasquesuman/callback`).
-- *Advanced Settings → Grant Types*: deja **Authorization Code** y **Refresh Token**. **No**
-  actives *Password*: la app no maneja contraseñas.
-- **Refresh Token Rotation**: **Rotation** activado, *Reuse Interval* `0`. Cada refresh token sirve
-  una sola vez; si alguien usa uno viejo, Auth0 detecta el robo e invalida la familia de tokens.
-- **Refresh Token Expiration**: *Absolute* (por ejemplo 30 días) e *Inactivity* (por ejemplo 7 días).
-- Copia el **Client ID** (no es secreto: va dentro del APK). La app nativa **no** usa Client Secret.
+- Como los permisos van firmados en el token, cambiarlos **invalida los tokens anteriores** de esa
+  cuenta (`tokens_validos_desde`): la persona vuelve a entrar y su nuevo token trae lo correcto.
 
-### 4.6 La base de usuarios y la política de contraseñas
+### 4.8 Cuentas de prueba (solo desarrollo)
 
-*Authentication → Database → Username-Password-Authentication*:
+El seed (`backend/db/seed/dev.sql`) crea:
 
-- *Password Policy*: **Good** o más (mínimo 8 caracteres, mezcla de tipos), y activa
-  *Password Dictionary* y *Personal Data*.
-- Deja activado el registro (las familias crean su cuenta).
+| Cuenta | Contraseña | Qué es |
+|---|---|---|
+| `ana.rodriguez@correo.com` | `familia123` | La Familia Rodríguez, con historial, testimonios, favoritos e inscripción |
+| `admin@correo.com` | `admin123` | Administración, con los cuatro permisos |
 
-### 4.7 Protección contra ataques
+En un servidor real no se carga el seed: las familias se registran desde la app.
 
-*Security → Attack Protection*:
+### 4.9 "¿Olvidaste tu contraseña?"
 
-- **Brute-force Protection**: activado (por omisión bloquea tras 10 intentos fallidos seguidos a una
-  cuenta desde la misma IP, y avisa por correo). Es el "BF" del pizarrón del lado del login.
-- **Suspicious IP Throttling**: activado (frena una IP que intenta contra muchas cuentas).
-- **Breached Password Detection** y **Bot Detection**: actívalos si tu plan los incluye.
+El proyecto no manda correos. `POST /v1/sesion/recuperar` responde lo mismo exista o no el correo y,
+si existe, deja la solicitud en la `auditoria` (`sesion.recuperar_solicitada`). El equipo la ve con:
 
-### 4.8 Roles (quién es admin)
-
-*User Management → Roles*:
-
-- `Administrador` con los cuatro permisos.
-- (Opcional) `Asociación` solo con `registrar:asistencias`: **mínimo privilegio** (una asociación
-  registra asistencias pero no puede borrar campañas).
-
-Asigna el rol a las cuentas del equipo en *Users → (persona) → Roles*. **El admin lo decide Auth0,
-no la app**: antes la app consideraba admin a cualquier correo que contuviera "admin" (§9.4).
-
-### 4.9 Usuarios de prueba y la familia del seed
-
-1. *Users → Create User*: `ana.rodriguez@correo.com` con una contraseña de prueba.
-2. Abre la app y entra con ella. La API responde **409 `correo_sin_verificar`**: ya existe una
-   cuenta con ese correo (la del seed) y Auth0 dice que el correo no está verificado. **Es a
-   propósito** (S-35): si no, cualquiera se registraría con el correo de otra familia y se quedaría
-   con sus datos.
-3. Como los correos `@correo.com` no reciben mensajes, se vincula a mano desde el servidor. Copia
-   el `user_id` de Ana en Auth0 (algo como `auth0|65f0c…`) y corre:
-
-   ```bash
-   docker compose exec api python -m app.herramientas vincular ana.rodriguez@correo.com "auth0|65f0c…"
-   ```
-
-   (`backend/api/app/herramientas.py:26`). Queda en la auditoría.
-4. Vuelve a entrar: ya ves su historial, testimonios, favoritos e inscripción.
-
-Con correos reales, Auth0 manda el mensaje de verificación al registrarse y la vinculación es
-automática.
-
-### 4.10 Poner los valores en el proyecto
-
-`backend/.env`:
-
-```ini
-AUTH0_DOMINIO=familias-que-suman.us.auth0.com
-AUTH0_AUDIENCIA=https://api.familiasquesuman
-AUTH0_CLIENTE_APP=<Client ID>          # opcional: solo tokens pedidos por la app
+```bash
+docker compose exec db psql -U familias -d familias -c "select ocurrio_en, objeto_id from auditoria where accion = 'sesion.recuperar_solicitada' order by 1 desc"
 ```
 
-`local.properties` (raíz del repo, no se sube a Git):
+y le pone una contraseña temporal (se escribe sin que se vea y no queda en el historial de la
+terminal; cierra las sesiones abiertas de esa cuenta):
+
+```bash
+docker compose exec -it api python -m app.herramientas contrasena ana.rodriguez@correo.com
+```
+
+### 4.10 Configuración
+
+`backend/.env` (ver `.env.example`):
+
+```ini
+JWT_SECRETO=<python -c "import secrets; print(secrets.token_urlsafe(48))">
+JWT_MINUTOS=1440
+```
+
+`local.properties` (raíz del repo, no se sube a Git) solo necesita dónde está la API:
 
 ```properties
-auth0.dominio=familias-que-suman.us.auth0.com
-auth0.cliente=<Client ID>
-auth0.audiencia=https://api.familiasquesuman
 api.url=http://10.0.2.2:8000
 ```
 
-Reinicia la API (`docker compose up -d api`) y recompila la app.
+El secreto **nunca** va en la app: con él se puede fabricar un token de administración.
+
+### 4.11 Demostración como en la guía (s23 §5)
+
+```bash
+API=http://127.0.0.1:8000
+ANA=$(curl -s -X POST $API/v1/sesion/iniciar -H "Content-Type: application/json" \
+  -d '{"correo":"ana.rodriguez@correo.com","contrasena":"familia123"}' | jq -r .access_token)
+ADMIN=$(curl -s -X POST $API/v1/sesion/iniciar -H "Content-Type: application/json" \
+  -d '{"correo":"admin@correo.com","contrasena":"admin123"}' | jq -r .access_token)
+
+curl -i -X POST $API/v1/sesion/iniciar -H "Content-Type: application/json" \
+  -d '{"correo":"ana.rodriguez@correo.com","contrasena":"WrongPassword!"}'      # 401
+curl -i $API/v1/yo                                                              # 401 falta_token
+curl -s $API/v1/yo -H "Authorization: Bearer $ANA" | jq '{correo, es_admin, permisos}'
+curl -i $API/v1/admin/encuestas -H "Authorization: Bearer $ANA"                 # 403: ABAC lo niega
+curl -s -o /dev/null -w "%{http_code}\n" $API/v1/admin/encuestas -H "Authorization: Bearer $ADMIN"   # 200
+```
+
+**Resistencia a la alteración (§5.4 de la guía):** se decodifica el contenido del token de Ana, se
+cambia `"permisos": []` por `["moderar:contenido"]` sin volver a firmar, y se manda:
+
+```json
+{"error": "Tu sesión no es válida. Vuelve a iniciar sesión.", "codigo": "token_invalido"}
+```
+
+La firma HMAC-SHA256 ya no coincide con el contenido alterado. Lo mismo prueba
+`test_contenido_alterado_rompe_la_firma`.
 
 ---
 
@@ -430,7 +477,8 @@ Reinicia la API (`docker compose up -d api`) y recompila la app.
   | `V3__participacion.sql` | `asistencias`, `testimonios`, `respuestas_encuesta`, `invitaciones` |
   | `V4__catalogo.sql` | `proyectos`, `formas_apoyo`, `centros`, `campanas`, `articulos_meta`, `aportaciones` |
   | `V5__sugerencias_y_privacidad.sql` | `sugerencias`, `solicitudes_eliminacion` |
-  | **`V6__api_completa.sql`** | `ciudades`; cuentas con `auth0_sub` y **sin** `contrasena_hash`; todos los textos del sitio; `inscripcion_personas`; consentimiento de menores; opciones y puntos de entrega; `auditoria` |
+  | `V6__api_completa.sql` | `ciudades`; cuentas con `auth0_sub` y **sin** `contrasena_hash` (la época de Auth0); todos los textos del sitio; `inscripcion_personas`; consentimiento de menores; opciones y puntos de entrega; `auditoria` |
+  | **`V7__identidad_propia_jwt.sql`** | Vuelve `contrasena_hash` (**solo Argon2id**, con `CHECK`), `permisos` (solo los cuatro que existen), `tokens_validos_desde`; se va `auth0_sub` |
 
 - **`afterMigrate.sql`** (callback de Flyway, corre después de cada `migrate`): crea el usuario
   `familias_api` con la contraseña que llega como *placeholder* (`FLYWAY_PLACEHOLDERS_API_CONTRASENA`),
@@ -459,7 +507,8 @@ Reinicia la API (`docker compose up -d api`) y recompila la app.
 ### 5.5 `redis` · Redis 8.8
 
 - **Qué es:** base en memoria, muy rápida.
-- **Para qué:** (1) los contadores del rate limit (S-09) y (2) la lista de sesiones cerradas (S-18).
+- **Para qué:** (1) los contadores del rate limit (S-09), (2) los intentos fallidos de inicio de
+  sesión por correo (§4.6) y (3) la lista de sesiones cerradas (S-18).
 - **Seguridad:** contraseña (`--requirepass`) aunque esté en red interna (defensa en profundidad);
   `--maxmemory-policy noeviction`: si se llena, **no** olvida llaves (una sesión cerrada no puede
   "revivir" por falta de memoria); persistencia `--save 60 1`.
@@ -468,7 +517,7 @@ Reinicia la API (`docker compose up -d api`) y recompila la app.
 
 Imagen construida con `backend/api/Dockerfile`:
 
-- Etapa **`produccion`**: Python 3.13 slim, dependencias **exactas** de `uv.lock` (con hashes), **sin**
+- Etapa **`produccion`**: Python 3.12 slim (Oso publica paquetes compilados hasta 3.12), dependencias **exactas** de `uv.lock` (con hashes), **sin**
   herramientas de prueba (`--no-dev`, línea 24), usuario sin privilegios `api` (UID 10001, línea
   18), *healthcheck*, y `uvicorn` con `--no-server-header`, `--limit-concurrency 200`,
   `--timeout-keep-alive 5` (línea 31).
@@ -487,8 +536,9 @@ variables; nunca la contraseña de dueño de la base).
 | `db.py` | Conexión a PostgreSQL con tiempos límite |
 | `modelos.py` | Las tablas como clases (ORM) |
 | `esquemas.py` | Lo que entra y lo que sale (Pydantic): validación y respuestas explícitas |
-| `identidad.py` | Verificación de los JWT de Auth0, alta de cuentas, sesiones cerradas, permisos |
-| `politicas.py` | Las políticas ABAC |
+| `identidad.py` | Emitir y verificar los JWT, hash Argon2id de contraseñas, bloqueo por fuerza bruta, sesiones cerradas, `usuario_actual` |
+| `politicas.polar` | **Las reglas ABAC en Polar** (lo que se permite y por qué se niega) |
+| `politicas.py` | Arma los recursos con sus atributos, le pregunta a Oso y traduce la negación al error de la app |
 | `limites.py` | Rate limit (slowapi + middleware global propio) |
 | `seguridad.py` | Middlewares: registro, encabezados, Host, tamaño de cuerpo, red de errores |
 | `errores.py` | Forma única de errores; manejo de excepciones que falla cerrado |
@@ -497,9 +547,10 @@ variables; nunca la contraseña de dueño de la base).
 | `almacen.py` | El almacén S3 |
 | `imagenes.py` | Validación y reescritura de fotos |
 | `convertir.py` | De filas a respuestas: lugares, metas, zonas horarias |
-| `herramientas.py` | Vinculación manual de cuentas (CLI, no HTTP) |
+| `herramientas.py` | Dar permisos y poner contraseña nueva (CLI dentro del contenedor, no HTTP) |
+| `routers/sesion.py` | Registro, inicio de sesión (JWT), cerrar sesión, recuperar |
 | `routers/catalogo.py` | Catálogo público y fotos |
-| `routers/cuenta.py` | `/v1/yo/…`: perfil, acompañantes, favoritos, preferencias, foto, invitaciones, privacidad, cerrar sesión |
+| `routers/cuenta.py` | `/v1/yo/…`: perfil, acompañantes, favoritos, preferencias, foto, invitaciones, privacidad |
 | `routers/inscripciones.py` | Inscribirse, modificar y cancelar (con candado) |
 | `routers/participacion.py` | Historial, testimonios, encuestas, asistencias |
 | `routers/aportaciones.py` | Apartar artículos de campañas (con candado e idempotencia) |
@@ -512,8 +563,8 @@ variables; nunca la contraseña de dueño de la base).
 
 ```
 Cloudflare → cloudflared → Registro → EncabezadosSeguridad → HostValido → LimiteCuerpo
-          → LimiteGlobal → CapturarErrores → [ruta] → identidad (token) → límite por flujo
-          → políticas ABAC → ORM → PostgreSQL → respuesta (esquema de salida) → …de regreso
+          → LimiteGlobal → CapturarErrores → [ruta] → identidad (JWT) → límite por flujo
+          → políticas ABAC (Oso + Polar) → ORM → PostgreSQL → respuesta (esquema de salida) → …de regreso
 ```
 
 (`main.py:57-62`: la última capa que se agrega es la más externa.)
@@ -561,7 +612,7 @@ completo y siempre al día en `http://localhost:8000/openapi.json` (solo desde l
 
 `401` trae `WWW-Authenticate: Bearer …`; `429` trae `Retry-After`.
 
-**Leyenda:** 🌐 público · 🔑 con sesión · 🛡️ con permiso de Auth0. "Límite": además del global
+**Leyenda:** 🌐 público · 🔑 con sesión · 🛡️ con permiso (claim `permisos` del JWT). "Límite": además del global
 de 120/min por IP.
 
 ### 6.1 Catálogo y enlaces (públicos)
@@ -583,6 +634,7 @@ de 120/min por IP.
 | POST | `/v1/sugerencias` | 🌐 | **5 por hora por IP** |
 | GET | `/a/{id}` | 🌐 | Página de invitación (HTML). 60/min |
 | GET | `/.well-known/assetlinks.json` | 🌐 | App Links |
+| POST | `/v1/sesion/registro`, `/v1/sesion/iniciar`, `/v1/sesion/recuperar` | 🌐 | §4.3. Responden el JWT (registro e iniciar) |
 
 ### 6.2 Mi cuenta (🔑)
 
@@ -630,7 +682,11 @@ Todas con 300/h por cuenta y **auditadas** (S-31).
 # Público
 curl -s http://localhost:8000/v1/actividades?cuando=proximas
 
-# Con sesión (el token lo da Auth0 a la app)
+# Entrar (el token lo da la API)
+TOKEN=$(curl -s -X POST http://localhost:8000/v1/sesion/iniciar -H "Content-Type: application/json" \
+  -d '{"correo":"ana.rodriguez@correo.com","contrasena":"familia123"}' | jq -r .access_token)
+
+# Con sesión
 curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8000/v1/yo
 
 # Inscribirse con un acompañante menor (requiere consentimiento)
@@ -685,29 +741,35 @@ así** y **cómo se comprueba**.
 - **Comprobación:** `test_entradas.py` (caracteres de control, topes, rangos, fechas sin zona,
   enlaces inseguros).
 
-#### S-04 · JWT RS256 verificado con las llaves públicas de Auth0 (JWKS)
+#### S-04 · JWT HS256 que emite y verifica la propia API
 
-- **Qué es:** el access token es un JWT (`encabezado.contenido.firma`, s22) firmado por Auth0 con
-  RSA. La API lo verifica con la llave pública que Auth0 publica en `/.well-known/jwks.json`.
+- **Qué es:** el token es un JWT (`encabezado.contenido.firma`, s22/s23) firmado por la API con
+  HMAC-SHA256 y un secreto que solo ella tiene (`JWT_SECRETO`). Lo da `POST /v1/sesion/iniciar`
+  (el `/login` de la guía) y se verifica en cada petición en `usuario_actual` (el
+  `get_current_user` de la guía).
 - **De qué protege:** suplantación de identidad, tokens falsificados o alterados (OWASP A07 ·
-  API2 · CWE-287).
-- **Cómo** (`identidad.py`, clase `Verificador`, línea 101; `verificar`, línea 122):
+  API2 · CWE-287), y confiar en un encabezado sin firma (`x-user`, s23 §3).
+- **Cómo** (`identidad.verificar_token`):
   1. Largo máximo y tres partes.
-  2. `alg` debe ser **exactamente RS256** (línea 129) y traer `kid`: cierra el ataque `alg: none`
-     y la confusión RS256→HS256 (firmar con HMAC usando la llave pública como secreto).
-  3. La llave se busca por `kid` en el JWKS (en memoria 1 hora; si llega un `kid` nuevo se vuelve
-     a pedir, porque Auth0 rota llaves).
-  4. `jwt.decode` revisa firma, `iss` (nuestro tenant), `aud` (esta API), `exp`/`iat` con 30 s de
-     tolerancia, y exige esos claims (línea 140).
-  5. Si se configuró `AUTH0_CLIENTE_APP`, el `azp` debe ser la app Android (línea 146).
-  6. Si el JWKS no responde → **503, no se deja pasar** (falla cerrado, S-30).
-- **Por qué RS256 y no HS256:** con HS256 la API tendría que conocer el secreto con el que se
-  firma: quien la robara podría fabricar tokens de administrador. Con RS256 la API **solo puede
-  verificar** (s22: "Non-Repudiation: provided. Only the auth server holding the private key could
-  have created it").
-- **Comprobación:** `tests/test_identidad.py` (20 pruebas): sin token, tokens basura, `alg: none`,
-  confusión HS256, firmado con otra llave, `kid` desconocido, contenido alterado (meterse
-  `administrar:catalogo`), vencido, audiencia ajena, emisor ajeno, sin `exp`.
+  2. `alg` debe ser **exactamente HS256**: cierra `alg: none` y que quien llama elija el algoritmo
+     (ni siquiera HS512 con el secreto correcto pasa).
+  3. `jwt.decode` revisa la firma con el secreto, `iss` (esta API), `aud` (la app), `exp`/`iat` con
+     30 s de tolerancia, y **exige** `exp, iat, iss, aud, sub, jti`.
+  4. Aunque la firma sea buena, se revisa la forma: `sub` es UUID, `rol` es `familia`/`admin`,
+     `permisos` es una lista de los cuatro permisos que existen.
+  5. Después: que no sea una sesión cerrada (S-18), que la cuenta exista y que el token sea
+     posterior a su último cambio de contraseña o de permisos (`tokens_validos_desde`).
+  6. Si Redis no responde → **503, no se deja pasar** (falla cerrado, S-30).
+- **Por qué HS256:** es el algoritmo de la guía y aquí la misma API firma y verifica, así que no
+  hace falta repartir una llave pública. El costo, dicho claro: quien robe el `JWT_SECRETO` puede
+  fabricar tokens. Por eso vive solo en la variable de entorno de la API (ni en el código, ni en la
+  app, ni en la base), en producción debe medir ≥ 32 caracteres y ser distinto de `HMAC_SECRETO`
+  (S-17), y rotarlo invalida todos los tokens de golpe (§14.3).
+- **Comprobación:** `tests/test_identidad.py` (43 pruebas): registro, inicio de sesión, enumeración,
+  fuerza bruta por correo y por IP, sin token, tokens basura, `alg: none`, otro algoritmo, otro
+  secreto, contenido alterado (meterse `administrar:catalogo`, la demostración de s23 §5.4),
+  vencido, audiencia y emisor ajenos, cada claim obligatorio, claims raros bien firmados, cuenta
+  inexistente, cerrar sesión, cambio de contraseña y de permisos.
 
 #### S-05 · UUID v4 en todos los identificadores
 
@@ -720,64 +782,87 @@ así** y **cómo se comprueba**.
 - **Por qué:** es la contramedida de s22 ("API1: Unpredictable Object IDs"). **No basta sola**:
   por eso se combina con S-06 (siempre se revisa de quién es).
 
-#### S-06 · ABAC: control de acceso basado en atributos, con políticas
+#### S-06 · ABAC: control de acceso basado en atributos, con Oso y Polar
 
-- **Qué es:** las decisiones de autorización dependen de **atributos** del sujeto (quién, qué
-  permisos), del recurso (de quién es, fecha y cupo de la actividad, autor del testimonio, cierre
-  de la campaña) y del entorno (la hora **del servidor**).
+- **Qué es:** las decisiones de autorización dependen de **atributos** del sujeto (los claims del
+  JWT: cuenta, rol, permisos), del recurso (de quién es, fecha y cupo de la actividad, autor del
+  testimonio, cierre de la campaña) y del entorno (la hora **del servidor**). Las evalúa **Oso** con
+  reglas **declarativas** escritas en **Polar**, como el `policy.polar` de la guía (s23 §4.2).
 - **De qué protege:** OWASP A01 (Broken Access Control) y API1 (BOLA): ver o cambiar lo ajeno, o
   hacer algo en un momento no permitido (cancelar cuando la actividad ya empezó).
-- **Cómo:** todas las reglas viven en `backend/api/app/politicas.py`, con nombre y descripción, y
-  devuelven una `Decision`. Las rutas no deciden: preguntan y `exigir()` (línea 44) convierte el
-  "no" en error.
+- **Cómo:**
+  - `backend/api/app/politicas.polar` tiene todas las reglas. Cada acción se escribe así:
 
-  | Política | Atributos | Línea |
+    ```polar
+    allow(s: Sujeto, "cancelar", r: Cancelacion) if not motivo(s, "cancelar", r, _);
+
+    motivo(s: Sujeto, "cancelar", r: Cancelacion, "no_encontrado") if r.dueno != s.id;
+    motivo(_: Sujeto, "cancelar", r: Cancelacion, "actividad_iniciada") if r.ahora >= r.inicia;
+    ```
+
+    "Se permite si ningún `motivo` la niega", y cada `motivo` es una razón concreta que la app
+    recibe como `codigo`. **Lo que no tiene su `allow` se niega** (Oso niega por omisión).
+  - `backend/api/app/politicas.py` arma el recurso con sus atributos (solo números, textos y
+    booleanos), llama a `oso.is_allowed(sujeto, accion, recurso)` y, si niega, consulta los
+    `motivo` para responder el error correcto (con su mensaje y su código HTTP). Las rutas no
+    deciden: preguntan.
+
+  | Política | Acción en Polar | Atributos |
   |---|---|---|
-  | `recurso.propio` | dueño del recurso vs. cuenta del token | 65 |
-  | `inscripcion.guardar` | hora vs. inicio, cupo libre + lugares propios, personas, edad mínima de cada quien, consentimiento si hay menores | 85 |
-  | `inscripcion.cancelar` | dueño + la actividad no ha empezado | 117 |
-  | `testimonio.publicar` | asistencia a nombre de la cuenta + la actividad ya empezó | 133 |
-  | `testimonio.eliminar` | autor o permiso `moderar:contenido` | 143 |
-  | `encuesta.previa` | inscripción vigente + no ha empezado | 150 |
-  | `encuestas.ver_todas` | permiso `moderar:contenido` | 164 |
-  | `aportacion.crear` | campaña no cerrada + cantidad ≤ lo que falta | 177 |
-  | `foto.perfil` | dueño | 190 |
+  | `funcion.permiso` | `usar` · `Funcion` | permiso pedido vs. `permisos` del token (S-07) |
+  | `recurso.propio` | `ver` · `Recurso` | dueño del recurso vs. cuenta del token |
+  | `inscripcion.guardar` | `inscribirse` · `Inscripcion` | hora vs. inicio, cupo libre + lugares propios, personas, edad mínima de cada quien, consentimiento si hay menores |
+  | `inscripcion.cancelar` | `cancelar` · `Cancelacion` | dueño + la actividad no ha empezado |
+  | `testimonio.publicar` | `publicar_testimonio` · `Participacion` | asistencia a nombre de la cuenta + la actividad ya empezó |
+  | `testimonio.eliminar` | `eliminar` · `Testimonio` | autor o permiso `moderar:contenido` |
+  | `encuesta.previa` | `contestar_previa` · `EncuestaPrevia` | inscripción vigente + no ha empezado |
+  | `encuesta.final` | `contestar_final` · `Participacion` | asistencia a nombre de la cuenta |
+  | `encuestas.ver_todas` | `ver_todas` · `"encuestas"` | permiso `moderar:contenido` |
+  | `aportacion.crear` | `aportar` · `Aportacion` | campaña no cerrada + cantidad ≤ lo que falta |
+  | `foto.perfil` | `ver` · `FotoPerfil` | dueño |
 
-  Además, lo que es de otra cuenta responde **404, no 403**: así no se confirma ni que existe.
-  Y en `/v1/yo/…` el id de la cuenta **nunca** llega del teléfono: sale del token y va dentro de la
-  consulta (`routers/cuenta.py:152`, el `DELETE … WHERE id = … AND cuenta_id = …`).
+  Lo que es de otra cuenta responde **404, no 403**: así no se confirma ni que existe. Y en
+  `/v1/yo/…` el id de la cuenta **nunca** llega del teléfono: sale del token y va dentro de la
+  consulta (el `DELETE … WHERE id = … AND cuenta_id = …` de `routers/cuenta.py`).
 - **Por qué ABAC (y no solo RBAC):** casi ninguna regla de esta app se resuelve con "¿qué rol
   tienes?": depende de **de quién es** y de **cuándo** (s22, tabla de modelos de control de
-  acceso). Tener las políticas juntas las hace legibles, probables y auditables.
-- **Comprobación:** `tests/test_autorizacion.py` (13), `test_inscripciones.py` (9),
+  acceso). Con las reglas en Polar, fuera del código de las rutas, se leen, se prueban y se auditan
+  en un solo archivo (s23 §6, "Fine-Grained Authorization Tier").
+- **Comprobación:** `tests/test_politicas.py` (20, contra Oso directo, como los casos Alice/Bob/
+  Charlie de la guía), `test_autorizacion.py` (13), `test_inscripciones.py` (9),
   `test_participacion.py` (5), `test_aportaciones.py` (6).
 
-#### S-07 · Autorización por función con permisos de Auth0 (RBAC)
+#### S-07 · Autorización por función con permisos firmados en el token
 
-- **Qué es:** cada función de administración pide un **permiso** concreto que viene en el token
-  (`permissions`), asignado en Auth0 por rol.
+- **Qué es:** cada función de administración pide un **permiso** concreto. Los permisos se guardan
+  en la cuenta y viajan en el claim `permisos` del JWT; la política `funcion.permiso` (Oso) decide.
 - **De qué protege:** OWASP API5 (Broken Function Level Authorization; caso Uber 2016, s15):
   que alguien llame directo a un endpoint de admin.
-- **Cómo:** `identidad.requiere(permiso)` (línea 369) como dependencia de cada ruta de
-  `/v1/admin/…`. Cuatro permisos separados: quien registra asistencias no puede borrar campañas
-  (**mínimo privilegio**).
+- **Cómo:** `identidad.requiere(permiso)` como dependencia de cada ruta de `/v1/admin/…`. Cuatro
+  permisos separados: quien registra asistencias no puede borrar campañas (**mínimo privilegio**).
+  Se dan solo desde el servidor (`herramientas permisos`, §4.7) y cambiarlos invalida los tokens
+  viejos (un token no conserva un permiso que ya se quitó).
 - **Por qué:** la app puede esconder el botón, pero el servidor no confía en eso (s22,
   `verify_admin_role` con `Depends`).
 - **Comprobación:** `test_funciones_de_admin_piden_permiso`,
   `test_permiso_minimo_quien_registra_asistencias_no_administra_catalogo`,
-  `test_una_familia_no_se_registra_asistencias`.
+  `test_una_familia_no_se_registra_asistencias`, `test_quitar_permisos_invalida_el_token_que_los_traia`,
+  `test_las_funciones_de_admin_piden_su_permiso_y_solo_ese`.
 
-#### S-08 · Contraseñas: hash en la base de Auth0, ninguna en la nuestra, ninguna en la app
+#### S-08 · Contraseñas: solo su hash Argon2id, ninguna en la app
 
-- **Qué es:** las contraseñas las guarda Auth0 con **bcrypt** (hash lento con sal). La migración V6
-  **borró** la columna `contrasena_hash` de nuestra base (`V6__api_completa.sql:26`). La app ya
-  no tiene campo de contraseña: se escribe en la página de Auth0.
+- **Qué es:** la contraseña se guarda como hash **Argon2id** con sal al azar (`argon2-cffi`,
+  `identidad.hash_contrasena`); la base exige el formato con un `CHECK` (V7). La app la manda una
+  vez y no la guarda.
 - **De qué protege:** robo de contraseñas si alguien se lleva la base (A04 Cryptographic Failures,
-  A07); phishing dentro de la app; que la app filtre la contraseña por error (logs, memoria).
-- **Por qué:** "Hashed Pw DB" del pizarrón, llevado al extremo: un dato que no se guarda no se puede
-  robar. Antes la app guardaba en el teléfono un PBKDF2 de 10,000 iteraciones; eso se eliminó.
-- **Dónde (app):** `IniciarSesionScreen.kt` y `CrearCuentaScreen.kt` ya no tienen contraseña;
-  `ServicioSesion.iniciar` abre Universal Login (`data/sesion/ServicioSesion.kt:51`).
+  A07); ataques de diccionario y con GPU (Argon2id es *memory-hard*); enumeración de cuentas por
+  tiempo de respuesta (hash señuelo, §4.5).
+- **Por qué Argon2id:** es la primera opción de OWASP (Password Storage Cheat Sheet); bcrypt sería
+  la segunda. Parámetros mínimos de OWASP (19 MiB, 2 pasadas, 1 hilo) para que la API (512 MB)
+  aguante varios inicios de sesión a la vez; si se suben, el hash se rehace solo al entrar.
+- **Comprobación:** `test_la_contrasena_se_guarda_como_hash_argon2id`,
+  `test_mismo_mensaje_si_el_correo_no_existe_o_la_contrasena_esta_mal`,
+  `test_contrasenas_debiles_o_absurdas`.
 
 #### S-09 · Rate limiting (fuerza bruta, DoS y bots)
 
@@ -793,13 +878,15 @@ así** y **cómo se comprueba**.
   - Contadores en **Redis**: valen aunque la API se reinicie o corran varias copias. Si Redis se
     cae, sigue frenando en memoria (60/min).
   - La IP es la **real** (S-27).
-  - El **login** es de Auth0: Brute-force Protection y Suspicious IP Throttling (§4.7).
+  - El **login** tiene además su límite por IP (10/min, 60/h) y el **bloqueo por correo** tras 5
+    fallos seguidos (§4.6).
 - **Lo que se encontró al verificar:** el middleware global de slowapi **no aplicaba el límite**
   con FastAPI 0.143 (no encuentra las rutas de los routers incluidos y, cuando no encuentra la ruta,
   la exime): 125 de 125 peticiones pasaban con un límite de 120. Se reemplazó por `LimiteGlobal`
   (misma librería `limits`, mismos contadores) y se agregó `test_limite_global_por_ip`. Ahora: 120
   pasan, la 121 recibe 429 con `Retry-After`.
-- **Comprobación:** `test_rate_limit_en_un_flujo_publico`, `test_limite_global_por_ip`,
+- **Comprobación:** `test_fuerza_bruta_bloquea_el_correo_aunque_cambie_de_ip`,
+  `test_limite_por_ip_del_inicio_de_sesion`, `test_rate_limit_en_un_flujo_publico`, `test_limite_global_por_ip`,
   `test_la_ip_real_solo_se_cree_si_viene_del_tunel`.
 
 #### S-10 · Encabezados HTTP de seguridad
@@ -889,20 +976,24 @@ Ver §13. Resultado: **0 altas, 0 medias, 0 bajas**.
 - **Qué es:** ninguna contraseña en el código (CWE-798); todo por variables de entorno; `.env` en
   `.gitignore`.
 - **Cómo:** `config.py:100` (`revisar_para_produccion`): con `ENTORNO=produccion`, si algún secreto
-  tiene el valor de ejemplo (`cambia-…`), el HMAC mide menos de 32 caracteres o falta Auth0, **la API
+  tiene el valor de ejemplo (`cambia-…`), el HMAC o el `JWT_SECRETO` miden menos de 32 caracteres o
+  son iguales entre sí, **la API
   no arranca** (A02 Security Misconfiguration, "default credentials" de s12).
 - **Además:** la API no usa `env_file`: recibe solo sus variables.
 
 #### S-18 · Sesiones que se cierran de verdad
 
 - **Qué es:** al cerrar sesión, la API guarda la **huella SHA-256** del token en Redis hasta que
-  venza, y la revisa en cada petición (`SesionesCerradas`, `identidad.py:197`).
+  venza, y la revisa en cada petición (`SesionesCerradas`, `identidad.py`).
 - **De qué protege:** un token robado sigue sirviendo después del logout (el costo de los tokens
   sin estado, s22 "stateful vs stateless").
-- **Cómo:** `POST /v1/sesion/cerrar` (`routers/cuenta.py:304`); la app además revoca el refresh
-  token en Auth0 y borra todo del teléfono (`ServicioSesion.cerrar`, línea 75). Se guarda la huella,
-  no el token (si alguien leyera Redis, no obtiene tokens). Sin Redis → 503 (falla cerrado).
-- **Comprobación:** `test_cerrar_sesion_invalida_el_token_de_inmediato`.
+- **Cómo:** `POST /v1/sesion/cerrar` (`routers/sesion.py`); la app además borra el token y la copia
+  de los datos del teléfono (`ServicioSesion.cerrar`). Se guarda la huella, no el token (si alguien
+  leyera Redis, no obtiene tokens). Sin Redis → 503 (falla cerrado). Para cerrar **todas** las
+  sesiones de una cuenta (cambio de contraseña o de permisos) está `tokens_validos_desde`: todo
+  token emitido antes deja de servir.
+- **Comprobación:** `test_cerrar_sesion_invalida_el_token_de_inmediato`,
+  `test_la_contrasena_nueva_cierra_las_sesiones_viejas`.
 
 #### S-19 · Condición de carrera (TOCTOU) en el cupo y en las metas
 
@@ -941,11 +1032,12 @@ Ver §13. Resultado: **0 altas, 0 medias, 0 bajas**.
 - **De qué protege:** OWASP API3 (Broken Object Property Level Authorization = *mass assignment* +
   *excessive data exposure*; caso Twitter 2022, s15).
 - **Cómo:** toda entrada hereda de `Entrada` con `extra="forbid"` (`esquemas.py:82`): mandar
-  `"rol": "admin"` o `"cuenta_id"` es error 422. Cada respuesta declara sus campos: los testimonios
+  `"rol": "admin"`, `"permisos"` o `"cuenta_id"` es error 422 (también al registrarse). Cada respuesta declara sus campos: los testimonios
   públicos llevan el **nombre** de la familia, nunca su correo (`TestimonioSalida`, línea 235); el
-  perfil no expone el `auth0_sub`.
+  perfil no expone el hash de la contraseña.
 - **Comprobación:** `test_mass_assignment_campos_extra_se_rechazan`,
-  `test_los_permisos_vienen_del_token_no_del_cuerpo`, `test_los_testimonios_publicos_no_exponen_correos`.
+  `test_los_permisos_vienen_del_token_no_del_cuerpo`, `test_nadie_se_registra_como_admin`,
+  `test_los_testimonios_publicos_no_exponen_correos`.
 
 #### S-23 · Escape de salida y CSP en la única página HTML
 
@@ -1025,7 +1117,7 @@ Ver §13. Resultado: **0 altas, 0 medias, 0 bajas**.
   no repite lo que se mandó; errores de base → 503 genérico; cualquier otra excepción → 500
   genérico con id de solicitud; el detalle (traza) va **solo** a la bitácora del servidor;
   `CapturarErrores` (`seguridad.py:255`) es la última red, dentro de los encabezados de seguridad.
-  Si no se puede verificar algo (Auth0, Redis), se niega.
+  Si no se puede verificar algo (Redis, la base), se niega.
 - **Comprobación:** `test_errores_sin_trazas_ni_detalles_internos`,
   `test_validacion_no_refleja_la_entrada`; ZAP 90022 (Application Error Disclosure): 0.
 
@@ -1040,7 +1132,8 @@ Ver §13. Resultado: **0 altas, 0 medias, 0 bajas**.
     diez intentos vinieron de la misma IP sin saber cuál; sin la llave, no se puede revertir
     probando las 4 mil millones de IPv4 (con un SHA-256 simple sí se podría).
   - Tabla `auditoria` (`V6__api_completa.sql:173`) para lo sensible (todo lo de admin, moderación,
-    privacidad, aceptación del aviso, vinculación de cuentas), escrita en la **misma transacción**
+    privacidad, aceptación del aviso, cuentas nuevas, cambios de permisos y de contraseña,
+    solicitudes de recuperación), escrita en la **misma transacción**
     (`bitacora.py:61`) y que la API no puede alterar (S-15).
 
 #### S-32 · Métricas y alertas de seguridad
@@ -1059,43 +1152,43 @@ Ver §11.
 #### S-34 · Consumo seguro de otras APIs (y nada de SSRF)
 
 - **De qué protege:** OWASP API10 (Unsafe Consumption of APIs) y API7/A01 (SSRF).
-- **Cómo:** la API solo habla con URLs **fijas de la configuración** (el JWKS y `/userinfo` de tu
-  tenant de Auth0, y `/quicktunnel` de `cloudflared`), nunca con una URL que mande alguien. Con
-  tiempo límite, tamaño máximo de respuesta, y validando lo que llega: en `/userinfo` el `sub` debe
-  ser el del token (`identidad.py:268`) y el correo tener forma de correo; el nombre del túnel debe
-  ser `*.trycloudflare.com` (`routers/enlaces.py:44`).
+- **Cómo:** la API solo habla con una URL **fija de la configuración** (`/quicktunnel` de
+  `cloudflared`), nunca con una URL que mande alguien. Con tiempo límite, tamaño máximo de respuesta,
+  y validando lo que llega: el nombre del túnel debe ser `*.trycloudflare.com`
+  (`routers/enlaces.py`). Sin Auth0 ya no hay llamadas a servicios de identidad externos.
 
-#### S-35 · Vinculación de cuentas solo con correo verificado
+#### S-35 · Sin enumeración de cuentas
 
-- **De qué protege:** *account takeover*: registrarse en Auth0 con el correo de otra familia para
-  quedarse con su historial.
-- **Cómo:** `_cuenta_de` (`identidad.py:260`): si ya existe una cuenta con ese correo, solo se
-  vincula si Auth0 dice `email_verified: true` (línea 276); si no, 409. La vinculación manual es una
-  herramienta de servidor, no HTTP (`herramientas.py`). Las primeras peticiones simultáneas no
-  duplican cuentas (`ON CONFLICT`, línea 297).
-- **Comprobación:** `test_correo_existente_sin_verificar_no_se_vincula`,
-  `test_vinculacion_manual_de_una_cuenta_del_seed`.
+- **De qué protege:** averiguar qué correos tienen cuenta (para phishing dirigido o para
+  concentrar la fuerza bruta), OWASP A07.
+- **Cómo:** `/v1/sesion/iniciar` responde **el mismo 401 y el mismo texto** si el correo no existe
+  o si la contraseña está mal, y tarda lo mismo (hash señuelo); `/v1/sesion/recuperar` responde
+  **202 siempre**; el bloqueo por intentos es por correo, exista o no. (El registro sí dice "ese
+  correo ya tiene cuenta": es inevitable para que una familia sepa que debe iniciar sesión, y está
+  limitado a 10 por hora por IP.)
+- **Comprobación:** `test_mismo_mensaje_si_el_correo_no_existe_o_la_contrasena_esta_mal`,
+  `test_recuperar_responde_igual_exista_o_no`.
 
 #### S-36 · Privacidad por diseño
 
-- **Minimización:** no se guardan contraseñas; los testimonios públicos no llevan correos; las IPs
+- **Minimización:** de las contraseñas solo se guarda su hash; el JWT no lleva ni correo ni nombre; los testimonios públicos no llevan correos; las IPs
   van seudonimizadas; las fotos van sin EXIF/GPS.
 - **Consentimiento:** se guarda **cuándo** se aceptó el aviso de privacidad (`aviso_aceptado_en`) y
   cuándo se dio el consentimiento para inscribir menores (`consentimiento_menores_en`).
 - **Derecho a borrar (HU-14):** la familia pide la eliminación (idempotente, con folio
   `ELIM-0001`); quien tiene `atender:privacidad` la atiende y se borra la cuenta y **todo lo suyo**
   en cascada, más sus fotos del almacén (`routers/admin.py:333`). La solicitud queda como
-  constancia. El usuario de Auth0 se borra desde su panel (§15).
+  constancia. Con la cuenta se va su hash de contraseña: ese correo ya no puede entrar.
 
 #### S-37 · Seguridad del lado de la app
 
-- **Tokens cifrados con el Android Keystore** (`SecureCredentialsManager`,
-  `ServicioSesion.kt:41`): AES-GCM con una llave que no sale del Keystore.
-- **PKCE** en el inicio de sesión: un `code_verifier` al azar y su SHA-256 como `code_challenge`
-  (s19: hashes y aleatoriedad criptográfica).
-- **`prompt=login`** (línea 54): siempre pide contraseña aunque el navegador recuerde a otra persona
-  (teléfonos compartidos).
-- **Refresh tokens rotados** (§4.5); access token de 1 h que el SDK renueva solo.
+- **Token cifrado con el Android Keystore** (`ServicioSesion.kt`, objeto `Cifrado`): AES-256-GCM
+  con una llave que se genera dentro del Keystore y no se puede exportar. Si alguien copia el
+  archivo de preferencias a otro teléfono, no puede descifrarlo; si lo altera, GCM lo detecta.
+- **La contraseña no se guarda** en el teléfono ni se queda en memoria después de entrar: se manda
+  una vez y se borra del formulario.
+- **El token vence** (24 h): la app lo borra un minuto antes y pide entrar otra vez; si la API dice
+  401 (sesión cerrada o contraseña cambiada), también.
 - **Token en el encabezado**, nunca en la URL; sin registros del cuerpo ni de los encabezados en
   Logcat (`ClienteApi.kt:71`); tiempos límite (línea 82).
 - **Solo HTTPS y solo CA del sistema** (S-12).
@@ -1113,7 +1206,7 @@ certificado de la app. Nadie más puede "robarse" los enlaces.
 
 #### S-39 · Pruebas de seguridad automatizadas
 
-104 pruebas que atacan lo mismo que un atacante: §12.
+147 pruebas que atacan lo mismo que un atacante: §12.
 
 #### S-40 · Monitoreo continuo con alertas
 
@@ -1179,10 +1272,11 @@ Ver §11.
 | s10 · Transporte y HTTP | HTTP sin estado + tokens; métodos GET/POST/PUT/PATCH/DELETE con su significado; parámetros de ruta, de query y cuerpo con FastAPI; retransmisiones | §6; S-20 (idempotencia) |
 | s12 · Vulnerabilidades | CIA; amenaza/vulnerabilidad/exploit; capas de diseño, implementación y operación; TOCTOU; credenciales por omisión; DoS L3/L4 | S-19, S-17, S-13, S-25 |
 | s15 · OWASP Web y API | Top 10 2025, API Top 10 2023, CWE Top 25 | §8 |
-| s19 · Criptografía | Entropía y CSPRNG (UUID, PKCE, `secrets`); hash SHA-256 (huellas de tokens, nombres de caché, PKCE); HMAC (IPs) | S-05, S-18, S-31, S-37 |
-| s20 · Criptografía moderna | AES-GCM (AEAD) en el Keystore y en TLS; RSA en las firmas RS256; ECDHE en TLS 1.3 | S-04, S-12, S-37 |
+| s19 · Criptografía | Entropía y CSPRNG (UUID, `jti`, sales de Argon2, IV del cifrado en la app, `secrets`); hash SHA-256 (huellas de tokens, llaves de intentos fallidos, nombres de caché); HMAC (IPs y firma del JWT) | S-05, S-18, S-31, S-37 |
+| s20 · Criptografía moderna | AES-GCM (AEAD) en el Keystore y en TLS; HMAC-SHA256 en las firmas del JWT; Argon2id para contraseñas; ECDHE en TLS 1.3 | S-04, S-12, S-37 |
 | TLS | Handshake, cipher suites, TLS 1.2 vs 1.3, secreto perfecto hacia adelante, HSTS | S-12, S-10 |
-| s22 · Defensa holística | Mínimo privilegio, zero trust, defensa en profundidad; DAC/MAC/RBAC/ABAC; JWT; HS256 vs RS256; consultas parametrizadas y ORM; escape de salida; UUID; encabezados; rate limit con slowapi | Prácticamente todo §7 |
+| s23 · DAC/MAC y ABAC con Oso y JWT | `POST /login` → JWT HS256 con atributos; `get_current_user`; reglas ABAC en Polar evaluadas por Oso; demostración de alteración del token | S-04, S-06, S-07 (§4.11) |
+| s22 · Defensa holística | Mínimo privilegio, zero trust, defensa en profundidad; DAC/MAC/RBAC/ABAC; JWT; HS256; consultas parametrizadas y ORM; escape de salida; UUID; encabezados; rate limit con slowapi | Prácticamente todo §7 |
 
 ---
 
@@ -1193,8 +1287,8 @@ Ver §11.
 | Antes | Ahora |
 |---|---|
 | Todo en memoria (`DatosDePrueba.kt`) | Todo de la API (Retrofit + OkHttp + kotlinx.serialization) |
-| Cuentas y contraseñas (PBKDF2) en el teléfono | Auth0 (Universal Login + PKCE); tokens en el Keystore |
-| Admin = correo con "admin" | Admin = permisos que pone Auth0 en el token |
+| Cuentas y contraseñas (PBKDF2) en el teléfono | Correo y contraseña contra la API; el JWT se guarda cifrado con el Keystore |
+| Admin = correo con "admin" | Admin = permisos que la API firma dentro del token |
 | Inscripción simulada | `PUT /v1/yo/inscripciones/{id}` con cupo real; P-08 sale cuando el servidor dice `sin_lugares` |
 | Apartar simulado | Aportación idempotente; P-14 con lo que de verdad falta |
 | Foto de perfil solo local | Se sube a la API (reducida y sin EXIF) y se guarda una copia |
@@ -1208,7 +1302,7 @@ Ver §11.
 | `data/red/ApiFamilias.kt` | Todas las rutas (Retrofit) |
 | `data/red/ClienteApi.kt` | OkHttp + token + errores → `ApiExcepcion` |
 | `data/red/Dto.kt`, `Convertir.kt` | JSON ↔ modelos del dominio (fechas en la hora de la ciudad) |
-| `data/sesion/ServicioSesion.kt` | Auth0: entrar, token, cerrar, recuperar contraseña |
+| `data/sesion/ServicioSesion.kt` | Entrar, crear cuenta, guardar el token cifrado, cerrar, pedir ayuda con la contraseña |
 | `data/*Repository.kt` | Las mismas firmas de antes, ahora contra la API |
 | `data/CuentasStore.kt` | Solo una copia mínima para el worker de avisos |
 | `ui/state/Intentar.kt` | Manejo de errores de red en los ViewModels |
@@ -1218,13 +1312,16 @@ Ver §11.
 
 ```properties
 api.url=http://10.0.2.2:8000                     # emulador; teléfono: https://…trycloudflare.com
-auth0.dominio=familias-que-suman.us.auth0.com
-auth0.cliente=<Client ID>
-auth0.audiencia=https://api.familiasquesuman
 # enlaces.dominio=app.tudominio.mx               # solo con dominio propio (§10.3)
 ```
 
 La versión de **entrega** (release) solo habla HTTPS: ahí `api.url` tiene que ser `https://…`.
+
+**Android 17 (targetSdk 37) y la red local:** para hablar con la API en tu máquina (`10.0.2.2`
+desde el emulador) la app necesita el permiso `ACCESS_LOCAL_NETWORK`. Solo la versión de
+depuración lo declara (`app/src/debug/AndroidManifest.xml`) y lo pide al abrir
+(`MainActivity.necesitaRedLocal`); si lo niegas, la app se queda "sin conexión". La de entrega
+habla con la API por internet (túnel HTTPS) y no lo pide.
 
 ### 9.4 La falla de control de acceso que se corrigió
 
@@ -1323,6 +1420,7 @@ eso existe la página con el botón. En cuanto haya dominio propio, se abre dire
 | Alerta | Cuándo | Qué podría ser |
 |---|---|---|
 | `MuchosTokensInvalidos` | > 20 en 5 min | Tokens robados o falsificados |
+| `FuerzaBrutaInicioSesion` | > 30 contraseñas equivocadas en 5 min | Fuerza bruta o *credential stuffing* contra el inicio de sesión |
 | `MuchosAccesosProhibidos` | > 20 403 en 5 min | Intento de admin o de datos ajenos |
 | `RateLimitDisparado` | > 50 en 5 min | Bot o DoS |
 | `ArchivosRechazados` | > 10 en 15 min | Subidas maliciosas |
@@ -1342,7 +1440,7 @@ activas, operaciones y rutas más usadas.
 Endurecido: sin registro público, sin acceso anónimo, cookies `SameSite=strict`, sin Gravatar, sin
 reportes ni búsqueda de actualizaciones, sin instalar plugins de internet, solo en `127.0.0.1`.
 
-**Comprobado:** Prometheus lee la API (`up`), las 9 reglas están cargadas, el contador de
+**Comprobado:** Prometheus lee la API (`up`), las 10 reglas están cargadas (incluida `FuerzaBrutaInicioSesion`), el contador de
 seguridad registra los 429 del rate limit, y Grafana responde 401 sin credenciales.
 
 ---
@@ -1354,13 +1452,14 @@ docker compose --profile pruebas run --rm --build pruebas
 ```
 
 Corren contra **PostgreSQL, Redis y RustFS reales** (una base nueva `familias_pruebas` con las
-mismas migraciones). Auth0 no se usa: las pruebas tienen su propio par de llaves RSA y firman sus
-tokens; solo se cambia, con `dependency_overrides`, de dónde saca la API la llave pública. El código
-de verificación es el de producción: **no existe un "modo de prueba" en el servidor**.
+mismas migraciones). Las personas de prueba se crean directo en la base (con su hash Argon2id) y su
+token lo firma el **mismo** `emitir_token` de producción con el secreto de pruebas; el inicio de
+sesión por HTTP se prueba aparte. **No existe un "modo de prueba" en el servidor**.
 
 | Archivo | Pruebas | Qué ataca |
 |---|---|---|
-| `test_identidad.py` | 20 | Tokens: ausentes, basura, `alg: none`, confusión HS256, otra llave, `kid` falso, alterados, vencidos, audiencia/emisor ajenos, sin `exp`; cerrar sesión; vinculación por correo |
+| `test_identidad.py` | 43 | Registro (hash Argon2id, nadie se hace admin, correo ocupado, contraseñas débiles, aviso); inicio de sesión (claims, sin enumeración, fuerza bruta por correo y por IP, recuperar); cambio de contraseña y de permisos invalida tokens; tokens ausentes, basura, `alg: none`, otro algoritmo, otro secreto, alterados, vencidos, audiencia/emisor ajenos, sin cada claim obligatorio, claims raros; cerrar sesión |
+| `test_politicas.py` | 20 | Las reglas de `politicas.polar` contra Oso directo: cada permiso, propiedad, cada motivo de inscripción y su orden, cancelar, testimonios, encuestas, aportaciones, negación por omisión |
 | `test_autorizacion.py` | 13 | BOLA, testimonios ajenos, funciones de admin, mínimo privilegio, mass assignment, correos expuestos |
 | `test_entradas.py` | 23 | SQLi en filtros, ids y cuerpos; caracteres de control; topes; rangos; fechas sin zona; enlaces `javascript:`/`intent:`; XSS en la página de invitación |
 | `test_inscripciones.py` | 9 | Cupo, edad mínima, consentimiento, modificar sin perder lugares, cancelar, idempotencia, **carrera con 8 familias a la vez** |
@@ -1369,7 +1468,7 @@ de verificación es el de producción: **no existe un "modo de prueba" en el ser
 | `test_minimo_privilegio.py` | 10 | Lo que el usuario de la base de la API NO puede hacer |
 | `test_participacion.py` | 5 | Historial e impacto desde asistencias, encuestas, eliminación de datos |
 | `test_seguridad_http.py` | 11 | Encabezados, Host, tamaño, errores sin trazas, rate limit por flujo y **global**, IP falsificada, inventario interno, sin CORS, App Links |
-| **Total** | **104** | **104 aprobadas** |
+| **Total** | **147** | **147 aprobadas** |
 
 **Dos hallazgos reales durante la verificación** (por eso se prueba):
 
@@ -1430,16 +1529,14 @@ y [`reporte-zap.md`](../backend/seguridad/zap/reporte-zap.md).
 
 ### 13.4 Lo que este escaneo no cubre (y cómo cubrirlo)
 
-El escaneo se hizo **sin token** (no había tenant de Auth0 al momento): las rutas privadas se
-probaron en su manejo de 401 y de entradas inválidas, no por dentro. Su lógica por dentro está
-cubierta por las 104 pruebas (§12). Para un escaneo **con sesión**, cuando exista el tenant:
+El escaneo se hizo **sin token**: las rutas privadas se probaron en su manejo de 401 y de entradas
+inválidas, no por dentro. Su lógica por dentro está cubierta por las 147 pruebas (§12). Para un
+escaneo **con sesión**, ahora que la API emite sus propios tokens:
 
-1. En Auth0 crea una aplicación aparte "Pruebas ZAP (solo laboratorio)" con *Password* grant y un
-   usuario de prueba **sin datos reales**. En *Settings → General → API Authorization Settings*
-   pon *Default Directory* = `Username-Password-Authentication`.
-2. Pide un token: `curl -X POST https://TU_DOMINIO/oauth/token -d grant_type=password -d username=… -d password=… -d audience=https://api.familiasquesuman -d client_id=… -d scope=openid email`.
+1. Crea una cuenta de prueba **sin datos reales** (`POST /v1/sesion/registro`).
+2. Pide su token con `POST /v1/sesion/iniciar` (§4.11).
 3. Agrega al plan un `replacer` que ponga `Authorization: Bearer <token>` en cada petición.
-4. Al terminar, **borra** esa aplicación de Auth0.
+4. Sube `LIMITE_GLOBAL` mientras escanea (si no, ZAP solo ve 429) y al terminar borra la cuenta.
 
 ---
 
@@ -1449,7 +1546,7 @@ cubierta por las 104 pruebas (§12). Para un escaneo **con sesión**, cuando exi
 
 - [ ] `ENTORNO=produccion` (la API se niega a arrancar con secretos de ejemplo).
 - [ ] Todas las contraseñas nuevas y largas (`secrets.token_urlsafe(32)`), distintas entre sí.
-- [ ] `AUTH0_*` del tenant de producción; `AUTH0_CLIENTE_APP` lleno.
+- [ ] `JWT_SECRETO` nuevo, al azar, de 48+ caracteres y distinto de `HMAC_SECRETO`.
 - [ ] Túnel con nombre y dominio propio (§10.3); TLS mínimo 1.2, HSTS en Cloudflare.
 - [ ] `HOSTS_PERMITIDOS` solo con tu dominio.
 - [ ] Sin el perfil `seed` (o sin datos de prueba): en producción no se carga `dev.sql`.
@@ -1469,8 +1566,8 @@ Las fotos están en el volumen `almacen-datos` (o, en la nube, en el bucket S3 c
 ### 14.3 Rotar un secreto
 
 Cambia el valor en `.env` y `docker compose up -d`. Para la contraseña de la API: Flyway la vuelve a
-poner al correr `migrar` (`afterMigrate.sql`). Si se filtra la llave de un token, en Auth0 se rotan
-las llaves de firma; la API las toma sola (JWKS).
+poner al correr `migrar` (`afterMigrate.sql`). Si se filtra el `JWT_SECRETO`, se cambia y se
+reinicia la API: **todos** los tokens dejan de servir de inmediato y cada familia vuelve a entrar.
 
 ### 14.4 Actualizar dependencias
 
@@ -1483,13 +1580,14 @@ cd backend/api && uv lock --upgrade && docker compose --profile pruebas run --rm
 | Síntoma | Causa | Qué hacer |
 |---|---|---|
 | `port is already allocated` | Otro programa o proyecto usa el puerto | Cambia `API_PORT`, `STORAGE_*_PORT`… en `.env` |
-| Todas las rutas privadas dan 503 `identidad_sin_configurar` | Falta `AUTH0_DOMINIO` y mandaste token | §4.10 |
-| La app dice "El inicio de sesión todavía no está configurado" | Falta `auth0.*` en `local.properties` | §9.3 y recompila |
-| 409 `correo_sin_verificar` al entrar | Ya existe una cuenta con ese correo | §4.9 (verificar o vincular) |
-| 401 `sesion_cerrada` | Se cerró sesión con ese token | Volver a entrar |
+| 401 `credenciales_invalidas` con las cuentas de prueba | La base es anterior a la V7 o el seed no corrió | `docker compose up -d --build` (corre `migrar` y `seed`) |
+| 429 `demasiados_intentos` al entrar | 5 contraseñas equivocadas seguidas con ese correo | Esperar 15 min (o `Retry-After`) |
+| 401 `sesion_cerrada` | Se cerró sesión con ese token, o cambió la contraseña o los permisos | Volver a entrar |
+| 401 `token_invalido` en todo después de reiniciar | Cambió `JWT_SECRETO` | Volver a entrar (es lo esperado) |
 | 429 `demasiadas_solicitudes` | Rate limit | Esperar lo que diga `Retry-After` |
-| `checksum mismatch` en `migrar` | Se editó una migración ya aplicada | Deshacer el cambio y crear `V7` |
+| `checksum mismatch` en `migrar` | Se editó una migración ya aplicada | Deshacer el cambio y crear `V8` |
 | Docker Desktop "unable to start" | Disco lleno | Liberar espacio / mover el disco de Docker |
+| La app en el emulador no carga nada ("sin conexión") y la API no recibe peticiones | Android 17 sin el permiso de red local | Acepta el permiso al abrir, o `adb shell pm grant mx.tec.familiasquesuman android.permission.ACCESS_LOCAL_NETWORK` (§9.3) |
 
 ---
 
@@ -1502,11 +1600,13 @@ atacante"). Esto es lo que queda, dicho con claridad:
 |---|---|---|
 | El tramo `cloudflared → api` va en HTTP | Es dentro de la misma máquina, en una red de Docker aislada | mTLS entre el túnel y la API, o una malla de servicios |
 | La API usa las llaves de administración de RustFS | RustFS está en red interna y las claves de objeto las pone el servidor | Un usuario de RustFS con política limitada al bucket |
-| El usuario de Auth0 no se borra solo al atender una eliminación | Requiere una aplicación máquina-a-máquina con secreto | Llamar a la Management API de Auth0 desde `atender` |
+| "¿Olvidaste tu contraseña?" la atiende una persona | El proyecto no tiene servidor de correo | Enviar un enlace de un solo uso por correo (token aleatorio con vencimiento, guardado como hash) |
+| HS256: el mismo secreto firma y verifica | Solo la API firma y verifica; el secreto vive solo en su entorno | RS256/EdDSA si otro servicio tuviera que verificar tokens sin poder firmarlos |
+| Un token robado sirve hasta 24 h (o hasta "Cerrar sesión") | Sin refresh tokens, una sesión más corta obligaría a entrar a cada rato | Access token de 15 min + refresh token rotado |
 | Con Quick Tunnel la dirección cambia | No hay dominio todavía | Dominio propio (§10.3) |
 | El escaneo de ZAP fue sin sesión | No había tenant al escanear | §13.4 |
 | Contraseña de Redis visible en `docker inspect` | Solo quien administra Docker la ve | Archivo de configuración o *secrets* de Docker |
-| Sin DPoP | Más complejidad | DPoP (RFC 9449; el SDK 4 de Auth0 ya lo soporta): ata el token al teléfono |
+| Sin DPoP | Más complejidad | DPoP (RFC 9449): ata el token al teléfono |
 | Sin *certificate pinning* | Los certificados de Cloudflare cambian | Evaluar con dominio propio |
 
 ---
@@ -1518,9 +1618,9 @@ atacante"). Esto es lo que queda, dicho con claridad:
 | **ABAC** | Control de acceso por atributos (de quién es, cuándo, qué permisos) |
 | **AEAD** | Cifrado que también garantiza integridad (AES-GCM, ChaCha20-Poly1305) |
 | **API** | Interfaz para que dos programas se hablen; aquí, por HTTP con JSON |
-| **Auth0** | Servicio de identidad: registro, login, contraseñas, emisión de tokens |
+| **Argon2id** | Función de hash para contraseñas, lenta y que gasta memoria a propósito (*memory-hard*) |
 | **BOLA / IDOR** | Pedir un objeto ajeno cambiando su id |
-| **bcrypt** | Función de hash lenta con sal, para contraseñas |
+| **bcrypt** | Otra función de hash lenta con sal para contraseñas (la segunda opción de OWASP) |
 | **CSP** | Encabezado que dice qué puede cargar o ejecutar una página |
 | **CSPRNG** | Generador de números al azar apto para criptografía |
 | **ECDHE** | Intercambio de llaves con curvas elípticas, efímero (secreto perfecto hacia adelante) |
@@ -1528,13 +1628,12 @@ atacante"). Esto es lo que queda, dicho con claridad:
 | **HMAC** | Hash con llave secreta: integridad y autenticidad |
 | **HSTS** | Encabezado que obliga al navegador a usar solo HTTPS |
 | **Idempotente** | Repetir la operación no cambia el resultado |
-| **JWKS** | Conjunto de llaves públicas que publica Auth0 para verificar sus tokens |
-| **JWT** | Token firmado `encabezado.contenido.firma` |
+| **HS256** | Firma de un JWT con HMAC-SHA256 y un secreto: el mismo secreto firma y verifica |
+| **JWT** | Token firmado `encabezado.contenido.firma`; el contenido se puede leer, no cambiar |
+| **Oso / Polar** | Motor de autorización y su lenguaje de reglas declarativas (`allow(actor, acción, recurso) if …`) |
 | **Mínimo privilegio** | Cada pieza tiene solo los permisos que necesita |
 | **ORM** | Capa que convierte tablas en objetos y arma consultas parametrizadas |
-| **PKCE** | Protección del flujo de login de apps nativas con un secreto de un solo uso |
 | **Rate limit** | Tope de peticiones por tiempo |
-| **RS256** | Firma RSA con SHA-256: se firma con la privada, se verifica con la pública |
 | **S3** | Protocolo de almacenamiento de objetos (archivos) |
 | **TOCTOU** | Condición de carrera entre revisar y usar |
 | **Túnel** | Conexión saliente que lleva tráfico de internet a la API sin abrir puertos |
@@ -1548,11 +1647,13 @@ atacante"). Esto es lo que queda, dicho con claridad:
 - Diapositivas del curso TC2007B (Dr. Juan David Guarnizo Hernández): s10 *Reliable Data Transfer
   Protocol and HTTP for APIs*, s12 *Introduction to Security & Network/Software Vulnerabilities*, s15
   *Security in Web Applications*, s19 *Introduction to Cryptography*, s20 *Modern Cryptography*, s22
-  *Holistic Defense*, y *Transport Layer Security* (Aumasson, *Serious Cryptography*, 2.ª ed.).
+  *Holistic Defense*, s23 *Linux DAC/MAC Models and ABAC in FastAPI with Oso and JWT
+  Authentication* (con su código `abac_jwt_fastapi`), y *Transport Layer Security* (Aumasson, *Serious Cryptography*, 2.ª ed.).
 - OWASP Top 10 2025 · OWASP API Security Top 10 2023 · OWASP Docker Top 10 · OWASP ZAP.
 - MITRE CWE Top 25 (2024).
-- RFC 7519 (JWT), RFC 7517 (JWK), RFC 6750 (Bearer), RFC 7636 (PKCE), RFC 8252 (OAuth para apps
-  nativas), RFC 8446 (TLS 1.3), RFC 6797 (HSTS), RFC 9449 (DPoP).
-- Documentación de Auth0 (APIs, RBAC, Attack Protection, Refresh Token Rotation, Auth0.Android 4).
+- RFC 7519 (JWT), RFC 7518 (JWA: HS256), RFC 6750 (Bearer), RFC 9106 (Argon2), RFC 8446 (TLS 1.3),
+  RFC 6797 (HSTS), RFC 9449 (DPoP).
+- OWASP Password Storage Cheat Sheet y Authentication Cheat Sheet.
+- Documentación de PyJWT, argon2-cffi y Oso (Polar).
 - Documentación de FastAPI, SQLAlchemy, Pydantic, slowapi/limits, Flyway, Cloudflare Tunnel,
   Prometheus y Grafana.

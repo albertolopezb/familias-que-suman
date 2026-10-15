@@ -9,24 +9,26 @@ los respete. Para no tocar los datos de desarrollo:
   · se crea una base aparte, `familias_pruebas`, desde cero, con las MISMAS migraciones;
   · Redis usa otra base lógica (/1) y el almacén otro bucket (familias-pruebas).
 
-Auth0 no se usa: las pruebas tienen su propio par de llaves RSA y firman sus tokens con la
-privada. Al servidor se le cambia (solo aquí, con dependency_overrides) de dónde saca la llave
-pública. El código que verifica la firma, el emisor, la audiencia y la fecha es el mismo de
-producción.
+Los tokens: las personas de prueba se crean directo en la base (con su contraseña en Argon2id) y
+su token lo firma el MISMO `identidad.emitir_token` de producción con el secreto de pruebas
+(JWT_SECRETO del servicio `pruebas`). Así cada prueba no tiene que pasar por /v1/sesion/iniciar
+(que tiene su propio límite por IP); el inicio de sesión se prueba aparte en test_identidad.py.
+No hay ningún "modo de prueba" en el servidor: se verifica todo igual que en producción.
 """
 
 import os
+import secrets
 import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 
 import jwt
 import psycopg
 import pytest
 import redis
-from cryptography.hazmat.primitives.asymmetric import rsa
 
 
 # ─── 1. La base de pruebas, de cero, ANTES de importar la app ────────────────
@@ -61,48 +63,24 @@ from app.main import app  # noqa: E402
 
 # ─── 2. Tokens de prueba ─────────────────────────────────────────────────────
 
-LLAVE = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-OTRA_LLAVE = rsa.generate_private_key(public_exponent=65537, key_size=2048)   # "la del atacante"
-KID = "llave-de-pruebas"
-EMISOR = ajustes.auth0_emisor
-AUDIENCIA = ajustes.auth0_audiencia
+SECRETO = ajustes.jwt_secreto
+OTRO_SECRETO = "el-secreto-que-adivino-el-atacante-0123456789"
+EMISOR = ajustes.jwt_emisor
+AUDIENCIA = ajustes.jwt_audiencia
+CONTRASENA = "una frase larga de prueba 42"
 
 
-class VerificadorDePrueba(identidad.Verificador):
-    """El verificador de producción, pero la llave pública sale de aquí y no del JWKS de Auth0."""
-
-    def __init__(self) -> None:
-        super().__init__(ajustes.auth0_dominio, AUDIENCIA)
-
-    def _llave(self, token: str):
-        if jwt.get_unverified_header(token).get("kid") != KID:
-            raise identidad._token_invalido()
-        return LLAVE.public_key()
+def firmar(claims: dict, secreto: str | None = None, algoritmo: str = "HS256", headers: dict | None = None) -> str:
+    """Para fabricar tokens a mano (los que un atacante intentaría)."""
+    return jwt.encode(claims, secreto or SECRETO, algorithm=algoritmo, headers=headers)
 
 
-class PerfilesDePrueba(identidad.ProveedorPerfil):
-    """En lugar de preguntarle a Auth0 /userinfo, cada prueba dice qué correo tiene cada sub."""
-
-    def __init__(self) -> None:
-        self.perfiles: dict[str, identidad.PerfilAuth0] = {}
-
-    def obtener(self, token: str) -> identidad.PerfilAuth0:
-        sub = jwt.decode(token, options={"verify_signature": False})["sub"]
-        return self.perfiles.get(sub) or identidad.PerfilAuth0(sub, f"{sub.split('|')[-1]}@pruebas.mx", True, "Familia de Prueba")
-
-
-PERFILES = PerfilesDePrueba()
-app.dependency_overrides[identidad.obtener_verificador] = VerificadorDePrueba
-app.dependency_overrides[identidad.obtener_proveedor_perfil] = lambda: PERFILES
-
-
-def firmar(claims: dict, llave=None, headers: dict | None = None, algoritmo: str = "RS256") -> str:
-    return jwt.encode(claims, llave or LLAVE, algorithm=algoritmo, headers=headers if headers is not None else {"kid": KID})
-
-
-def claims_de(sub: str, permisos: tuple[str, ...] = (), **cambios) -> dict:
-    ahora = int(time.time())
-    base = {"iss": EMISOR, "aud": AUDIENCIA, "sub": sub, "iat": ahora, "exp": ahora + 600, "permissions": list(permisos)}
+def claims_de(cuenta_id: str, permisos: tuple[str, ...] = (), **cambios) -> dict:
+    ahora = time.time()
+    base = {
+        "iss": EMISOR, "aud": AUDIENCIA, "sub": str(cuenta_id), "rol": identidad.rol_de(permisos),
+        "permisos": list(permisos), "iat": ahora, "exp": int(ahora) + 600, "jti": uuid.uuid4().hex,
+    }
     base.update(cambios)
     return base
 
@@ -111,9 +89,11 @@ def claims_de(sub: str, permisos: tuple[str, ...] = (), **cambios) -> dict:
 
 @dataclass
 class Persona:
-    sub: str
+    sub: str                  # el id de la cuenta (lo que va en el claim `sub`)
+    correo: str
     token: str
     permisos: tuple[str, ...] = field(default_factory=tuple)
+    contrasena: str = CONTRASENA
 
     @property
     def headers(self) -> dict[str, str]:
@@ -126,12 +106,23 @@ def cliente():
         yield c
 
 
+def crear_cuenta(*permisos: str, nombre: str = "Familia de Prueba", contrasena: str = CONTRASENA) -> Persona:
+    correo = f"{secrets.token_hex(6)}@pruebas.mx"
+    with conectar_como_dueno() as c:
+        cuenta_id = c.execute(
+            "INSERT INTO cuentas (correo, contrasena_hash, nombre_familia, rol, permisos, tokens_validos_desde) "
+            "VALUES (%s, %s, %s, %s, %s, now() - interval '1 minute') RETURNING id",
+            (correo, identidad.hash_contrasena(contrasena), nombre, identidad.rol_de(permisos), list(permisos)),
+        ).fetchone()[0]
+        c.execute("INSERT INTO preferencias (cuenta_id) VALUES (%s)", (cuenta_id,))
+    token, _ = identidad.emitir_token(SimpleNamespace(id=cuenta_id, permisos=list(permisos)))
+    return Persona(str(cuenta_id), correo, token, permisos, contrasena)
+
+
 @pytest.fixture
 def nueva_persona(cliente):
     def _crear(*permisos: str, nombre: str = "Familia de Prueba") -> Persona:
-        sub = f"auth0|{uuid.uuid4().hex}"
-        PERFILES.perfiles[sub] = identidad.PerfilAuth0(sub, f"{sub[6:]}@pruebas.mx", True, nombre)
-        persona = Persona(sub, firmar(claims_de(sub, permisos)), permisos)
+        persona = crear_cuenta(*permisos, nombre=nombre)
         r = cliente.get("/v1/yo", headers=persona.headers)
         assert r.status_code == 200, r.text
         return persona
@@ -198,8 +189,8 @@ def registrar_asistencia(cliente, admin):
         with conectar_como_dueno() as c:
             # La actividad tiene que haber pasado para que tenga sentido la asistencia.
             fila = c.execute(
-                "INSERT INTO asistencias (cuenta_id, actividad_id) SELECT id, %s FROM cuentas WHERE auth0_sub = %s RETURNING id",
-                (actividad_id, persona_id),
+                "INSERT INTO asistencias (cuenta_id, actividad_id) VALUES (%s, %s) RETURNING id",
+                (persona_id, actividad_id),
             ).fetchone()
         return str(fila[0])
 

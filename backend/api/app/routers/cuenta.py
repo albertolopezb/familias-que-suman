@@ -18,7 +18,7 @@ from ..bitacora import auditar
 from ..config import ajustes
 from ..db import obtener_db
 from ..errores import ApiError, no_encontrado
-from ..identidad import SesionesCerradas, Sujeto, obtener_sesiones, usuario_actual
+from ..identidad import Sujeto, usuario_actual
 from ..limites import limitador, por_cuenta
 from ..modelos import (
     Acompanante, Actividad, Aportacion, ArticuloMeta, Asistencia, Asociacion, Campana, Centro, Ciudad, Cuenta,
@@ -296,12 +296,3 @@ def solicitar_eliminacion(request: Request, sujeto: Sujeto = Depends(usuario_act
         db.commit()
         db.refresh(actual)
     return solicitud_salida(actual)
-
-
-# ─── Cerrar sesión ──────────────────────────────────────────────────────────
-
-@router.post("/sesion/cerrar", status_code=status.HTTP_204_NO_CONTENT, tags=["Sesión"])
-def cerrar_sesion(sujeto: Sujeto = Depends(usuario_actual), sesiones: SesionesCerradas = Depends(obtener_sesiones)):
-    """El token de esta sesión deja de servir desde ya (no solo cuando venza)."""
-    sesiones.cerrar(sujeto.huella_token, sujeto.expira_en)
-    return Response(status_code=204)

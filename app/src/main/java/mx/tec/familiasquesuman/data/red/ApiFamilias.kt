@@ -18,7 +18,7 @@ import retrofit2.http.Url
 
 /**
  * Todas las rutas de la API (backend/api). Retrofit arma cada petición a partir de estas firmas.
- * El token de Auth0 NO se pasa aquí: lo agrega ClienteApi a las que lo necesitan.
+ * El token (JWT) NO se pasa aquí: lo agrega ClienteApi a las que lo necesitan.
  */
 interface ApiFamilias {
 
@@ -37,6 +37,12 @@ interface ApiFamilias {
     @GET suspend fun descargar(@Url ruta: String): ResponseBody
     @POST("v1/sugerencias") suspend fun sugerir(@Body cuerpo: SugerenciaCuerpo): ConteoDto
 
+    // ─── Sesión: correo y contraseña → JWT ───
+    @POST("v1/sesion/iniciar") suspend fun iniciarSesion(@Body cuerpo: InicioSesionCuerpo): TokenDto
+    @POST("v1/sesion/registro") suspend fun registrarse(@Body cuerpo: RegistroCuerpo): TokenDto
+    @POST("v1/sesion/recuperar") suspend fun recuperar(@Body cuerpo: CorreoCuerpo): Response<Unit>
+    @POST("v1/sesion/cerrar") suspend fun cerrarSesion(): Response<Unit>
+
     // ─── Mi cuenta ───
     @GET("v1/yo") suspend fun yo(): YoDto
     @PATCH("v1/yo") suspend fun editarYo(@Body cambios: YoCambiosDto): YoDto
@@ -54,7 +60,6 @@ interface ApiFamilias {
     @POST("v1/yo/invitaciones") suspend fun registrarInvitacion(@Body cuerpo: InvitacionDto): ConteoDto
     @GET("v1/yo/eliminacion") suspend fun miSolicitudEliminacion(): ResponseBody   // JSON: la solicitud o null
     @POST("v1/yo/eliminacion") suspend fun solicitarEliminacion(): SolicitudEliminacionDto
-    @POST("v1/sesion/cerrar") suspend fun cerrarSesion(): Response<Unit>
 
     // ─── Inscripciones ───
     @GET("v1/yo/inscripciones") suspend fun inscripciones(): List<InscripcionDto>

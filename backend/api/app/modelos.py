@@ -36,10 +36,14 @@ class Ciudad(Base):
 class Cuenta(Base):
     __tablename__ = "cuentas"
     id: Mapped[uuid.UUID] = _id()
-    auth0_sub: Mapped[str | None] = mapped_column(Text, unique=True)
     correo: Mapped[str] = mapped_column(Text)
+    # Solo el hash Argon2id (ver identidad.py). Nunca sale en una respuesta (ver esquemas.YoSalida).
+    contrasena_hash: Mapped[str | None] = mapped_column(Text)
     correo_verificado: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
     rol: Mapped[str] = mapped_column(Text, server_default=text("'familia'"))
+    permisos: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default=text("'{}'"))
+    # Un token emitido ANTES de esta fecha ya no sirve (cambio de contraseña o de permisos).
+    tokens_validos_desde: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
     nombre_familia: Mapped[str] = mapped_column(Text)
     ciudad: Mapped[str] = mapped_column(Text, server_default=text("'Monterrey'"))
     foto_clave: Mapped[str | None] = mapped_column(Text)

@@ -19,7 +19,7 @@ import java.io.File
 
 /**
  * El contenedor de dependencias: quién construye a quién, en un solo lugar.
- * Los repositorios hablan con la API (backend/api); la sesión, con Auth0.
+ * Los repositorios y la sesión hablan con la API (backend/api).
  */
 class AppContainer(contexto: android.content.Context) {
     val sesion: ServicioSesion = ServicioSesion(contexto)

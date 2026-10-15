@@ -101,6 +101,7 @@ def inscribirse(
     personas = len(integrantes)
 
     decision = politicas.puede_guardar_inscripcion(
+        sujeto=sujeto,
         actividad_inicia=actividad.inicia_en,
         ahora=ahora,
         tiene_cupo=actividad.cupo_total > 0,

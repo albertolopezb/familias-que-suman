@@ -1,8 +1,10 @@
 [project]
 name = "familias-api"
 version = "1.0.0"
-description = "API de Familias que Suman: catálogo, cuentas, inscripciones, testimonios y donaciones. FastAPI + PostgreSQL + S3 (RustFS) + Redis, con identidad en Auth0."
-requires-python = ">=3.13"
+description = "API de Familias que Suman: catálogo, cuentas, inscripciones, testimonios y donaciones. FastAPI + PostgreSQL + S3 (RustFS) + Redis, con identidad propia en JWT y autorización ABAC con Oso."
+# 3.12 y no 3.13: Oso (las políticas ABAC en Polar, como en la guía de clase) publica sus
+# paquetes compilados hasta Python 3.12.
+requires-python = ">=3.12,<3.13"
 # Versiones exactas: lo que se probó es lo que corre (OWASP A03, cadena de suministro).
 # uv.lock además guarda el hash de cada paquete: si alguien cambia un paquete publicado, no se instala.
 dependencies = [
@@ -10,7 +12,9 @@ dependencies = [
     "uvicorn[standard]==0.54.0",
     "sqlalchemy==2.0.54",
     "psycopg[binary]==3.3.6",
-    "pyjwt[crypto]==2.15.1",
+    "pyjwt==2.15.1",             # emitir y verificar los JWT (HS256)
+    "argon2-cffi==25.1.0",       # el hash de las contraseñas (Argon2id)
+    "oso==0.27.3",               # el motor de políticas ABAC (reglas en Polar)
     "pydantic-settings==2.15.0",
     "python-multipart==0.0.32",
     "boto3==1.43.113",

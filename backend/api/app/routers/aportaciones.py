@@ -57,7 +57,7 @@ def apartar(
         raise no_encontrado("Ese artículo")
     campana = db.get(Campana, articulo.campana_id)
     faltan = articulo.meta - articulo.apartados_fuera - _apartados(db, articulo_id)
-    decision = politicas.puede_aportar(campana.cierra_en, date.today(), datos.cantidad, faltan)
+    decision = politicas.puede_aportar(sujeto, campana.cierra_en, date.today(), datos.cantidad, faltan)
     if not decision.permitido:
         db.rollback()
         metricas.operacion("aportacion", decision.codigo)

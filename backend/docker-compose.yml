@@ -105,7 +105,7 @@ services:
       - "127.0.0.1:${STORAGE_CONSOLE_PORT:-9001}:9001"
     networks: [datos, local]
 
-  # Contadores del rate limit y sesiones cerradas. Con contraseña aunque esté en una red
+  # Contadores del rate limit, intentos fallidos de inicio de sesión y sesiones cerradas. Con contraseña aunque esté en una red
   # interna (defensa en profundidad), y sin desalojar llaves: una sesión cerrada no se "olvida".
   redis:
     image: redis:8.8-alpine
@@ -146,9 +146,9 @@ services:
       S3_ENDPOINT: http://almacen:9000
       S3_ACCESS_KEY: ${STORAGE_ROOT_USER:-familias-almacen}
       S3_SECRET_KEY: ${STORAGE_ROOT_PASSWORD:-cambia-esta-contrasena-almacen}
-      AUTH0_DOMINIO: ${AUTH0_DOMINIO:-}
-      AUTH0_AUDIENCIA: ${AUTH0_AUDIENCIA:-https://api.familiasquesuman}
-      AUTH0_CLIENTE_APP: ${AUTH0_CLIENTE_APP:-}
+      # El secreto con que la API firma los JWT (HS256). Solo lo tiene la API: ni la base ni la app.
+      JWT_SECRETO: ${JWT_SECRETO:-cambia-este-secreto-jwt-de-desarrollo-32+}
+      JWT_MINUTOS: ${JWT_MINUTOS:-1440}
       HMAC_SECRETO: ${HMAC_SECRETO:-cambia-este-secreto-hmac-de-desarrollo}
       IP_TUNEL: ${IP_TUNEL:-172.31.250.10}
       HOSTS_PERMITIDOS: ${HOSTS_PERMITIDOS:-localhost,127.0.0.1,10.0.2.2,api,*.trycloudflare.com}
@@ -293,8 +293,7 @@ services:
       S3_ACCESS_KEY: ${STORAGE_ROOT_USER:-familias-almacen}
       S3_SECRET_KEY: ${STORAGE_ROOT_PASSWORD:-cambia-esta-contrasena-almacen}
       S3_BUCKET: familias-pruebas
-      AUTH0_DOMINIO: pruebas.auth0.invalid
-      AUTH0_AUDIENCIA: https://api.familiasquesuman
+      JWT_SECRETO: secreto-solo-para-las-pruebas-automaticas-0123456789
       HOSTS_PERMITIDOS: testserver,localhost
       METRICAS_ACTIVAS: "false"
       # Todas las pruebas llegan desde la misma "IP"; el límite global se sube solo aquí.

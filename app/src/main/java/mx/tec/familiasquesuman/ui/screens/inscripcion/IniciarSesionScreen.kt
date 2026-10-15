@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -31,8 +32,8 @@ import mx.tec.familiasquesuman.ui.theme.MarcaAzul
 import mx.tec.familiasquesuman.ui.theme.TintaSuave
 
 /**
- * P-26 · Iniciar sesión. La contraseña NO se escribe aquí: el botón abre la página segura de Auth0
- * (en una pestaña del navegador). Así la app nunca ve ni guarda la contraseña.
+ * P-26 · Iniciar sesión con correo y contraseña. La contraseña viaja una sola vez a la API (por
+ * HTTPS) y no se guarda en el teléfono: lo que se guarda es el token que responde la API.
  * @param regresoA "Preparar despensas de fin de mes · Sáb 12 sep" si vienen de inscribirse; si no, null.
  */
 @Composable
@@ -40,6 +41,7 @@ fun IniciarSesionScreen(
     ui: IniciarSesionUi,
     regresoA: String?,
     onCorreoChange: (String) -> Unit,
+    onContrasenaChange: (String) -> Unit,
     onEntrar: () -> Unit,
     onOlvideContrasena: () -> Unit,
     onCrearCuenta: () -> Unit,
@@ -61,18 +63,23 @@ fun IniciarSesionScreen(
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 13.sp),
                 color = TintaSuave
             )
-            Text(
-                "Te llevamos a la página segura de inicio de sesión. Tu contraseña se escribe ahí y la app nunca la ve.",
-                style = MaterialTheme.typography.bodyLarge.copy(fontSize = 13.sp),
-                color = TintaSuave
-            )
             CampoTexto(
-                etiqueta = "Correo (opcional)",
+                etiqueta = "Correo",
                 valor = ui.correo,
                 onValorChange = onCorreoChange,
                 placeholder = "familia@correo.com",
                 error = ui.errorCorreo,
                 tipoTeclado = KeyboardType.Email,
+                habilitado = !ui.enviando
+            )
+            CampoTexto(
+                etiqueta = "Contraseña",
+                valor = ui.contrasena,
+                onValorChange = onContrasenaChange,
+                placeholder = "Tu contraseña",
+                tipoTeclado = KeyboardType.Password,
+                accionTeclado = ImeAction.Done,
+                esContrasena = true,
                 habilitado = !ui.enviando
             )
             TextButton(onClick = onOlvideContrasena, contentPadding = PaddingValues(0.dp)) {
@@ -81,7 +88,7 @@ fun IniciarSesionScreen(
         }
         BarraAccionesInferior {
             BotonPrimario(
-                texto = if (ui.enviando) "Entrando…" else "Continuar a inicio de sesión",
+                texto = if (ui.enviando) "Entrando…" else "Entrar",
                 onClick = onEntrar,
                 habilitado = ui.puedeEnviar,
                 cargando = ui.enviando
@@ -98,9 +105,9 @@ fun IniciarSesionScreen(
 private fun IniciarSesionPreview() {
     FamiliasQueSumanTheme {
         IniciarSesionScreen(
-            IniciarSesionUi("ana.rodriguez@correo.com"),
+            IniciarSesionUi("ana.rodriguez@correo.com", "familia123"),
             "Preparar despensas de fin de mes · Sáb 12 sep",
-            {}, {}, {}, {}, {}
+            {}, {}, {}, {}, {}, {}
         )
     }
 }

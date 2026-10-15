@@ -20,7 +20,7 @@ familias-que-suman/          ← se abre esta carpeta en Android Studio
 ├── app/                     ← el módulo Android
 │   └── src/main/java/mx/tec/familiasquesuman/
 │       ├── domain/          ← modelos, Kotlin puro
-│       ├── data/            ← repositorios (API) y sesión (Auth0)
+│       ├── data/            ← repositorios (API) y sesión (JWT de la API)
 │       ├── ui/theme/        ← colores y tipografías de la marca
 │       ├── ui/state/        ← ViewModels, UiState, Factory
 │       ├── ui/screens/      ← una carpeta por tarea
@@ -39,7 +39,7 @@ familias-que-suman/          ← se abre esta carpeta en Android Studio
 
 - [ ] **1. Pantallas** — toda la app navegable con datos de prueba
 - [x] **2. Servidor** — base de datos y API; las pantallas leen datos reales
-- [x] **3. Cuenta y sesión** — registro, inicio de sesión (Auth0) e inscripciones
+- [x] **3. Cuenta y sesión** — registro, inicio de sesión (JWT propio de la API) e inscripciones
 - [ ] **4. Notificaciones** — recordatorios y avisos de favoritos
 - [ ] **5. Pruebas y entrega** — pruebas con familias reales y ajustes finales
 

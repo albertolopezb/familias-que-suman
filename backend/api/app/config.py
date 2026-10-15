@@ -4,8 +4,8 @@ Todo lo que cambia entre tu máquina y un servidor (contraseñas, dominios, llav
 variables de entorno, nunca en el código (OWASP A02 · CWE-798 "Hard-coded credentials").
 docker-compose.yml las pasa desde `backend/.env`.
 
-En `produccion` la API se niega a arrancar si encuentra una contraseña de ejemplo o le falta
-Auth0: es preferible que no arranque a que arranque insegura ("fallar cerrado", OWASP A10).
+En `produccion` la API se niega a arrancar si encuentra una contraseña de ejemplo o un secreto
+de JWT corto: es preferible que no arranque a que arranque insegura ("fallar cerrado", OWASP A10).
 """
 
 from functools import cached_property
@@ -28,11 +28,21 @@ class Ajustes(BaseSettings):
     # ── Redis ── contadores del rate limit y sesiones cerradas.
     redis_url: str = "redis://:cambia-esta-contrasena-redis@redis:6379/0"
 
-    # ── Auth0 ── quién emite los tokens (el "tenant") y para quién (la "audiencia" = esta API).
-    auth0_dominio: str = ""                 # ej. familias-que-suman.us.auth0.com
-    auth0_audiencia: str = "https://api.familiasquesuman"
-    # Si se llena, solo se aceptan tokens emitidos para la app Android (claim `azp`).
-    auth0_cliente_app: str = ""
+    # ── JWT ── La API emite y verifica sus propios tokens (HS256, como en la guía de clase).
+    # El SECRETO firma los tokens: quien lo tenga puede fabricar uno de administración, así que
+    # vive solo aquí (variable de entorno), nunca en el código ni en la app. Mínimo 32 caracteres.
+    jwt_secreto: str = "cambia-este-secreto-jwt-de-desarrollo-32+"
+    jwt_emisor: str = "familias-que-suman-api"          # claim `iss`: quién lo firmó
+    jwt_audiencia: str = "familias-que-suman-app"       # claim `aud`: para quién es
+    # Cuánto dura una sesión. La app no pide la contraseña cada hora: un día es el punto medio
+    # entre comodidad y riesgo (un token robado sirve como mucho 24 h, y "Cerrar sesión" lo
+    # invalida al instante; ver identidad.SesionesCerradas).
+    jwt_minutos: int = 1440
+
+    # ── Fuerza bruta contra el inicio de sesión ── Tras N contraseñas equivocadas seguidas para
+    # un mismo correo, ese correo queda bloqueado unos minutos (desde cualquier IP).
+    login_max_fallos: int = 5
+    login_bloqueo_minutos: int = 15
 
     # ── Almacén de fotos (S3: RustFS en Docker; Amazon S3 o R2 en la nube, sin cambiar código) ──
     s3_endpoint: str = "http://almacen:9000"
@@ -67,23 +77,16 @@ class Ajustes(BaseSettings):
     metricas_puerto: int = 9100
     metricas_activas: bool = True
 
-    @field_validator("auth0_dominio")
+    @field_validator("jwt_minutos")
     @classmethod
-    def _sin_esquema(cls, v: str) -> str:
-        # Se acepta "https://x.auth0.com/" o "x.auth0.com"; adentro siempre es "x.auth0.com".
-        return v.strip().removeprefix("https://").removeprefix("http://").rstrip("/")
+    def _duracion_razonable(cls, v: int) -> int:
+        if not 5 <= v <= 7 * 24 * 60:
+            raise ValueError("JWT_MINUTOS debe estar entre 5 minutos y 7 días")
+        return v
 
     @property
     def es_produccion(self) -> bool:
         return self.entorno == "produccion"
-
-    @property
-    def auth0_configurado(self) -> bool:
-        return bool(self.auth0_dominio)
-
-    @property
-    def auth0_emisor(self) -> str:
-        return f"https://{self.auth0_dominio}/"
 
     @cached_property
     def ip_del_tunel(self):
@@ -107,13 +110,16 @@ class Ajustes(BaseSettings):
             ("REDIS_URL", self.redis_url),
             ("S3_SECRET_KEY", self.s3_secret_key),
             ("HMAC_SECRETO", self.hmac_secreto),
+            ("JWT_SECRETO", self.jwt_secreto),
         ]:
             if "cambia-" in valor:
                 problemas.append(f"{nombre} todavía tiene el valor de ejemplo")
         if len(self.hmac_secreto) < 32:
             problemas.append("HMAC_SECRETO debe tener al menos 32 caracteres")
-        if not self.auth0_configurado:
-            problemas.append("Falta AUTH0_DOMINIO")
+        if len(self.jwt_secreto) < 32:
+            problemas.append("JWT_SECRETO debe tener al menos 32 caracteres")
+        if self.jwt_secreto == self.hmac_secreto:
+            problemas.append("JWT_SECRETO y HMAC_SECRETO deben ser distintos")
         if problemas:
             raise RuntimeError("La API no arranca en producción: " + "; ".join(problemas))
 

@@ -6,14 +6,14 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-// La configuración que cambia por máquina o por tenant de Auth0 NO va en el código: se lee de
-// local.properties (no se sube a Git) o de gradle.properties / -P. Ver docs/guia-backend.md §App.
+// La configuración que cambia por máquina NO va en el código: se lee de local.properties (no se
+// sube a Git) o de gradle.properties / -P. Ver docs/guia-backend.md §App.
 //
 //   api.url          dónde está la API. Emulador: http://10.0.2.2:8000 · Teléfono: la URL del túnel.
-//   auth0.dominio    el dominio del tenant, ej. familias-que-suman.us.auth0.com
-//   auth0.cliente    el Client ID de la aplicación "Native" de Auth0 (no es secreto: va dentro del APK)
-//   auth0.audiencia  el identificador de la API en Auth0
 //   enlaces.dominio  el dominio de los enlaces para compartir, cuando haya uno propio (App Links)
+//
+// Ningún secreto va aquí: lo que se compila dentro del APK lo puede leer cualquiera. El secreto
+// que firma los JWT vive solo en el servidor (backend/.env).
 val locales = Properties().apply {
     rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
 }
@@ -36,17 +36,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "API_URL", "\"${config("api.url", "http://10.0.2.2:8000")}\"")
-        buildConfigField("String", "AUTH0_DOMINIO", "\"${config("auth0.dominio")}\"")
-        buildConfigField("String", "AUTH0_CLIENTE", "\"${config("auth0.cliente")}\"")
-        buildConfigField("String", "AUTH0_AUDIENCIA", "\"${config("auth0.audiencia", "https://api.familiasquesuman")}\"")
-        buildConfigField("String", "AUTH0_ESQUEMA", "\"familiasquesuman-auth\"")
         buildConfigField("String", "ENLACES_DOMINIO", "\"${config("enlaces.dominio", "enlaces.familiasquesuman.invalid")}\"")
 
-        // Los usa el manifiesto del SDK de Auth0 (la pantalla a la que regresa el inicio de sesión)
-        // y el nuestro (los enlaces que abren la app). ".invalid" nunca existe: sin dominio propio,
-        // el filtro de App Links queda inofensivo.
-        manifestPlaceholders["auth0Domain"] = config("auth0.dominio", "sin-configurar.invalid")
-        manifestPlaceholders["auth0Scheme"] = "familiasquesuman-auth"
+        // Lo usa el manifiesto (los enlaces que abren la app). ".invalid" nunca existe: sin
+        // dominio propio, el filtro de App Links queda inofensivo.
         manifestPlaceholders["enlacesDominio"] = config("enlaces.dominio", "enlaces.familiasquesuman.invalid")
     }
 
@@ -58,7 +51,6 @@ android {
         }
     }
     compileOptions {
-        // Auth0 Android 4 pide Java 17.
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -95,6 +87,4 @@ dependencies {
     implementation(libs.retrofit.kotlinx.serialization)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
-    // Inicio de sesión con Auth0 (Universal Login + PKCE) y tokens guardados con el Android Keystore.
-    implementation(libs.auth0)
 }

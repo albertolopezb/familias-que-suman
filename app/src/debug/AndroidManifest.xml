@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SOLO depuración. Desde Android 17 (targetSdk 37) una app necesita ACCESS_LOCAL_NETWORK para hablar
+  con direcciones de la red local, y la API de desarrollo vive en tu máquina (10.0.2.2 desde el
+  emulador, o la IP de tu PC desde un teléfono en el mismo wifi). La versión de entrega habla con
+  la API por internet (HTTPS por el túnel), así que no pide este permiso.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
+</manifest>

@@ -187,6 +187,21 @@ data class YoCambiosDto(
     val aceptarAviso: Boolean? = null
 )
 
+// ─── Sesión (POST /v1/sesion/…) ───
+
+@Serializable
+data class InicioSesionCuerpo(val correo: String, val contrasena: String)
+
+@Serializable
+data class RegistroCuerpo(val correo: String, val contrasena: String, val nombreFamilia: String, val aceptaAviso: Boolean)
+
+@Serializable
+data class CorreoCuerpo(val correo: String)
+
+/** El JWT que firma la API, y cuántos segundos dura. */
+@Serializable
+data class TokenDto(val accessToken: String, val tokenType: String = "bearer", val expiraEn: Long)
+
 @Serializable
 data class AcompananteDto(val id: String, val nombre: String, val fechaNacimiento: String? = null, val edad: Int? = null, val sexo: String? = null)
 

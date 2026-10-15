@@ -1,10 +1,8 @@
 package mx.tec.familiasquesuman.ui.screens.inscripcion
 
-import android.app.Activity
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.auth0.android.authentication.AuthenticationException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,7 +44,7 @@ import java.time.LocalDateTime
 
 /**
  * Quién tiene la sesión abierta, tal como lo dice el servidor (/v1/yo). [esAdmin] sale de los
- * permisos que Auth0 puso en el token: la app solo lo usa para enseñar botones.
+ * permisos que la API firmó dentro del token: la app solo lo usa para enseñar botones.
  */
 data class Sesion(
     val familia: String,
@@ -65,45 +63,60 @@ fun Sesion?.comoUsuario(): Usuario =
 data class EstadoValidacion(
     val errorNombre: String? = null,
     val errorCorreo: String? = null,
+    val errorContrasena: String? = null,
     val errorServidor: Boolean = false
 )
 
 /**
- * P-05 · Crear cuenta. La CONTRASEÑA ya no se escribe aquí: se escribe en la página segura de
- * Auth0. Aquí solo va el nombre de la familia, el correo (para rellenar la página) y la
- * aceptación del aviso de privacidad, que se guarda en el servidor con su fecha.
+ * P-05 · Crear cuenta. La contraseña viaja una sola vez a la API (por HTTPS), que guarda solo su
+ * hash Argon2id; en el teléfono no se guarda. El aviso de privacidad aceptado se guarda en el
+ * servidor con su fecha.
  */
 data class CrearCuentaUi(
     val nombre: String = "",
     val correo: String = "",
+    val contrasena: String = "",
     val aceptaAviso: Boolean = false,
     val enviando: Boolean = false,
     val errorServidor: Boolean = false,
     val mensaje: String? = null,
+    /** "Ese correo ya tiene cuenta": lo dice el servidor, no la validación en vivo. */
+    val correoOcupado: Boolean = false,
+    /** Lo que el servidor dijo de la contraseña (por ejemplo, que es demasiado fácil). */
+    val errorContrasenaServidor: String? = null,
     val lista: Boolean = false
 ) {
+    /** Validación en vivo: un campo vacío todavía no es error, uno mal escrito sí. */
     val validacion: EstadoValidacion
         get() = EstadoValidacion(
             errorNombre = if (nombre.isNotEmpty() && nombre.trim().length < 3) "Escribe el nombre de tu familia" else null,
-            errorCorreo = if (correo.isNotEmpty() && !esCorreoValido(correo)) "Escribe un correo válido, por ejemplo familia@correo.com" else null,
+            errorCorreo = when {
+                correoOcupado -> "Ese correo ya tiene cuenta. Inicia sesión con él."
+                correo.isNotEmpty() && !esCorreoValido(correo) -> "Escribe un correo válido, por ejemplo familia@correo.com"
+                else -> null
+            },
+            errorContrasena = errorContrasenaServidor
+                ?: if (contrasena.isNotEmpty() && contrasena.length < 8) "Usa mínimo 8 caracteres" else null,
             errorServidor = errorServidor
         )
 
-    /** El botón se prende con el nombre y la casilla. El correo es opcional (Auth0 lo vuelve a pedir). */
+    /** El botón se prende solo con los tres campos válidos y la casilla marcada. */
     val puedeEnviar: Boolean
-        get() = !enviando && nombre.trim().length >= 3 && (correo.isBlank() || esCorreoValido(correo)) && aceptaAviso
+        get() = !enviando && !correoOcupado && nombre.trim().length >= 3 &&
+            esCorreoValido(correo) && contrasena.length >= 8 && aceptaAviso
 }
 
-/** P-26 · Iniciar sesión: un botón que abre la página de Auth0. El correo, si se escribe, la rellena. */
+/** P-26 · Iniciar sesión con correo y contraseña. */
 data class IniciarSesionUi(
     val correo: String = "",
+    val contrasena: String = "",
     val enviando: Boolean = false,
     val error: String? = null,
     val lista: Boolean = false
 ) {
     val errorCorreo: String?
         get() = if (correo.isNotEmpty() && !esCorreoValido(correo)) "Escribe un correo válido, por ejemplo familia@correo.com" else null
-    val puedeEnviar: Boolean get() = !enviando && (correo.isBlank() || esCorreoValido(correo))
+    val puedeEnviar: Boolean get() = !enviando && esCorreoValido(correo) && contrasena.isNotEmpty()
 }
 
 data class RecuperarUi(val correo: String = "", val enviando: Boolean = false, val enviado: Boolean = false) {
@@ -211,7 +224,7 @@ class CuentaViewModel(
     init {
         viewModelScope.launch {
             cargarCatalogo()
-            // Si quedó una sesión guardada (cifrada por Auth0), se retoma sin pedir contraseña.
+            // Si quedó una sesión guardada (el token, cifrado con el Keystore), se retoma sin pedir contraseña.
             if (servicioSesion.hayCredenciales()) runCatching { refrescarCuenta() } else olvidarSesionLocal()
             revisarAvisos()
         }
@@ -270,14 +283,9 @@ class CuentaViewModel(
 
     // ── La sesión ──
 
-    private fun mensajeSinAuth0() =
-        "El inicio de sesión todavía no está configurado en esta copia de la app (falta Auth0 en local.properties)."
-
-    /** Lo que se ve si algo sale mal al entrar. Cancelar la página de Auth0 no es un error. */
-    private fun mensajeDe(e: Throwable): String? = when {
-        e is AuthenticationException && e.isCanceled -> null
-        e is AuthenticationException -> "No pudimos entrar con Auth0. Revisa tu conexión e intenta de nuevo."
-        e is ApiExcepcion -> e.message
+    /** Lo que se ve si algo sale mal al entrar. El texto lo da el servidor (ya viene en español). */
+    private fun mensajeDe(e: Throwable): String = when (e) {
+        is ApiExcepcion -> e.message
         else -> "No pudimos entrar. Intenta de nuevo."
     }
 
@@ -289,10 +297,10 @@ class CuentaViewModel(
     } catch (e: CancellationException) {
         throw e
     } catch (e: ApiExcepcion) {
-        if (e.estado == 401 || e.codigo == "correo_sin_verificar") {
+        if (e.estado == 401) {
+            // El token venció, se cerró o la cuenta cambió de contraseña: se pide entrar otra vez.
             servicioSesion.cerrar()
             olvidarSesionLocal()
-            if (e.codigo == "correo_sin_verificar") throw e
         }
         null    // sin conexión: se queda lo que había y se reintenta la próxima vez
     }
@@ -349,33 +357,32 @@ class CuentaViewModel(
     // ── P-05 · Crear cuenta ──
 
     fun onNombreChange(v: String) = _crear.update { it.copy(nombre = v, errorServidor = false, mensaje = null) }
-    fun onCorreoChange(v: String) = _crear.update { it.copy(correo = v, errorServidor = false, mensaje = null) }
+    fun onCorreoChange(v: String) = _crear.update { it.copy(correo = v, errorServidor = false, mensaje = null, correoOcupado = false) }
+    fun onContrasenaChange(v: String) = _crear.update { it.copy(contrasena = v, errorContrasenaServidor = null) }
     fun onAceptaAvisoChange(v: Boolean) = _crear.update { it.copy(aceptaAviso = v) }
 
-    /**
-     * Abre la página de registro de Auth0. Al regresar, se guarda en el servidor el nombre de la
-     * familia y la aceptación del aviso de privacidad.
-     */
-    fun crearCuenta(actividad: Activity) {
+    /** Crea la cuenta en la API (que ya responde el token) y deja la sesión abierta. */
+    fun crearCuenta() {
         val f = _crear.value
         if (!f.puedeEnviar) return
-        if (!servicioSesion.configurada) {
-            _crear.update { it.copy(errorServidor = true, mensaje = mensajeSinAuth0()) }
-            return
-        }
         viewModelScope.launch {
             _crear.update { it.copy(enviando = true, errorServidor = false, mensaje = null) }
             try {
-                servicioSesion.iniciar(actividad, registro = true, correo = f.correo.ifBlank { null })
-                cuentaRepository.completarPerfil(nombreFamilia = f.nombre.trim(), titular = null, aceptarAviso = true)
-                refrescarCuenta()
+                servicioSesion.registrarse(f.correo, f.contrasena, f.nombre)
+                if (refrescarCuenta() == null) throw ApiExcepcion(0, "sin_conexion", "Tu cuenta se creó, pero no pudimos leerla. Revisa tu conexión.")
                 recibirAvisos(listOf(avisoBienvenida()), reemplazar = true)
-                _crear.value = CrearCuentaUi(lista = true)
+                _crear.value = CrearCuentaUi(lista = true)       // la contraseña no se queda en memoria
             } catch (e: CancellationException) {
                 throw e
+            } catch (e: ApiExcepcion) {
+                when {
+                    e.codigo == "correo_ocupado" -> _crear.update { it.copy(enviando = false, correoOcupado = true) }
+                    e.codigo == "contrasena_debil" || (e.codigo == "dato_invalido" && "contrasena" in e.message) ->
+                        _crear.update { it.copy(enviando = false, errorContrasenaServidor = "Esa contraseña es muy fácil de adivinar. Usa una frase o mezcla palabras y números.") }
+                    else -> _crear.update { it.copy(enviando = false, errorServidor = true, mensaje = e.message) }
+                }
             } catch (e: Exception) {
-                val mensaje = mensajeDe(e)
-                _crear.update { it.copy(enviando = false, errorServidor = mensaje != null, mensaje = mensaje) }
+                _crear.update { it.copy(enviando = false, errorServidor = true, mensaje = mensajeDe(e)) }
             }
         }
     }
@@ -385,24 +392,22 @@ class CuentaViewModel(
     // ── P-26 · Iniciar sesión ──
 
     fun onCorreoEntrarChange(v: String) = _entrar.update { it.copy(correo = v, error = null) }
+    fun onContrasenaEntrarChange(v: String) = _entrar.update { it.copy(contrasena = v, error = null) }
 
-    fun iniciarSesion(actividad: Activity) {
+    /** Correo y contraseña → la API responde el JWT. Si no coinciden, no se dice cuál de los dos falló. */
+    fun iniciarSesion() {
         val f = _entrar.value
         if (!f.puedeEnviar) return
-        if (!servicioSesion.configurada) {
-            _entrar.update { it.copy(error = mensajeSinAuth0()) }
-            return
-        }
         viewModelScope.launch {
             _entrar.update { it.copy(enviando = true, error = null) }
             try {
-                servicioSesion.iniciar(actividad, registro = false, correo = f.correo.ifBlank { null })
+                servicioSesion.iniciar(f.correo, f.contrasena)
                 if (refrescarCuenta() == null) throw ApiExcepcion(0, "sin_conexion", "Entraste, pero no pudimos leer tu cuenta. Revisa tu conexión.")
-                _entrar.value = IniciarSesionUi(lista = true)
+                _entrar.value = IniciarSesionUi(lista = true)       // la contraseña no se queda en memoria
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _entrar.update { it.copy(enviando = false, error = mensajeDe(e)) }
+                _entrar.update { it.copy(enviando = false, contrasena = "", error = mensajeDe(e)) }
             }
         }
     }
@@ -410,8 +415,8 @@ class CuentaViewModel(
     fun entrarAtendida() = _entrar.update { it.copy(lista = false) }
 
     /**
-     * Cierra la sesión en TODOS lados: el servidor deja de aceptar el token, Auth0 revoca el
-     * refresh token y el teléfono borra los tokens y la copia de los datos de la familia.
+     * Cierra la sesión en los dos lados: el servidor deja de aceptar el token (aunque no haya
+     * vencido) y el teléfono borra el token y la copia de los datos de la familia.
      */
     fun cerrarSesion() {
         viewModelScope.launch {
@@ -487,15 +492,15 @@ class CuentaViewModel(
     fun onCorreoRecuperarChange(v: String) = _recuperar.update { it.copy(correo = v, enviado = false) }
 
     /**
-     * Auth0 manda el correo para poner una contraseña nueva. Se responde lo mismo exista o no el
-     * correo (y aunque falle): así nadie averigua quién tiene cuenta.
+     * Le avisa al equipo de Familias que Suman que esta familia necesita una contraseña nueva. Se
+     * responde lo mismo exista o no el correo (y aunque falle): así nadie averigua quién tiene cuenta.
      */
     fun enviarEnlace() {
         val correo = _recuperar.value.correo
         if (!esCorreoValido(correo)) return
         viewModelScope.launch {
             _recuperar.update { it.copy(enviando = true) }
-            runCatching { if (servicioSesion.configurada) servicioSesion.recuperar(correo) }
+            runCatching { servicioSesion.recuperar(correo) }
             _recuperar.update { it.copy(enviando = false, enviado = true) }
         }
     }

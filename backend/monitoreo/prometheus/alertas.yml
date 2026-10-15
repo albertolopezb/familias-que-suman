@@ -11,6 +11,13 @@ groups:
           resumen: "Más de 20 tokens inválidos o vencidos en 5 minutos"
           descripcion: "Alguien podría estar probando tokens robados o falsificados. Revisa la bitácora de la API (ip_hmac)."
 
+      - alert: FuerzaBrutaInicioSesion
+        expr: sum(increase(familias_eventos_seguridad_total{tipo="credenciales_invalidas"}[5m])) > 30
+        labels: {severidad: alta}
+        annotations:
+          resumen: "Más de 30 contraseñas equivocadas en 5 minutos"
+          descripcion: "Alguien podría estar probando contraseñas (fuerza bruta o credential stuffing). Los correos atacados se bloquean solos 15 min; revisa desde cuántas ip_hmac llega."
+
       - alert: MuchosAccesosProhibidos
         expr: sum(increase(familias_eventos_seguridad_total{tipo=~"prohibido|sin_permiso"}[5m])) > 20
         labels: {severidad: alta}
@@ -72,4 +79,4 @@ groups:
         labels: {severidad: media}
         annotations:
           resumen: "El 5 % más lento tarda más de 1 s"
-          descripcion: "La base, el almacén o Auth0 están lentos, o hay demasiada carga."
+          descripcion: "La base, el almacén o Redis están lentos, o hay demasiada carga (el hash Argon2 de cada inicio de sesión también cuesta CPU)."

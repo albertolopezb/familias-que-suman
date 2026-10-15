@@ -68,7 +68,7 @@ def test_la_foto_de_perfil_no_la_ve_otra_familia(cliente, familia, otra_familia)
     _subir(cliente, familia, _jpeg_con_gps())
     from .conftest import conectar_como_dueno
     with conectar_como_dueno() as c:
-        clave = c.execute("SELECT foto_clave FROM cuentas WHERE auth0_sub = %s", (familia.sub,)).fetchone()[0]
+        clave = c.execute("SELECT foto_clave FROM cuentas WHERE id = %s", (familia.sub,)).fetchone()[0]
     assert cliente.get(f"/v1/fotos/{clave}").status_code == 401                            # sin sesión
     assert cliente.get(f"/v1/fotos/{clave}", headers=otra_familia.headers).status_code == 404
     assert cliente.get(f"/v1/fotos/{clave}", headers=familia.headers).status_code == 200

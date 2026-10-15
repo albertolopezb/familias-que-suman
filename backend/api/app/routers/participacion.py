@@ -184,7 +184,7 @@ def encuesta_previa(request: Request, actividad_id: uuid.UUID, datos: e.Encuesta
     inscrita = db.scalar(select(Inscripcion.id).where(
         Inscripcion.cuenta_id == sujeto.cuenta_id, Inscripcion.actividad_id == actividad_id, Inscripcion.cancelada_en.is_(None)
     )) is not None
-    politicas.exigir(politicas.puede_contestar_previa(inscrita, actividad.inicia_en, datetime.now(UTC)))
+    politicas.exigir(politicas.puede_contestar_previa(sujeto, inscrita, actividad.inicia_en, datetime.now(UTC)))
     return encuesta_salida(_guardar_encuesta(db, sujeto, actividad_id, "antes", None, datos), sujeto.nombre_familia)
 
 
