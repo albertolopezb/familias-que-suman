@@ -34,6 +34,5 @@ def dependencias(request: Request) -> dict:
         "base_de_datos": base,
         "redis": obtener_sesiones().disponible(),
         "almacen": almacen.disponible(),
-        "auth0_configurado": ajustes.auth0_configurado,
         "entorno": ajustes.entorno,
     }

@@ -1,4 +1,4 @@
-"""Administración del catálogo y de la privacidad. Todo aquí pide un PERMISO de Auth0:
+"""Administración del catálogo y de la privacidad. Todo aquí pide un PERMISO (claim `permisos` del JWT):
 
   · administrar:catalogo → crear, editar y borrar asociaciones, actividades, campañas, proyectos y centros.
   · atender:privacidad   → ver y atender las solicitudes de eliminación de datos.
@@ -332,8 +332,9 @@ def solicitudes(s: Sujeto = Depends(requiere(ATENDER_PRIVACIDAD)), db: Session =
 @router.post("/solicitudes-eliminacion/{solicitud_id}/atender", response_model=e.SolicitudEliminacionSalida)
 def atender(request: Request, solicitud_id: uuid.UUID, s: Sujeto = Depends(requiere(ATENDER_PRIVACIDAD)), db: Session = Depends(obtener_db)):
     """Borra la cuenta y TODO lo suyo (las tablas lo hacen en cascada) y sus fotos del almacén.
-    La solicitud se queda, sin la cuenta, como constancia. El usuario en Auth0 se elimina
-    desde el panel de Auth0 (ver la guía)."""
+    La solicitud se queda, sin la cuenta, como constancia. Con la cuenta se va su contraseña
+    (el hash): ese correo ya no puede entrar, y sus tokens vigentes dejan de servir porque la
+    cuenta ya no existe."""
     solicitud = db.get(SolicitudEliminacion, solicitud_id) or _no(no_encontrado("Esa solicitud"))
     if solicitud.estado != "pendiente":
         return solicitud_salida(solicitud, con_correo=True)

@@ -9,9 +9,11 @@
 --     Si editas una de estas desde la app, el siguiente `up` la regresa como está aquí.
 --   · Lo de la FAMILIA DE PRUEBA solo se agrega si no existe: no pisa lo que hagas al probar.
 --
--- Familia de prueba: ana.rodriguez@correo.com. Las contraseñas ya no viven aquí (las guarda
--- Auth0): crea en Auth0 un usuario con ese correo y vincúlalo (ver docs/guia-backend.md, §Auth0).
--- La cuenta de administración es la que tenga los permisos en Auth0.
+-- Cuentas de prueba (SOLO desarrollo; la contraseña se guarda como hash Argon2id, nunca en claro):
+--   · familia:        ana.rodriguez@correo.com / familia123
+--   · administración: admin@correo.com         / admin123   (con los cuatro permisos)
+-- En un servidor real no se carga este archivo: las cuentas se crean desde la app y los permisos
+-- se dan con `python -m app.herramientas permisos` (ver docs/guia-backend.md, §4).
 
 \set ON_ERROR_STOP on
 
@@ -22,9 +24,6 @@ LANGUAGE sql STABLE AS $$
     SELECT ((date_trunc('week', now() AT TIME ZONE 'America/Monterrey')::date + dia + 7 * semanas)::text || ' ' || hora)::timestamp
            AT TIME ZONE 'America/Monterrey'
 $$;
-
--- La cuenta de admin del seed anterior ya no se usa: el admin lo decide Auth0.
-DELETE FROM cuentas WHERE id = 'c0000000-0000-0000-0000-000000000001' AND auth0_sub IS NULL;
 
 -- ─── Asociaciones del directorio y quienes organizan actividades ────────────
 INSERT INTO asociaciones (id, nombre, categoria, descripcion, direccion, telefono, whatsapp, correo, en_directorio) VALUES
@@ -346,12 +345,24 @@ ON CONFLICT (id) DO UPDATE SET
   como_ayudar = EXCLUDED.como_ayudar, recomendaciones = EXCLUDED.recomendaciones, instagram = EXCLUDED.instagram;
 
 -- ─── La familia de prueba (solo se agrega si no existe) ─────────────────────
-INSERT INTO cuentas (id, correo, correo_verificado, rol, nombre_familia, ciudad, titular_nombre, titular_nacimiento, titular_sexo, aviso_aceptado_en) VALUES
-  ('c0000000-0000-0000-0000-000000000002', 'ana.rodriguez@correo.com', false, 'familia', 'Familia Rodríguez', 'Monterrey',
-   'Ana Rodríguez', '1988-05-20', 'FEMENINO', now())
+INSERT INTO cuentas (id, correo, contrasena_hash, rol, permisos, nombre_familia, ciudad, titular_nombre, titular_nacimiento, titular_sexo, aviso_aceptado_en) VALUES
+  ('c0000000-0000-0000-0000-000000000002', 'ana.rodriguez@correo.com',
+   '$argon2id$v=19$m=19456,t=2,p=1$ll8cSI2byTIoj5Dh0EvKzg$6pWa/GriWggzfGf8mgugOKaPghGhEFxtqos1IwfjffU', 'familia', '{}', 'Familia Rodríguez', 'Monterrey',
+   'Ana Rodríguez', '1988-05-20', 'FEMENINO', now()),
+  ('c0000000-0000-0000-0000-000000000001', 'admin@correo.com',
+   '$argon2id$v=19$m=19456,t=2,p=1$c4A4M38t8CDtAbRpANxWow$Woy/CA2GUQHEdGPF2h5Uhf2czIF90dRru1aPWibmIvc', 'admin',
+   ARRAY['administrar:catalogo', 'moderar:contenido', 'registrar:asistencias', 'atender:privacidad'],
+   'Administración Familias que Suman', 'Monterrey', 'Administración', NULL, NULL, now())
 ON CONFLICT DO NOTHING;
+-- Si la base ya tenía estas cuentas de antes (sin contraseña, de cuando entraban con Auth0), se
+-- les pone la de prueba. Una contraseña que alguien ya cambió no se toca.
+UPDATE cuentas SET contrasena_hash = '$argon2id$v=19$m=19456,t=2,p=1$ll8cSI2byTIoj5Dh0EvKzg$6pWa/GriWggzfGf8mgugOKaPghGhEFxtqos1IwfjffU'
+ WHERE id = 'c0000000-0000-0000-0000-000000000002' AND contrasena_hash IS NULL;
+UPDATE cuentas SET contrasena_hash = '$argon2id$v=19$m=19456,t=2,p=1$c4A4M38t8CDtAbRpANxWow$Woy/CA2GUQHEdGPF2h5Uhf2czIF90dRru1aPWibmIvc', rol = 'admin',
+       permisos = ARRAY['administrar:catalogo', 'moderar:contenido', 'registrar:asistencias', 'atender:privacidad']
+ WHERE id = 'c0000000-0000-0000-0000-000000000001' AND contrasena_hash IS NULL;
 
-INSERT INTO preferencias (cuenta_id) VALUES ('c0000000-0000-0000-0000-000000000002') ON CONFLICT DO NOTHING;
+INSERT INTO preferencias (cuenta_id) VALUES ('c0000000-0000-0000-0000-000000000002'), ('c0000000-0000-0000-0000-000000000001') ON CONFLICT DO NOTHING;
 
 INSERT INTO acompanantes (id, cuenta_id, nombre, fecha_nacimiento, sexo) VALUES
   ('a0000000-0000-0000-0000-000000000001', 'c0000000-0000-0000-0000-000000000002', 'Mateo Rodríguez', '2017-03-14', 'MASCULINO'),

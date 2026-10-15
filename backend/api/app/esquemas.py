@@ -287,6 +287,56 @@ class YoEntrada(Entrada):
     aceptar_aviso: bool | None = None
 
 
+# ─── Sesión: correo y contraseña → JWT ──────────────────────────────────────
+# Las contraseñas NO se recortan ni se pasan a minúsculas (por eso no heredan de Entrada): una
+# contraseña con un espacio al final es otra contraseña. Se limita el largo para que nadie mande
+# un "contraseña" de 1 MB a que la API la pase por Argon2 (OWASP API4).
+
+_MUY_COMUNES = {
+    "12345678", "123456789", "1234567890", "87654321", "11111111", "00000000", "password", "password1",
+    "contraseña", "contrasena", "qwertyui", "qwerty123", "abcdefgh", "abc12345", "iloveyou", "monterrey",
+}
+
+
+def _contrasena_nueva(v: str) -> str:
+    if _CONTROL.search(v):
+        raise ValueError("tiene caracteres no permitidos")
+    if not v.strip() or len(set(v)) < 4 or v.lower() in _MUY_COMUNES:
+        raise ValueError("es demasiado fácil de adivinar; usa una frase o mezcla palabras y números")
+    return v
+
+
+CorreoObligatorio = Annotated[str, StringConstraints(strip_whitespace=True, min_length=6, max_length=254), AfterValidator(_correo)]
+
+
+class EntradaSesion(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class InicioSesionEntrada(EntradaSesion):
+    correo: CorreoObligatorio
+    contrasena: Annotated[str, StringConstraints(min_length=1, max_length=128)]
+
+
+class RegistroEntrada(EntradaSesion):
+    correo: CorreoObligatorio
+    contrasena: Annotated[str, StringConstraints(min_length=8, max_length=128), AfterValidator(_contrasena_nueva)]
+    nombre_familia: Texto(80, 3)
+    acepta_aviso: bool
+
+
+class RecuperarEntrada(EntradaSesion):
+    correo: CorreoObligatorio
+
+
+class TokenSalida(BaseModel):
+    """Lo mismo que responde el /login de la guía: el JWT y su tipo. Más cuánto dura (segundos)."""
+
+    access_token: str
+    token_type: Literal["bearer"] = "bearer"
+    expira_en: int
+
+
 class AcompananteSalida(BaseModel):
     id: uuid.UUID
     nombre: str

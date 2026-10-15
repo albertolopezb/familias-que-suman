@@ -5,7 +5,7 @@
 OWASP A10:2025 (manejo de condiciones excepcionales): cuando algo truena, la API
   · responde un mensaje genérico (nunca la traza, la consulta SQL ni la versión de nada),
   · guarda el detalle en la bitácora del servidor con el id de la solicitud,
-  · y FALLA CERRADO: si no puede verificar algo (la base, Auth0, Redis), niega; no deja pasar.
+  · y FALLA CERRADO: si no puede verificar algo (la base, Redis), niega; no deja pasar.
 """
 
 import logging

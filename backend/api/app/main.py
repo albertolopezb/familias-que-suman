@@ -7,7 +7,7 @@
 Cómo está armada (ver docs/guia-backend.md para el detalle de cada pieza):
 
     petición → Registro → EncabezadosSeguridad → HostValido → LimiteCuerpo → RateLimit global
-             → CapturarErrores → ruta → [identidad: token de Auth0] → [políticas ABAC] → ORM → PostgreSQL
+             → CapturarErrores → ruta → [identidad: JWT propio (HS256)] → [políticas ABAC en Polar (Oso)] → ORM → PostgreSQL
 """
 
 import logging
@@ -20,7 +20,7 @@ from . import almacen, bitacora, errores, metricas
 from .config import ajustes
 from .errores import ApiError
 from .limites import LimiteGlobal, limitador
-from .routers import admin, aportaciones, catalogo, cuenta, enlaces, inscripciones, participacion, salud, sugerencias
+from .routers import admin, aportaciones, catalogo, cuenta, enlaces, inscripciones, participacion, salud, sesion, sugerencias
 from .seguridad import CapturarErrores, EncabezadosSeguridad, HostValido, LimiteCuerpo, Registro
 
 log = logging.getLogger("familias")
@@ -43,7 +43,7 @@ async def arranque(_: FastAPI):
 app = FastAPI(
     title="API · Familias que Suman",
     version="1.0.0",
-    description="Catálogo, cuentas, inscripciones, testimonios, encuestas y campañas. Identidad con Auth0 (JWT RS256).",
+    description="Catálogo, cuentas, inscripciones, testimonios, encuestas y campañas. Identidad con JWT propio (HS256) y autorización ABAC con Oso.",
     lifespan=arranque,
     # La documentación no se publica sola: ver /openapi.json y /docs abajo.
     openapi_url=None,
@@ -63,7 +63,7 @@ app.add_middleware(Registro)
 # Sin CORSMiddleware a propósito: la API la usa una app nativa, no un sitio web. Sin CORS, el
 # navegador no deja que una página ajena llame a la API con los datos de quien la visita.
 
-for modulo in (salud, catalogo, enlaces, cuenta, inscripciones, participacion, aportaciones, sugerencias, admin):
+for modulo in (salud, sesion, catalogo, enlaces, cuenta, inscripciones, participacion, aportaciones, sugerencias, admin):
     app.include_router(modulo.router)
 
 

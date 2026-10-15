@@ -8,9 +8,10 @@ Dos llaves de conteo:
   · por IP (la real, ver seguridad.ip_real) para lo que es público;
   · por CUENTA para lo que pide sesión: un bot con muchas IPs pero una sola cuenta igual se frena.
 
-¿Y la fuerza bruta contra el inicio de sesión? El login es de Auth0, que ya bloquea una cuenta
-tras varios intentos fallidos desde la misma IP (Brute-force Protection) y frena IPs
-sospechosas (Suspicious IP Throttling). Aquí se limita todo lo demás.
+¿Y la fuerza bruta contra el inicio de sesión? Dos frenos que se suman:
+  · por IP: INICIAR_SESION (abajo) — un bot desde una máquina no puede probar mil contraseñas;
+  · por CORREO: tras 5 contraseñas equivocadas seguidas, ese correo se bloquea 15 minutos venga
+    de la IP que venga (identidad.SesionesCerradas.anotar_fallo) — un bot con muchas IPs tampoco.
 
 Si Redis se cae, slowapi sigue contando en la memoria del proceso con un límite más estricto:
 se protege la disponibilidad sin quedarse sin freno.
@@ -44,6 +45,9 @@ limitador = Limiter(
 )
 
 # Los límites de cada flujo sensible, en un solo lugar para poder revisarlos (y explicarlos).
+INICIAR_SESION = "10/minute;60/hour"  # por IP; el bloqueo por correo va aparte (identidad.py)
+REGISTRARSE = "10/hour"             # crear cuentas en masa (bots, spam) desde una IP
+RECUPERAR = "5/hour"
 SUGERIR = "5/hour"                  # público y anónimo: lo más estricto
 INSCRIBIR = "30/hour"               # inscribirse, modificar y cancelar
 APORTAR = "30/hour"

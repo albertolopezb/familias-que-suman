@@ -1,73 +1,85 @@
-"""Autenticación: ¿quién eres? La responde Auth0; aquí solo se VERIFICA.
+"""Identificación: ¿quién eres? Con JWT emitidos y verificados por esta misma API.
 
-Cómo funciona (OAuth 2.0 + OpenID Connect):
-  1. La app abre la página de inicio de sesión de Auth0 (Universal Login) con PKCE.
-  2. Auth0 revisa correo y contraseña (que guarda con hash bcrypt y protege contra fuerza bruta)
-     y le da a la app un ACCESS TOKEN: un JWT firmado con la llave PRIVADA RSA de Auth0 (RS256).
-  3. La app manda ese token en cada petición: `Authorization: Bearer <token>`.
-  4. Esta API descarga las llaves PÚBLICAS de Auth0 (JWKS, https://<tenant>/.well-known/jwks.json)
-     y comprueba la firma. Con la llave pública se puede VERIFICAR, pero no FIRMAR: aunque alguien
-     robara esta API completa, no podría fabricar tokens. Es la diferencia HS256 vs RS256 de clase.
+Es el esquema de la guía de clase (s23 · "Stateless Identity: JWT Authentication in FastAPI"):
+
+  1. La app manda correo y contraseña UNA vez a `POST /v1/sesion/iniciar` (por HTTPS).
+  2. La API busca la cuenta, compara la contraseña contra su hash Argon2id y, si coincide,
+     firma un JWT con HMAC-SHA256 (HS256) usando un secreto que solo ella conoce.
+  3. La app guarda ese token y lo manda en cada petición: `Authorization: Bearer <token>`.
+  4. La API vuelve a calcular la firma: si alguien cambió UN solo carácter del contenido (por
+     ejemplo `"permisos": []` → `["administrar:catalogo"]`), la firma ya no coincide y es 401.
+     Así la API no tiene que guardar sesiones: el token se defiende solo ("stateless").
+
+Lo que lleva el token (claims):
+  · iss / aud      quién lo emitió (esta API) y para quién es (la app). Un JWT de otro sistema
+                   firmado con otro secreto no sirve, y uno nuestro no sirve en otro sistema.
+  · sub            el id de la cuenta (UUID). Nada de correo ni nombre: el contenido de un JWT
+                   se puede LEER (solo está en Base64), no se debe poner nada privado.
+  · rol, permisos  los ATRIBUTOS del sujeto que usan las políticas ABAC (politicas.polar).
+  · iat / exp      cuándo se emitió y cuándo vence.
+  · jti            un id único: dos tokens nunca son iguales.
 
 Qué se revisa de cada token, y por qué:
-  · alg == RS256 y nada más        → cierra el ataque "alg: none" y la confusión RS256/HS256.
-  · la firma con la llave del `kid` → nadie alteró el contenido (integridad y autenticidad).
-  · iss == https://<tenant>/        → lo emitió NUESTRO tenant, no otro de Auth0.
-  · aud == esta API                 → el token era para nosotros, no para otra API.
-  · exp / iat                       → no está vencido (tolerancia de 30 s por relojes).
-  · azp (opcional)                  → lo pidió nuestra app Android.
-  · no está en la lista de sesiones cerradas (Redis).
+  · alg == HS256 y nada más        → cierra el ataque "alg: none" y la confusión de algoritmos.
+  · la firma con NUESTRO secreto   → nadie alteró el contenido (integridad y autenticidad).
+  · iss, aud, exp, iat, sub, jti   → obligatorios; vencido = 401 (tolerancia de 30 s por relojes).
+  · que no esté en la lista de sesiones cerradas (Redis) y que sea más nuevo que el último
+    cambio de contraseña o de permisos de la cuenta (`tokens_validos_desde`).
 
-Si Auth0 no responde, la API NO deja pasar a nadie: responde 503 (falla cerrado, OWASP A10).
+Si Redis no responde, la API NO deja pasar a nadie: responde 503 (falla cerrado, OWASP A10).
 """
 
 import hashlib
-import json
 import logging
 import time
-import urllib.error
-import urllib.request
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
 import jwt
 import redis
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHashError, VerificationError
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import func, select
-from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from .config import ajustes
 from .db import obtener_db
 from .errores import ApiError
-from .modelos import Cuenta, Preferencias
+from .modelos import Cuenta
 
 log = logging.getLogger("familias.identidad")
 
-# Los permisos que da Auth0 (RBAC de la API). Cada función de administración pide el suyo:
-# quien solo registra asistencias no puede borrar campañas (mínimo privilegio, OWASP API5).
+# Los permisos de administración. Cada función pide el suyo: quien solo registra asistencias no
+# puede borrar campañas (mínimo privilegio, OWASP API5). Se guardan en la cuenta y viajan en el JWT.
 ADMINISTRAR_CATALOGO = "administrar:catalogo"
 MODERAR_CONTENIDO = "moderar:contenido"
 REGISTRAR_ASISTENCIAS = "registrar:asistencias"
 ATENDER_PRIVACIDAD = "atender:privacidad"
 PERMISOS_ADMIN = frozenset({ADMINISTRAR_CATALOGO, MODERAR_CONTENIDO, REGISTRAR_ASISTENCIAS, ATENDER_PRIVACIDAD})
 
-MAX_LARGO_TOKEN = 8192
+ALGORITMO = "HS256"
+MAX_LARGO_TOKEN = 4096
 
 
 @dataclass(frozen=True)
 class Sujeto:
-    """Quién hace la petición, con los ATRIBUTOS que usan las políticas ABAC (politicas.py)."""
+    """Quién hace la petición, con los ATRIBUTOS que usan las políticas ABAC (politicas.polar).
+    `rol` y `permisos` salen del token (firmado); el correo y el nombre, de la base."""
 
     cuenta_id: uuid.UUID
-    sub: str
     correo: str
     nombre_familia: str
+    rol: str
     permisos: frozenset[str]
     huella_token: str          # SHA-256 del token: para cerrarlo sin guardar el token
     expira_en: int
+
+    @property
+    def id(self) -> str:
+        """El id como texto: así lo compara Polar con el dueño de cada recurso."""
+        return str(self.cuenta_id)
 
     def puede(self, permiso: str) -> bool:
         return permiso in self.permisos
@@ -81,7 +93,9 @@ def huella(token: str) -> str:
     return hashlib.sha256(token.encode("ascii", errors="ignore")).hexdigest()
 
 
-# ─── Verificar la firma ──────────────────────────────────────────────────────
+def rol_de(permisos: frozenset[str] | set[str] | list[str]) -> str:
+    return "admin" if set(permisos) & PERMISOS_ADMIN else "familia"
+
 
 class IdentidadNoDisponible(ApiError):
     def __init__(self) -> None:
@@ -98,101 +112,96 @@ def _token_invalido(codigo: str = "token_invalido") -> ApiError:
     return ApiError(401, mensajes[codigo], codigo)
 
 
-class Verificador:
-    """Verifica tokens de Auth0 con sus llaves públicas (JWKS), que se guardan en memoria una
-    hora y se vuelven a pedir si llega un `kid` nuevo (Auth0 rota sus llaves)."""
+# ─── Contraseñas: Argon2id ───────────────────────────────────────────────────
+# Argon2id es la primera opción de OWASP (Password Storage Cheat Sheet). Cada hash lleva su propia
+# sal al azar, y calcularlo cuesta memoria a propósito: probar millones de contraseñas contra una
+# tabla robada sale carísimo, incluso con tarjetas gráficas. Parámetros: la configuración mínima
+# que recomienda OWASP (19 MiB, 2 pasadas, 1 hilo), para que la API (512 MB) aguante varios
+# inicios de sesión a la vez.
 
-    def __init__(self, dominio: str, audiencia: str, cliente_app: str = "") -> None:
-        self.emisor = f"https://{dominio}/"
-        self.audiencia = audiencia
-        self.cliente_app = cliente_app
-        self._jwks = jwt.PyJWKClient(
-            f"https://{dominio}/.well-known/jwks.json", cache_keys=True, lifespan=3600, timeout=5
+_hasher = PasswordHasher(time_cost=2, memory_cost=19456, parallelism=1)
+# Un hash de mentira para comparar cuando el correo NO existe: así tarda lo mismo que cuando sí
+# existe y nadie puede averiguar qué correos tienen cuenta midiendo el tiempo de respuesta.
+_HASH_SENUELO = _hasher.hash("contraseña-que-nadie-tiene")
+
+
+def hash_contrasena(contrasena: str) -> str:
+    return _hasher.hash(contrasena)
+
+
+def contrasena_correcta(guardado: str | None, contrasena: str) -> bool:
+    try:
+        return _hasher.verify(guardado or _HASH_SENUELO, contrasena) and guardado is not None
+    except (VerificationError, InvalidHashError):
+        return False
+
+
+def necesita_rehash(guardado: str) -> bool:
+    """Si algún día se suben los parámetros, el hash viejo se rehace al entrar (con la contraseña en mano)."""
+    return _hasher.check_needs_rehash(guardado)
+
+
+# ─── Emitir y verificar el JWT ───────────────────────────────────────────────
+
+def emitir_token(cuenta: Cuenta) -> tuple[str, int]:
+    """Firma el token de una cuenta. Devuelve el token y cuántos segundos dura."""
+    # `iat` con fracciones de segundo (el estándar JWT lo permite): así un token emitido justo
+    # antes de un cambio de contraseña no "empata" con él y se invalida sin ventana de 1 s.
+    ahora = time.time()
+    segundos = ajustes.jwt_minutos * 60
+    permisos = sorted(set(cuenta.permisos or ()) & PERMISOS_ADMIN)
+    claims = {
+        "iss": ajustes.jwt_emisor,
+        "aud": ajustes.jwt_audiencia,
+        "sub": str(cuenta.id),
+        "rol": rol_de(permisos),
+        "permisos": permisos,
+        "iat": ahora,
+        "exp": int(ahora) + segundos,
+        "jti": uuid.uuid4().hex,
+    }
+    return jwt.encode(claims, ajustes.jwt_secreto, algorithm=ALGORITMO), segundos
+
+
+def verificar_token(token: str) -> dict:
+    """Las claims de un token válido, o 401. Ninguna parte del token se cree antes de verificar la firma."""
+    if not token or len(token) > MAX_LARGO_TOKEN or token.count(".") != 2:
+        raise _token_invalido()
+    try:
+        encabezado = jwt.get_unverified_header(token)
+    except jwt.DecodeError as e:
+        raise _token_invalido() from e
+    # `algorithms=[HS256]` abajo ya lo exige; revisarlo antes deja claro que "none" ni se intenta.
+    if encabezado.get("alg") != ALGORITMO:
+        raise _token_invalido()
+    try:
+        claims = jwt.decode(
+            token,
+            ajustes.jwt_secreto,
+            algorithms=[ALGORITMO],
+            audience=ajustes.jwt_audiencia,
+            issuer=ajustes.jwt_emisor,
+            leeway=30,
+            options={"require": ["exp", "iat", "iss", "aud", "sub", "jti"]},
         )
-
-    def _llave(self, token: str):
-        try:
-            return self._jwks.get_signing_key_from_jwt(token).key
-        except jwt.PyJWKClientConnectionError as e:
-            log.error("No se pudo leer el JWKS de Auth0", exc_info=e)
-            raise IdentidadNoDisponible() from e
-        except (jwt.PyJWKClientError, jwt.DecodeError) as e:
-            raise _token_invalido() from e
-
-    def verificar(self, token: str) -> dict:
-        if len(token) > MAX_LARGO_TOKEN or token.count(".") != 2:
-            raise _token_invalido()
-        try:
-            encabezado = jwt.get_unverified_header(token)
-        except jwt.DecodeError as e:
-            raise _token_invalido() from e
-        if encabezado.get("alg") != "RS256" or not encabezado.get("kid"):
-            raise _token_invalido()
-        llave = self._llave(token)
-        try:
-            claims = jwt.decode(
-                token,
-                llave,
-                algorithms=["RS256"],
-                audience=self.audiencia,
-                issuer=self.emisor,
-                leeway=30,
-                options={"require": ["exp", "iat", "iss", "aud", "sub"]},
-            )
-        except jwt.ExpiredSignatureError as e:
-            raise _token_invalido("token_expirado") from e
-        except jwt.InvalidTokenError as e:
-            raise _token_invalido() from e
-        if self.cliente_app and claims.get("azp") != self.cliente_app:
-            raise _token_invalido()
-        if not isinstance(claims.get("sub"), str) or not 1 <= len(claims["sub"]) <= 255:
-            raise _token_invalido()
-        return claims
+    except jwt.ExpiredSignatureError as e:
+        raise _token_invalido("token_expirado") from e
+    except jwt.InvalidTokenError as e:
+        raise _token_invalido() from e
+    # Aunque la firma sea buena, la forma de las claims se revisa igual (defensa en profundidad).
+    try:
+        claims["cuenta_id"] = uuid.UUID(claims["sub"])
+    except (ValueError, TypeError, AttributeError) as e:
+        raise _token_invalido() from e
+    permisos = claims.get("permisos", [])
+    if not isinstance(permisos, list) or not all(isinstance(p, str) and p in PERMISOS_ADMIN for p in permisos):
+        raise _token_invalido()
+    if claims.get("rol") not in ("familia", "admin") or isinstance(claims["iat"], bool) or not isinstance(claims["iat"], int | float):
+        raise _token_invalido()
+    return claims
 
 
-# ─── El perfil de Auth0 (solo la primera vez) ────────────────────────────────
-
-@dataclass(frozen=True)
-class PerfilAuth0:
-    sub: str
-    correo: str
-    verificado: bool
-    nombre: str
-
-
-class ProveedorPerfil:
-    """Le pregunta a Auth0 (/userinfo) el correo de la persona. Solo se usa la primera vez
-    que una cuenta llega a la API, para crearla aquí.
-
-    OWASP API10 (consumo inseguro de APIs): la respuesta de Auth0 tampoco se cree a ciegas.
-    Se pide con HTTPS y tiempo límite, y se revisan los tipos, los largos y que el `sub`
-    sea el mismo del token.
-    """
-
-    def __init__(self, dominio: str) -> None:
-        self.url = f"https://{dominio}/userinfo"
-
-    def obtener(self, token: str) -> PerfilAuth0:
-        solicitud = urllib.request.Request(self.url, headers={"Authorization": f"Bearer {token}", "Accept": "application/json"})
-        try:
-            with urllib.request.urlopen(solicitud, timeout=5) as r:  # noqa: S310 — URL fija de la configuración
-                if r.status != 200:
-                    raise IdentidadNoDisponible()
-                datos = json.loads(r.read(64_000))
-        except urllib.error.HTTPError as e:
-            if e.code in (401, 403):
-                raise _token_invalido() from e
-            raise IdentidadNoDisponible() from e
-        except (urllib.error.URLError, TimeoutError, ValueError) as e:
-            raise IdentidadNoDisponible() from e
-        sub, correo = datos.get("sub"), datos.get("email")
-        if not isinstance(sub, str) or not isinstance(correo, str) or not 3 <= len(correo) <= 254 or "@" not in correo:
-            raise ApiError(422, "Tu cuenta de Auth0 no tiene un correo válido.", "perfil_incompleto")
-        nombre = datos.get("name") if isinstance(datos.get("name"), str) else ""
-        return PerfilAuth0(sub=sub, correo=correo.strip().lower(), verificado=datos.get("email_verified") is True, nombre=nombre[:80])
-
-
-# ─── Sesiones cerradas (Redis) ───────────────────────────────────────────────
+# ─── Redis: sesiones cerradas e intentos fallidos ────────────────────────────
 
 class SesionesCerradas:
     """El JWT es "sin estado": la API no guarda sesiones y cualquier réplica lo puede verificar
@@ -221,30 +230,48 @@ class SesionesCerradas:
         except redis.RedisError:
             return False
 
+    # ── Fuerza bruta (OWASP A07 · API2) ──
+    # El límite por IP (limites.INICIAR_SESION) frena a un bot que prueba muchas contraseñas desde
+    # una sola máquina. Esto frena al que usa MUCHAS IPs contra UNA cuenta: tras N fallos seguidos,
+    # ese correo queda bloqueado un rato, venga de donde venga. La llave es el SHA-256 del correo:
+    # en Redis no queda ningún correo.
+
+    @staticmethod
+    def _llave_fallos(correo: str) -> str:
+        return "fallos_login:" + hashlib.sha256(correo.strip().lower().encode()).hexdigest()
+
+    def segundos_de_bloqueo(self, correo: str) -> int:
+        try:
+            llave = self._llave_fallos(correo)
+            fallos = int(self._redis.get(llave) or 0)
+            if fallos < ajustes.login_max_fallos:
+                return 0
+            return max(1, int(self._redis.ttl(llave)))
+        except redis.RedisError as e:
+            log.error("Redis no responde al revisar intentos de inicio de sesión", exc_info=e)
+            raise IdentidadNoDisponible() from e
+
+    def anotar_fallo(self, correo: str) -> None:
+        try:
+            llave = self._llave_fallos(correo)
+            with self._redis.pipeline() as p:
+                p.incr(llave)
+                p.expire(llave, ajustes.login_bloqueo_minutos * 60)
+                p.execute()
+        except redis.RedisError as e:
+            log.error("Redis no responde al anotar un intento fallido", exc_info=e)
+            raise IdentidadNoDisponible() from e
+
+    def limpiar_fallos(self, correo: str) -> None:
+        try:
+            self._redis.delete(self._llave_fallos(correo))
+        except redis.RedisError:
+            pass
+
 
 # ─── Dependencias para las rutas ─────────────────────────────────────────────
-# Se pueden sustituir en las pruebas (app.dependency_overrides) sin tocar el código de producción:
-# no existe ningún "modo de prueba" que acepte tokens falsos en el servidor real.
 
-_verificador: Verificador | None = None
-_proveedor: ProveedorPerfil | None = None
 _sesiones: SesionesCerradas | None = None
-
-
-def obtener_verificador() -> Verificador:
-    global _verificador
-    if not ajustes.auth0_configurado:
-        raise ApiError(503, "El inicio de sesión todavía no está configurado en el servidor.", "identidad_sin_configurar")
-    if _verificador is None:
-        _verificador = Verificador(ajustes.auth0_dominio, ajustes.auth0_audiencia, ajustes.auth0_cliente_app)
-    return _verificador
-
-
-def obtener_proveedor_perfil() -> ProveedorPerfil:
-    global _proveedor
-    if _proveedor is None:
-        _proveedor = ProveedorPerfil(ajustes.auth0_dominio)
-    return _proveedor
 
 
 def obtener_sesiones() -> SesionesCerradas:
@@ -254,87 +281,39 @@ def obtener_sesiones() -> SesionesCerradas:
     return _sesiones
 
 
-_bearer = HTTPBearer(auto_error=False, description="El access token de Auth0")
-
-
-def _cuenta_de(db: Session, claims: dict, token: str, proveedor: ProveedorPerfil) -> Cuenta:
-    """La cuenta local de este `sub`. Si es la primera vez, se crea (o se vincula)."""
-    sub = claims["sub"]
-    cuenta = db.scalar(select(Cuenta).where(Cuenta.auth0_sub == sub))
-    if cuenta is not None:
-        return cuenta
-
-    perfil = proveedor.obtener(token)
-    if perfil.sub != sub:
-        raise _token_invalido()
-
-    existente = db.scalar(select(Cuenta).where(func.lower(Cuenta.correo) == perfil.correo))
-    if existente is not None:
-        # Una cuenta con ese correo ya existía (por ejemplo, la de prueba del seed). Solo se
-        # vincula si Auth0 asegura que el correo es de quien entra; si no, cualquiera podría
-        # registrarse con el correo de otra familia y quedarse con sus datos.
-        if existente.auth0_sub is None and perfil.verificado:
-            existente.auth0_sub = sub
-            existente.correo_verificado = True
-            db.commit()
-            return existente
-        log.warning("Cuenta sin vincular: el correo ya existe", extra={"evento": f"sub:{sub}"})
-        raise ApiError(
-            409,
-            "Ya existe una cuenta con ese correo. Confirma tu correo desde el mensaje que te mandamos y vuelve a entrar.",
-            "correo_sin_verificar",
-        )
-
-    db.execute(
-        insert(Cuenta)
-        .values(
-            auth0_sub=sub,
-            correo=perfil.correo,
-            correo_verificado=perfil.verificado,
-            nombre_familia=perfil.nombre or "Mi familia",
-            titular_nombre=perfil.nombre or None,
-        )
-        .on_conflict_do_nothing(index_elements=["auth0_sub"])   # dos primeras peticiones a la vez
-    )
-    db.flush()
-    cuenta = db.scalar(select(Cuenta).where(Cuenta.auth0_sub == sub))
-    db.execute(insert(Preferencias).values(cuenta_id=cuenta.id).on_conflict_do_nothing())
-    db.commit()
-    return cuenta
+_bearer = HTTPBearer(auto_error=False, description="El JWT que da POST /v1/sesion/iniciar")
 
 
 def _sujeto(request: Request, credenciales: HTTPAuthorizationCredentials | None, db: Session,
-            proveedor: ProveedorPerfil, sesiones: SesionesCerradas) -> Sujeto:
+            sesiones: SesionesCerradas) -> Sujeto:
     if credenciales is None or credenciales.scheme.lower() != "bearer":
         raise _token_invalido("falta_token")
-    # El verificador se pide hasta que hay token: sin token es 401 siempre, esté o no Auth0
-    # configurado. (Las pruebas lo sustituyen con dependency_overrides.)
-    fabrica = request.app.dependency_overrides.get(obtener_verificador, obtener_verificador)
     token = credenciales.credentials
-    claims = fabrica().verificar(token)
+    claims = verificar_token(token)
     huella_token = huella(token)
     if sesiones.esta_cerrada(huella_token):
         raise _token_invalido("sesion_cerrada")
 
-    cuenta = _cuenta_de(db, claims, token, proveedor)
-    permisos = frozenset(p for p in claims.get("permissions", []) if isinstance(p, str))
+    cuenta = db.get(Cuenta, claims["cuenta_id"])
+    if cuenta is None:   # se borró mientras el token seguía vigente
+        raise _token_invalido()
+    # Se cambió la contraseña o los permisos después de emitir este token: ya no sirve.
+    if claims["iat"] < cuenta.tokens_validos_desde.timestamp():
+        raise _token_invalido("sesion_cerrada")
 
-    # Se refleja el rol en la base (para consultas y la bitácora) y la última vez que entró,
-    # pero sin escribir en cada petición: como mucho una vez cada 10 minutos.
-    rol = "admin" if permisos & PERMISOS_ADMIN else "familia"
+    # La última vez que entró, sin escribir en cada petición: como mucho una vez cada 10 minutos.
     ahora = datetime.now(UTC)
-    if cuenta.rol != rol or cuenta.ultimo_acceso_en is None or ahora - cuenta.ultimo_acceso_en > timedelta(minutes=10):
-        cuenta.rol = rol
+    if cuenta.ultimo_acceso_en is None or ahora - cuenta.ultimo_acceso_en > timedelta(minutes=10):
         cuenta.ultimo_acceso_en = ahora
         db.commit()
 
     request.state.cuenta_id = cuenta.id
     return Sujeto(
         cuenta_id=cuenta.id,
-        sub=claims["sub"],
         correo=cuenta.correo,
         nombre_familia=cuenta.nombre_familia,
-        permisos=permisos,
+        rol=claims["rol"],
+        permisos=frozenset(claims.get("permisos", [])),
         huella_token=huella_token,
         expira_en=int(claims["exp"]),
     )
@@ -344,11 +323,10 @@ def usuario_actual(
     request: Request,
     credenciales: HTTPAuthorizationCredentials | None = Depends(_bearer),
     db: Session = Depends(obtener_db),
-    proveedor: ProveedorPerfil = Depends(obtener_proveedor_perfil),
     sesiones: SesionesCerradas = Depends(obtener_sesiones),
 ) -> Sujeto:
-    """Exige sesión. Sin token o con uno inválido: 401."""
-    return _sujeto(request, credenciales, db, proveedor, sesiones)
+    """Exige sesión (el `get_current_user` de la guía). Sin token o con uno inválido: 401."""
+    return _sujeto(request, credenciales, db, sesiones)
 
 
 def usuario_opcional(
@@ -356,23 +334,24 @@ def usuario_opcional(
     credenciales: HTTPAuthorizationCredentials | None = Depends(_bearer),
     db: Session = Depends(obtener_db),
     sesiones: SesionesCerradas = Depends(obtener_sesiones),
-    proveedor: ProveedorPerfil = Depends(obtener_proveedor_perfil),
 ) -> Sujeto | None:
     """Para rutas públicas que cambian un poco con sesión (por ejemplo, "este testimonio es
     tuyo"). Sin token: None. Con token: se verifica igual de estricto (un token malo es 401,
     no "sin sesión")."""
     if credenciales is None:
         return None
-    return _sujeto(request, credenciales, db, proveedor, sesiones)
+    return _sujeto(request, credenciales, db, sesiones)
 
 
 def requiere(permiso: str):
     """Autorización a nivel de FUNCIÓN (OWASP API5): la app puede esconder el botón de
-    administrar, pero el servidor no confía en eso y revisa el permiso del token."""
+    administrar, pero el servidor no confía en eso y le pregunta a la política (Oso) si el
+    sujeto del token tiene el permiso."""
 
     def _dependencia(sujeto: Sujeto = Depends(usuario_actual)) -> Sujeto:
-        if not sujeto.puede(permiso):
-            raise ApiError(403, "Tu cuenta no tiene permiso para hacer esto.", "sin_permiso")
+        from . import politicas  # aquí y no arriba: politicas importa este módulo
+
+        politicas.exigir(politicas.puede_usar_funcion(sujeto, permiso))
         return sujeto
 
     return _dependencia
