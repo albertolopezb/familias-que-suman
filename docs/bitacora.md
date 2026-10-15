@@ -19,3 +19,7 @@ Decisiones de diseño y de arquitectura, con fecha y quién las tomó.
 | 2026-10-13 | Cloudflare Tunnel para salir a internet | HTTPS sin abrir puertos; la red de Cloudflare absorbe ataques de red |
 | 2026-10-13 | Prometheus + Grafana con alertas de seguridad | OWASP A09: detectar, no solo prevenir |
 | 2026-10-13 | OWASP ZAP en cada entrega (0 altas, 0 medias, 0 bajas) | Comprobar desde afuera lo que dicen las pruebas |
+| 2026-10-15 | Se quita Auth0: la API emite y verifica sus propios JWT (HS256) con `POST /v1/sesion/iniciar` | Es lo que pide la guía de clase (s23): identificación y autorización con JWT, sin un servicio externo que configurar; reemplaza la fila de Auth0 del 13 |
+| 2026-10-15 | Las contraseñas vuelven a la base, solo como hash Argon2id (V7), con bloqueo por fuerza bruta | Sin Auth0 alguien tiene que guardarlas; Argon2id es la primera opción de OWASP y el bloqueo por correo sustituye al de Auth0 |
+| 2026-10-15 | Las políticas ABAC pasan a Polar (`politicas.polar`) evaluadas por Oso; la API baja a Python 3.12 | Como en la guía (s23 §4.2): reglas declarativas fuera del código de las rutas; Oso solo publica paquetes hasta 3.12 |
+| 2026-10-15 | Los permisos de admin viven en la cuenta (`permisos`) y viajan en el JWT; cambiarlos invalida los tokens viejos | Los atributos del sujeto van firmados en el token (la guía), sin dejar que un token viejo conserve permisos quitados |
