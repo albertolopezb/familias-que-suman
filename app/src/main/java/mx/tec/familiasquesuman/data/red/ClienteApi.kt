@@ -32,7 +32,7 @@ class ApiExcepcion(
     fun datoEntero(nombre: String): Int? = datos?.get(nombre)?.jsonPrimitive?.intOrNull
 }
 
-/** De dónde sale el token de la sesión. Lo implementa ServicioSesion (Auth0). */
+/** De dónde sale el token de la sesión. Lo implementa ServicioSesion. */
 fun interface ProveedorToken {
     suspend fun token(): String?
 }
@@ -70,8 +70,7 @@ object ClienteApi {
 
     private val conToken = Interceptor { cadena ->
         val original = cadena.request()
-        // OkHttp corre esto en su propio hilo: aquí sí se puede esperar al token (si hace falta,
-        // el SDK de Auth0 lo renueva con el refresh token antes de que venza).
+        // OkHttp corre esto en su propio hilo: aquí sí se puede esperar a que se descifre el token.
         val token = runCatching { runBlocking { proveedor.token() } }.getOrNull()
         val peticion = if (token.isNullOrBlank()) original
         else original.newBuilder().header("Authorization", "Bearer $token").build()

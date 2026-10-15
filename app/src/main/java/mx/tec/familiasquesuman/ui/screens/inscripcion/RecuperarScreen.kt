@@ -45,7 +45,7 @@ fun RecuperarScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Text(
-                "Escribe el correo con el que creaste tu cuenta. Te mandamos un enlace para poner una contraseña nueva.",
+                "Escribe el correo con el que creaste tu cuenta. El equipo de Familias que Suman te contactará para ponerte una contraseña nueva.",
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 13.sp),
                 color = TintaSuave
             )
@@ -61,7 +61,7 @@ fun RecuperarScreen(
             )
             if (ui.enviado) {
                 AvisoExito(
-                    "Si ese correo tiene cuenta, el enlace llega en unos minutos. " +
+                    "Si ese correo tiene cuenta, recibimos tu solicitud y te contactaremos para ayudarte a entrar. " +
                         "Revisa también tu bandeja de no deseados."
                 )
             }
@@ -70,8 +70,8 @@ fun RecuperarScreen(
             BotonPrimario(
                 texto = when {
                     ui.enviando -> "Enviando…"
-                    ui.enviado -> "Reenviar enlace"
-                    else -> "Enviar enlace"
+                    ui.enviado -> "Volver a enviar"
+                    else -> "Pedir ayuda"
                 },
                 onClick = onEnviarEnlace,
                 habilitado = esCorreoValido(ui.correo),

@@ -97,7 +97,7 @@ fun FamiliasApp() {
         onDispose { actividadActual?.removeOnNewIntentListener(escucha) }
     }
 
-    // Quién es y si es admin lo dice el SERVIDOR (permisos de Auth0 en el token). La app solo lo
+    // Quién es y si es admin lo dice el SERVIDOR (permisos firmados en el token). La app solo lo
     // usa para enseñar u ocultar botones; cada acción de admin la vuelve a revisar la API.
     val usuarioActual = sesion.comoUsuario()
 

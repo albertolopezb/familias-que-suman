@@ -7,8 +7,8 @@ import android.content.Context
  * el correo (para saber de quién es la bandeja de avisos) y a qué actividades va (para los
  * recordatorios del RevisarAvisosWorker). La verdad la tiene el servidor; esto es solo una copia.
  *
- * Ya no hay cuentas ni contraseñas aquí: la identidad la lleva Auth0 y los tokens los guarda
- * cifrados el SDK (ver data/sesion/ServicioSesion.kt).
+ * Ni cuentas ni contraseñas aquí: la identidad la lleva la API y el token se guarda cifrado con
+ * el Android Keystore (ver data/sesion/ServicioSesion.kt).
  */
 class CuentasStore(contexto: Context) {
 

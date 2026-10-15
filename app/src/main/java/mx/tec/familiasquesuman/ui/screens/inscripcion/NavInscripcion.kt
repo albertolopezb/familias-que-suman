@@ -170,7 +170,6 @@ fun NavGraphBuilder.grafoInscripcion(nav: NavController) {
     composable(RutasInscripcion.CREAR_CUENTA) {
         val cuenta = cuentaViewModel()
         val ui by cuenta.crear.collectAsStateWithLifecycle()
-        val actividadActual = LocalActivity.current
         LaunchedEffect(ui.lista) {
             if (ui.lista) {
                 cuenta.crearAtendida()
@@ -182,8 +181,9 @@ fun NavGraphBuilder.grafoInscripcion(nav: NavController) {
             estadoValidacion = ui.validacion,
             onNombreChange = cuenta::onNombreChange,
             onCorreoChange = cuenta::onCorreoChange,
+            onContrasenaChange = cuenta::onContrasenaChange,
             onAceptaAvisoChange = cuenta::onAceptaAvisoChange,
-            onCrearCuenta = { actividadActual?.let(cuenta::crearCuenta) },
+            onCrearCuenta = cuenta::crearCuenta,
             onIniciarSesion = {
                 nav.navigate(RutasInscripcion.INICIAR_SESION) { popUpTo(RutasInscripcion.CREAR_CUENTA) { inclusive = true } }
             },
@@ -195,7 +195,6 @@ fun NavGraphBuilder.grafoInscripcion(nav: NavController) {
     composable(RutasInscripcion.INICIAR_SESION) {
         val cuenta = cuentaViewModel()
         val ui by cuenta.entrar.collectAsStateWithLifecycle()
-        val actividadActual = LocalActivity.current
         val regreso by cuenta.regreso.collectAsStateWithLifecycle()
         val actividades by cuenta.actividades.collectAsStateWithLifecycle()
         val regresoA = regreso?.let { r ->
@@ -211,7 +210,8 @@ fun NavGraphBuilder.grafoInscripcion(nav: NavController) {
             ui = ui,
             regresoA = regresoA,
             onCorreoChange = cuenta::onCorreoEntrarChange,
-            onEntrar = { actividadActual?.let(cuenta::iniciarSesion) },
+            onContrasenaChange = cuenta::onContrasenaEntrarChange,
+            onEntrar = cuenta::iniciarSesion,
             onOlvideContrasena = {
                 cuenta.precargarCorreoRecuperar()
                 nav.navigate(RutasInscripcion.RECUPERAR)
