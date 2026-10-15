@@ -394,6 +394,9 @@ INSERT INTO testimonios (id, asistencia_id, experiencia, foto_clave) VALUES
   ('92000000-0000-0000-0000-000000000012', '91000000-0000-0000-0000-000000000002',
    'Entregamos kits de higiene y los niños se dieron cuenta de lo mucho que pueden aportar.', NULL)
 ON CONFLICT DO NOTHING;
+-- Un seed anterior dejó un testimonio con una foto de ejemplo que nunca existió en el almacén
+-- (la app pedía una foto que da 404). En las bases que lo tengan, se queda sin foto.
+UPDATE testimonios SET foto_clave = NULL WHERE foto_clave = 'testimonios/ejemplo-1.jpg';
 
 INSERT INTO respuestas_encuesta (cuenta_id, actividad_id, asistencia_id, momento, respuestas) VALUES
   ('c0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000006', '91000000-0000-0000-0000-000000000003', 'despues',
