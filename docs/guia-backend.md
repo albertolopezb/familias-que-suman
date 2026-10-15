@@ -1317,6 +1317,12 @@ api.url=http://10.0.2.2:8000                     # emulador; teléfono: https://
 
 La versión de **entrega** (release) solo habla HTTPS: ahí `api.url` tiene que ser `https://…`.
 
+**Android 17 (targetSdk 37) y la red local:** para hablar con la API en tu máquina (`10.0.2.2`
+desde el emulador) la app necesita el permiso `ACCESS_LOCAL_NETWORK`. Solo la versión de
+depuración lo declara (`app/src/debug/AndroidManifest.xml`) y lo pide al abrir
+(`MainActivity.necesitaRedLocal`); si lo niegas, la app se queda "sin conexión". La de entrega
+habla con la API por internet (túnel HTTPS) y no lo pide.
+
 ### 9.4 La falla de control de acceso que se corrigió
 
 `domain/Usuario.kt` tenía:
@@ -1581,6 +1587,7 @@ cd backend/api && uv lock --upgrade && docker compose --profile pruebas run --rm
 | 429 `demasiadas_solicitudes` | Rate limit | Esperar lo que diga `Retry-After` |
 | `checksum mismatch` en `migrar` | Se editó una migración ya aplicada | Deshacer el cambio y crear `V8` |
 | Docker Desktop "unable to start" | Disco lleno | Liberar espacio / mover el disco de Docker |
+| La app en el emulador no carga nada ("sin conexión") y la API no recibe peticiones | Android 17 sin el permiso de red local | Acepta el permiso al abrir, o `adb shell pm grant mx.tec.familiasquesuman android.permission.ACCESS_LOCAL_NETWORK` (§9.3) |
 
 ---
 
