@@ -41,7 +41,7 @@ INSERT INTO asociaciones (id, nombre, categoria, descripcion, direccion, telefon
    'Av. Aztlán 1500, Monterrey', '8100000004', '5218100000004', 'contacto@parroquiasanbernabe.org', true),
   ('b0000000-0000-0000-0000-000000000021', 'Familias que Suman', 'Voluntariado familiar',
    'Conectamos familias con oportunidades de voluntariado en su ciudad.',
-   'Monterrey, N.L.', '8100000005', '5218100000005', 'contacto@familiasquesuman.org', false),
+   'Monterrey, N.L.', '8100000005', '5218100000005', 'hola@familiasquesuman.com', false),
   ('b0000000-0000-0000-0000-000000000001', 'Regalando Estrellas', 'Salud',
    'Desde hace 11 años visitamos el Hospital Materno Infantil.',
    'Guadalupe, N.L.', '8100000006', '5218100000006', 'contacto@regalandoestrellas.org', false),

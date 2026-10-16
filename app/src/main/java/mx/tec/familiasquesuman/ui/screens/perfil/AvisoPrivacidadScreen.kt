@@ -53,13 +53,16 @@ private val IconoFotosPrivacidad = ImageVector.Builder("Fotos", 24.dp, 24.dp, 24
 }.build()
 
 /**
- * Quién es responsable de los datos (LFPDPPP art. 15-I). Un solo lugar para cambiarlo:
- * antes de publicar la app, Familias que Suman confirma su razón social y su domicilio completo.
+ * Quién es responsable de los datos (LFPDPPP art. 15-I). Un solo lugar para cambiarlo.
+ * Tomado del aviso oficial del sitio (familiasquesuman.com/aviso-de-privacidad, julio 2026): una
+ * asociación civil con domicilio en Monterrey y el correo hola@. El sitio todavía no publica la
+ * razón social ni el domicilio completo; cuando lo haga, se cambia aquí.
  */
 object Responsable {
-    const val NOMBRE = "Familias que Suman"
+    const val NOMBRE = "Familias que Suman, asociación civil"
     const val DOMICILIO = "Monterrey, Nuevo León, México"
-    const val CORREO = "contacto@familiasquesuman.org"
+    const val CORREO = "hola@familiasquesuman.com"
+    const val AVISO_DEL_SITIO = "familiasquesuman.com/aviso-de-privacidad"
     const val ACTUALIZADO = "16 de octubre de 2026"
 }
 
@@ -96,7 +99,8 @@ fun AvisoPrivacidadScreen(
             // Las tarjetas 1 a 4 son el aviso simplificado del art. 16-II (el que se muestra al crear la cuenta).
             TarjetaPrivacidad("1. Quién es responsable",
                 "${Responsable.NOMBRE}, con domicilio en ${Responsable.DOMICILIO}. " +
-                    "Para cualquier tema de tus datos escríbenos a ${Responsable.CORREO}.",
+                    "Para cualquier tema de tus datos escríbenos a ${Responsable.CORREO}. " +
+                    "Este aviso es el de la app; el de las actividades y el sitio está en ${Responsable.AVISO_DEL_SITIO}.",
                 Icons.Outlined.Home)
             TarjetaPrivacidad("2. Qué datos guardamos",
                 "De la cuenta: tu correo, tu contraseña (guardada como huella Argon2id; nadie puede leerla), el nombre de tu familia, " +
@@ -117,8 +121,10 @@ fun AvisoPrivacidadScreen(
                     "borrarlos. \"Cerca de mí\" solo se activa si lo tocas y das permiso. Y puedes pedir que borremos todo con el botón de abajo.",
                 Icons.Outlined.Settings)
             TarjetaPrivacidad("Quién más los ve",
-                "Solo el equipo de Familias que Suman que lo necesita para su trabajo (por ejemplo, quien registra la asistencia). " +
-                    "No vendemos ni transferimos tus datos. Para que la app llegue al servidor de forma cifrada usamos Cloudflare, " +
+                "El equipo de Familias que Suman que lo necesita para su trabajo (por ejemplo, quien registra la asistencia) y, " +
+                    "solo para coordinar una actividad, la institución que la organiza: recibe lo indispensable, como los nombres y " +
+                    "edades de quienes van. No vendemos tus datos ni los usamos para publicidad. Para que la app llegue al servidor " +
+                    "de forma cifrada usamos Cloudflare, " +
                     "que actúa como encargado y no los usa para nada más. Solo los entregaríamos a una autoridad que los pida conforme a la ley.",
                 IconoVisibilidadPrivacidad)
             TarjetaPrivacidad("Tu ubicación",

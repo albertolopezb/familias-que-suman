@@ -216,6 +216,6 @@ internal fun actividadDeMuestra(
         direccion = "Monterrey, N.L.",
         telefono = "8100000005",
         whatsapp = "5218100000005",
-        correo = "contacto@familiasquesuman.org"
+        correo = "hola@familiasquesuman.com"
     )
 )
