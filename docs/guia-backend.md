@@ -59,7 +59,7 @@ encuestas, aportaciones a campañas, sugerencias, privacidad y administración.
 
 - **69 operaciones** documentadas en OpenAPI (más la página pública de invitación y `assetlinks.json`).
 - **147 pruebas automáticas** de la API, todas en verde (§12).
-- **OWASP ZAP: 0 alertas altas, 0 medias, 0 bajas** (1 informativa) (§13).
+- **OWASP ZAP, sin y con sesión: 0 alertas altas, 0 medias, 0 bajas** (1 informativa) (§13).
 - **40 medidas de seguridad** catalogadas (§7), mapeadas a OWASP Top 10 2025, OWASP API Top 10
   2023 y CWE Top 25 (§8).
 
@@ -123,7 +123,7 @@ flowchart LR
 | **AA ⇒ Hashed Pw DB** | Las contraseñas viven en nuestra base **solo** como hash Argon2id con sal; la app no las guarda | S-08 |
 | **BF ⇒ Rate limit** | Rate limit global por IP y por flujo/cuenta (slowapi + Redis); en el login además bloqueo por correo tras 5 fallos | S-09 |
 | **Sec ⇒ HTTP Sec** | Encabezados de seguridad en cada respuesta, HSTS, CSP | S-10, S-12 |
-| **OWASP ZAP ⇒ ✓ OK** | Escaneo activo: 0 alertas altas, medias o bajas | S-11 |
+| **OWASP ZAP ⇒ ✓ OK** | Escaneo activo sin y con sesión: 0 alertas altas, medias o bajas | S-11 |
 
 ### 2.3 Las redes (segmentación)
 
@@ -218,7 +218,7 @@ Para generar secretos: `python -c "import secrets; print(secrets.token_urlsafe(3
 docker compose --profile tunel up -d                       # túnel HTTPS (Quick Tunnel)
 docker compose logs tunel | grep trycloudflare             # la dirección pública
 docker compose --profile pruebas run --rm --build pruebas  # pruebas automáticas
-docker compose --profile zap run --rm zap                  # escaneo de OWASP ZAP
+bash seguridad/zap/escanear.sh                             # escaneo de OWASP ZAP (sin y con sesión)
 ```
 
 ### 3.5 Datos de prueba
@@ -914,7 +914,7 @@ así** y **cómo se comprueba**.
 
 #### S-11 · Escaneo con OWASP ZAP
 
-Ver §13. Resultado: **0 altas, 0 medias, 0 bajas**.
+Ver §13. Resultado, sin sesión y con la sesión de una familia: **0 altas, 0 medias, 0 bajas**.
 
 ### Del resto del curso
 
@@ -1500,32 +1500,57 @@ sesión por HTTP se prueba aparte. **No existe un "modo de prueba" en el servido
 ### 13.1 Qué es y qué hace
 
 **OWASP ZAP** es un escáner de seguridad que se pone en medio y ataca la aplicación como lo haría
-alguien de afuera. El plan (`backend/seguridad/zap/plan-zap.yaml`):
+alguien de afuera. El plan (`backend/seguridad/zap/plan-zap.yaml`) hace **dos pasadas**:
 
-1. **Importa el inventario** de la API (`/openapi.json`): 89 URLs.
-2. **Escaneo pasivo:** revisa cada respuesta (encabezados, cookies, fugas de información…).
-3. **Escaneo activo:** ataca cada parámetro con SQLi, XSS, inyección de comandos y de código,
-   *path traversal*, SSRF, inclusión de archivos, etcétera.
-4. **Reportes** HTML, Markdown y JSON en `backend/seguridad/zap/`.
-5. **`exitStatus`:** el escaneo falla si hay una alerta **alta** y avisa si hay una **media**.
+1. **Sin sesión**, como alguien de afuera:
+   - **importa el inventario** de la API (`/openapi.json`): 92 URLs;
+   - **escaneo pasivo:** revisa cada respuesta (encabezados, cookies, fugas de información…);
+   - **escaneo activo:** ataca cada parámetro con SQLi, XSS, inyección de comandos y de código,
+     *path traversal*, SSRF, inclusión de archivos, etcétera.
+2. **Con sesión**, como una familia: un `replacer` pone `Authorization: Bearer <token>` en cada
+   petición, se vuelve a importar el inventario (ahora `/v1/yo/…` responde de verdad) y se repiten
+   el pasivo y el activo. El token es de una **cuenta de escaneo sin datos reales** (rol `familia`,
+   sin permisos de administración) que se crea y se borra en cada corrida.
+3. **Reportes** HTML, Markdown y JSON en `backend/seguridad/zap/`, con las alertas de las dos pasadas.
+4. **`exitStatus`:** el escaneo falla si hay una alerta **alta** y avisa si hay una **media**.
+
+Dos detalles de la pasada con sesión:
+
+- **`/v1/sesion/cerrar` no se ataca con el token.** Cerrar sesión invalida el token en el servidor
+  (§4); si ZAP lo llamara con el token, el resto de la pasada solo vería 401. La regla del
+  `replacer` lleva `url: ^(?!.*/v1/sesion/cerrar).*$` y el contexto `familias-sesion` la excluye.
+  Esa ruta sí se prueba en la pasada sin sesión (y en las pruebas automáticas, §12).
+- **El job `replacer` de ZAP 2.17 no expande `${TOKEN}`** como los demás jobs: manda el texto
+  `Bearer ${TOKEN}` tal cual (se comprobó con un servidor de eco). Por eso `escanear.sh` escribe
+  una copia temporal del plan con el token ya puesto (`.plan-con-token.yaml`, en `.gitignore`) y la
+  borra al terminar.
 
 ### 13.2 Cómo correrlo
 
+`backend/seguridad/zap/escanear.sh` hace todo el procedimiento:
+
+1. sube `LIMITE_GLOBAL` a `100000/minute` (si no, ZAP solo ve 429 y no prueba la lógica);
+2. crea la cuenta de escaneo (`POST /v1/sesion/registro`) y pide su token (`POST /v1/sesion/iniciar`);
+3. corre el plan con ese token;
+4. pase lo que pase (`trap`): borra la cuenta, y con ella todo lo que ZAP le haya creado
+   (`ON DELETE CASCADE`), borra la copia del plan y regresa el límite normal (`120/minute`). Con la
+   cuenta borrada, el token ya no sirve aunque quedara en algún log (§4: `cuenta is None → 401`).
+
 ```bash
-# Dentro de Docker (lo normal)
-LIMITE_GLOBAL=100000/minute docker compose up -d api      # para que ZAP pruebe la lógica, no solo el 429
-docker compose --profile zap run --rm zap
-docker compose up -d api                                   # regresar el límite normal
+cd backend && docker compose up -d --build
+bash seguridad/zap/escanear.sh                                   # ZAP en Docker (perfil zap)
 ```
 
 Con ZAP instalado (lo que se usó en esta entrega, para no llenar el disco con su imagen de ~3.7 GB):
 
 ```bash
-OBJETIVO=http://127.0.0.1:8000 REPORTES=<ruta>/backend/seguridad/zap \
-  java -jar zap-2.17.0.jar -cmd -silent -autorun <ruta>/backend/seguridad/zap/plan-zap.yaml
+ZAP_JAR=<ruta>/zap-2.17.0.jar JAVA=<ruta>/java ZAP_HOME=<carpeta> bash seguridad/zap/escanear.sh
 ```
 
-### 13.3 Resultado (ZAP 2.17.0, 13 oct 2026)
+Solo la pasada sin sesión, sin script: `docker compose --profile zap run --rm zap` (la pasada 2
+verá 401, porque no hay token).
+
+### 13.3 Resultado (ZAP 2.17.0, 15 oct 2026, con identidad propia JWT)
 
 | Riesgo | Alertas |
 |---|---|
@@ -1534,25 +1559,48 @@ OBJETIVO=http://127.0.0.1:8000 REPORTES=<ruta>/backend/seguridad/zap \
 | **Bajo** | **0** |
 | Informativo | 1 |
 
-La única informativa es **User Agent Fuzzer** (10104): ZAP compara la respuesta con distintos
-`User-Agent` (navegador viejo, buscadores). No es una vulnerabilidad: es una observación.
+**`exitStatus` aprobó** (código 0). Las dos pasadas tardaron 3 min 23 s y 4 min 10 s de escaneo activo.
 
-Estadísticas del reporte: 92 % de respuestas 4xx. Es lo esperado: sin token, las rutas privadas
-responden 401; con datos mal formados, 422; lo que no existe, 404. **`exitStatus` aprobó.**
+| Alerta | Riesgo | Justificación |
+|---|---|---|
+| **User Agent Fuzzer** (10104) | Informativa | ZAP manda la misma petición con distintos `User-Agent` (navegador viejo, buscadores) y compara código y *hash* del cuerpo. Se repitió a mano en `/v1/campanas/`, `/v1/centros/` y `/v1/fotos/testimonios/`: mismo código con los dos `User-Agent` (307 a la ruta sin `/` final, o 404). La API no lee el `User-Agent` (solo aparece en el texto de `robots.txt`); lo que cambia es el `solicitud` de cada respuesta de error, un id único por petición (§6), así que dos peticiones iguales nunca dan el mismo *hash*. No es una vulnerabilidad: es una observación. |
 
-Reporte completo: [`backend/seguridad/zap/reporte-zap.html`](../backend/seguridad/zap/reporte-zap.html)
-y [`reporte-zap.md`](../backend/seguridad/zap/reporte-zap.md).
+Lo que vio la API durante el escaneo (contadores de Prometheus, §11; números redondeados):
+
+| Dónde | Respuestas | Qué significa |
+|---|---|---|
+| `/v1/yo/…` con el token | ~170 × 200, ~3 400 × 422, 17 × 429 | La pasada 2 sí entró: ZAP atacó los datos de la familia por dentro. Los 422 son la validación de entrada rechazando las cargas (SQLi, XSS…); los 429 son los límites **por cuenta** (perfil, invitaciones…), que no se suben para el escaneo. |
+| `/v1/admin/…` con el token | ~19 000 × 403, **0 × 2xx** | El token de familia no abre nada de administración: lo frena la política ABAC (`politicas.polar`). |
+| `/v1/admin/…` y `/v1/yo/…` sin token | ~22 000 × 401 | La pasada 1: sin token, nada privado. |
+
+El 91 % de respuestas 4xx del reporte es lo esperado por lo mismo: 401 sin token, 403 sin
+permiso, 422 con datos mal formados, 404 y 405 en lo que no existe.
+
+**Una alerta que se encontró y se corrigió en el camino.** La primera corrida dio 1 **baja**:
+*Timestamp Disclosure - Unix* (10096) en `GET /v1/yo`, evidencia `1792125022`. Se buscó la
+respuesta en la sesión de ZAP: el número era parte del **correo de la propia cuenta de escaneo**
+(`zap-1792125022-…@pruebas.mx`), que el script armaba con `date +%s`. La API no expone ninguna
+marca de tiempo Unix en `/v1/yo` (sus fechas van en ISO 8601). Se cambió el correo a
+`zap-AAAAMMDD-HHMMSS-<n>@pruebas.mx` y la segunda corrida ya no la reporta. Era un falso positivo
+del arnés de prueba, no de la API.
+
+Reporte completo: [`backend/seguridad/zap/reporte-zap.html`](../backend/seguridad/zap/reporte-zap.html),
+[`reporte-zap.md`](../backend/seguridad/zap/reporte-zap.md) y
+[`reporte-zap.json`](../backend/seguridad/zap/reporte-zap.json).
 
 ### 13.4 Lo que este escaneo no cubre (y cómo cubrirlo)
 
-El escaneo se hizo **sin token**: las rutas privadas se probaron en su manejo de 401 y de entradas
-inválidas, no por dentro. Su lógica por dentro está cubierta por las 147 pruebas (§12). Para un
-escaneo **con sesión**, ahora que la API emite sus propios tokens:
-
-1. Crea una cuenta de prueba **sin datos reales** (`POST /v1/sesion/registro`).
-2. Pide su token con `POST /v1/sesion/iniciar` (§4.11).
-3. Agrega al plan un `replacer` que ponga `Authorization: Bearer <token>` en cada petición.
-4. Sube `LIMITE_GLOBAL` mientras escanea (si no, ZAP solo ve 429) y al terminar borra la cuenta.
+- **La administración por dentro.** La cuenta de escaneo es una familia: las rutas de
+  `/v1/admin/…` se probaron en su 403, no en su lógica. Esa lógica está cubierta por las 147
+  pruebas (§12). Para escanearla, se le darían permisos a la cuenta de escaneo con
+  `python -m app.herramientas permisos <correo> todos` antes de pedir el token (a una base de
+  desarrollo: ZAP crearía y borraría catálogo).
+- **IDs reales en la ruta.** ZAP llena `{actividad_id}`, `{acompanante_id}`… con valores de
+  ejemplo, que dan 404 o 422. El acceso a objetos ajenos (BOLA, OWASP API1) lo prueban las pruebas
+  automáticas con dos cuentas.
+- **`DomXssScanRule`** se saltó: necesita un navegador (Firefox) y la API solo responde JSON.
+- **`Log4ShellScanRule`** se saltó: necesita el servicio OAST de ZAP (salida a internet). La API
+  es Python, no Java.
 
 ---
 
@@ -1620,7 +1668,7 @@ atacante"). Esto es lo que queda, dicho con claridad:
 | HS256: el mismo secreto firma y verifica | Solo la API firma y verifica; el secreto vive solo en su entorno | RS256/EdDSA si otro servicio tuviera que verificar tokens sin poder firmarlos |
 | Un token robado sirve hasta 24 h (o hasta "Cerrar sesión") | Sin refresh tokens, una sesión más corta obligaría a entrar a cada rato | Access token de 15 min + refresh token rotado |
 | Con Quick Tunnel la dirección cambia | No hay dominio todavía | Dominio propio (§10.3) |
-| El escaneo de ZAP fue sin sesión | No había tenant al escanear | §13.4 |
+| El escaneo de ZAP con sesión es de una familia, no de admin | Escanear la administración por dentro crea y borra catálogo | §13.4 |
 | Contraseña de Redis visible en `docker inspect` | Solo quien administra Docker la ve | Archivo de configuración o *secrets* de Docker |
 | Sin DPoP | Más complejidad | DPoP (RFC 9449): ata el token al teléfono |
 | Sin *certificate pinning* | Los certificados de Cloudflare cambian | Evaluar con dominio propio |

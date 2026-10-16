@@ -1,8 +1,8 @@
 {
 	"@programName": "ZAP",
 	"@version": "2.17.0",
-	"@generated": "Tue, 13 Oct 2026 18:41:23",
-	"created": "2026-10-14T00:41:23.896743Z",
+	"@generated": "Thu, 15 Oct 2026 22:47:40",
+	"created": "2026-10-16T04:47:40.339548400Z",
 	"insights":[
 		{
 			"level": "Low",
@@ -18,7 +18,7 @@
 			"site": "",
 			"key": "insight.log.warn",
 			"description": "ZAP warnings logged - see the zap.log file for details",
-			"statistic": "6"
+			"statistic": "10"
 		},
 		{
 			"level": "Low",
@@ -26,7 +26,7 @@
 			"site": "http://127.0.0.1:8000",
 			"key": "insight.code.4xx",
 			"description": "Percentage of responses with status code 4xx",
-			"statistic": "92"
+			"statistic": "91"
 		},
 		{
 			"level": "Info",
@@ -34,7 +34,7 @@
 			"site": "http://127.0.0.1:8000",
 			"key": "insight.code.2xx",
 			"description": "Percentage of responses with status code 2xx",
-			"statistic": "5"
+			"statistic": "7"
 		},
 		{
 			"level": "Info",
@@ -58,7 +58,7 @@
 			"site": "http://127.0.0.1:8000",
 			"key": "insight.endpoint.method.DELETE",
 			"description": "Percentage of endpoints with method DELETE",
-			"statistic": "21"
+			"statistic": "20"
 		},
 		{
 			"level": "Info",
@@ -66,7 +66,7 @@
 			"site": "http://127.0.0.1:8000",
 			"key": "insight.endpoint.method.GET",
 			"description": "Percentage of endpoints with method GET",
-			"statistic": "37"
+			"statistic": "36"
 		},
 		{
 			"level": "Info",
@@ -82,7 +82,7 @@
 			"site": "http://127.0.0.1:8000",
 			"key": "insight.endpoint.method.POST",
 			"description": "Percentage of endpoints with method POST",
-			"statistic": "15"
+			"statistic": "18"
 		},
 		{
 			"level": "Info",
@@ -90,7 +90,7 @@
 			"site": "http://127.0.0.1:8000",
 			"key": "insight.endpoint.method.PUT",
 			"description": "Percentage of endpoints with method PUT",
-			"statistic": "21"
+			"statistic": "20"
 		},
 		{
 			"level": "Info",
@@ -98,15 +98,7 @@
 			"site": "http://127.0.0.1:8000",
 			"key": "insight.endpoint.total",
 			"description": "Count of total endpoints",
-			"statistic": "88"
-		},
-		{
-			"level": "Info",
-			"reason": "Informational",
-			"site": "http://127.0.0.1:8000",
-			"key": "insight.response.slow",
-			"description": "Percentage of slow responses",
-			"statistic": "1"
+			"statistic": "91"
 		}
 	],
 	"site":[ 
@@ -164,7 +156,7 @@
 					"reference": "<p>https://owasp.org/wstg</p>",
 					"cweid": "0",
 					"wascid": "0",
-					"sourceid": "143"
+					"sourceid": "146"
 				}
 			]
 		}

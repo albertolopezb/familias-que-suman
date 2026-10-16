@@ -2,3 +2,5 @@
 reporte-zap.json
 zap.log
 zap.yaml
+# La copia del plan con el token de la cuenta de escaneo (escanear.sh la borra al terminar).
+.plan-con-token.yaml

@@ -1,11 +1,18 @@
 # Plan de OWASP ZAP (Automation Framework). Lo mismo sirve dentro de Docker o con ZAP instalado:
 #
-#   Docker:  docker compose --profile zap run --rm zap          (usa OBJETIVO=http://api:8000)
-#   Local:   OBJETIVO=http://127.0.0.1:8000 zap.bat -cmd -autorun <ruta>/plan-zap.yaml
+#   bash seguridad/zap/escanear.sh        crea la cuenta de escaneo, saca su token, corre ZAP (en
+#                                         Docker, o el instalado con ZAP_JAR=…) y al final la borra.
+#   Solo sin sesión: docker compose --profile zap run --rm zap  (la pasada 2 verá 401, sin token)
 #
-# Qué hace: importa el inventario de la API (OpenAPI), espera el escaneo PASIVO (revisa cada
-# respuesta: encabezados, fugas de información, cookies…), corre el escaneo ACTIVO (ataca cada
-# parámetro con SQLi, XSS, inyección de comandos, path traversal, SSRF…) y escribe los reportes.
+# Qué hace, en dos pasadas:
+#   1. SIN SESIÓN, como alguien de afuera: importa el inventario de la API (OpenAPI), espera el
+#      escaneo PASIVO (revisa cada respuesta: encabezados, fugas de información, cookies…) y corre
+#      el escaneo ACTIVO (ataca cada parámetro con SQLi, XSS, inyección de comandos, path
+#      traversal, SSRF…).
+#   2. CON SESIÓN, como una familia: un `replacer` pone `Authorization: Bearer ${TOKEN}` en cada
+#      petición, se vuelve a importar el inventario (ahora las rutas privadas responden de verdad)
+#      y se repiten el pasivo y el activo. Así las rutas de /v1/yo/… se prueban por dentro.
+# Al final escribe los reportes con las alertas de las dos pasadas.
 env:
   contexts:
     - name: familias
@@ -13,6 +20,15 @@ env:
         - ${OBJETIVO}
       includePaths:
         - ${OBJETIVO}.*
+    # La misma API, para la pasada con sesión. Sin /v1/sesion/cerrar: atacarla con el token lo
+    # invalidaría en el servidor (es su trabajo) y el resto del escaneo solo vería 401.
+    - name: familias-sesion
+      urls:
+        - ${OBJETIVO}
+      includePaths:
+        - ${OBJETIVO}.*
+      excludePaths:
+        - ${OBJETIVO}/v1/sesion/cerrar.*
   parameters:
     failOnError: true
     failOnWarning: false
@@ -32,6 +48,48 @@ jobs:
   - type: activeScan
     parameters:
       context: familias
+      maxRuleDurationInMins: 3
+      maxScanDurationInMins: 30
+      threadPerHost: 4
+    policyDefinition:
+      defaultStrength: medium
+      defaultThreshold: medium
+
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+
+  # ─── Pasada 2: con sesión ──────────────────────────────────────────────────
+  # El token es de una cuenta de escaneo SIN datos reales (rol familia, sin permisos de admin):
+  # lo crea y lo borra escanear.sh. La regla no aplica a /v1/sesion/cerrar (ver el contexto),
+  # ni siquiera al importar el inventario, que también la llama.
+  # Ojo: este job NO expande ${TOKEN} como los demás (ZAP 2.17 lo manda tal cual); escanear.sh
+  # escribe una copia del plan con el token ya puesto. Sin token, la pasada 2 solo ve 401.
+  - type: replacer
+    parameters:
+      deleteAllRules: true
+    rules:
+      - description: "Token de la cuenta de escaneo"
+        url: "^(?!.*/v1/sesion/cerrar).*$"
+        matchType: req_header
+        matchString: Authorization
+        matchRegex: false
+        replacementString: "Bearer ${TOKEN}"
+        tokenProcessing: false
+
+  - type: openapi
+    parameters:
+      apiUrl: ${OBJETIVO}/openapi.json
+      targetUrl: ${OBJETIVO}
+      context: familias-sesion
+
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+
+  - type: activeScan
+    parameters:
+      context: familias-sesion
       maxRuleDurationInMins: 3
       maxScanDurationInMins: 30
       threadPerHost: 4
