@@ -123,6 +123,21 @@ services:
     mem_limit: 192m
     networks: [datos]
 
+  # El "correo" de desarrollo: recibe lo que manda la API (los códigos para recuperar la
+  # contraseña) y lo enseña en http://localhost:8025, sin mandarlo a nadie de verdad. Vive en la
+  # red interna `datos`: la API le habla sin TLS porque no sale de la máquina. Para producción se
+  # cambia por un proveedor real con SMTP_HOST, SMTP_USUARIO, SMTP_CONTRASENA y SMTP_TLS=true.
+  correo:
+    image: axllent/mailpit:v1.27.10
+    restart: unless-stopped
+    environment:
+      MP_MAX_MESSAGES: 500
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 128m
+    ports:
+      - "127.0.0.1:${CORREO_WEB_PORT:-8025}:8025"
+    networks: [datos, local]
+
   # ─── La API ───────────────────────────────────────────────────────────────
 
   api:
@@ -155,6 +170,12 @@ services:
       HOSTS_PERMITIDOS: ${HOSTS_PERMITIDOS:-localhost,127.0.0.1,10.0.2.2,api,*.trycloudflare.com}
       ENLACES_BASE: ${ENLACES_BASE:-}
       APP_HUELLAS_SHA256: ${APP_HUELLAS_SHA256:-}
+      # El correo para recuperar la contraseña (Mailpit en desarrollo; ver el servicio `correo`).
+      SMTP_HOST: ${SMTP_HOST:-correo}
+      SMTP_PUERTO: ${SMTP_PUERTO:-1025}
+      SMTP_USUARIO: ${SMTP_USUARIO:-}
+      SMTP_CONTRASENA: ${SMTP_CONTRASENA:-}
+      SMTP_TLS: ${SMTP_TLS:-false}
       # Peticiones por minuto por IP en todo lo que no tiene un límite propio. Para el escaneo de
       # ZAP se sube un rato (ver la guía): si no, ZAP solo vería 429 y no probaría la lógica.
       LIMITE_GLOBAL: ${LIMITE_GLOBAL:-120/minute}
@@ -296,6 +317,9 @@ services:
       S3_SECRET_KEY: ${STORAGE_ROOT_PASSWORD:-cambia-esta-contrasena-almacen}
       S3_BUCKET: familias-pruebas
       JWT_SECRETO: secreto-solo-para-las-pruebas-automaticas-0123456789
+      # Las pruebas no mandan correos: los atrapan (tests/test_recuperacion.py). Si alguno se
+      # escapara, este host no existe y solo se anota que falló.
+      SMTP_HOST: sin-correo-en-pruebas
       HOSTS_PERMITIDOS: testserver,localhost
       METRICAS_ACTIVAS: "false"
       # Todas las pruebas llegan desde la misma "IP"; el límite global se sube solo aquí.

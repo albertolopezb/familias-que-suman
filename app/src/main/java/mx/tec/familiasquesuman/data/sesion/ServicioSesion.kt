@@ -11,6 +11,8 @@ import mx.tec.familiasquesuman.data.red.InicioSesionCuerpo
 import mx.tec.familiasquesuman.data.red.ProveedorToken
 import mx.tec.familiasquesuman.data.red.RegistroCuerpo
 import mx.tec.familiasquesuman.data.red.RenovarCuerpo
+import mx.tec.familiasquesuman.data.red.RestablecerCuerpo
+import mx.tec.familiasquesuman.data.exigirExito
 import mx.tec.familiasquesuman.data.red.TokenDto
 import mx.tec.familiasquesuman.data.red.llamar
 import okhttp3.MediaType.Companion.toMediaType
@@ -72,9 +74,18 @@ class ServicioSesion(contexto: Context) : ProveedorToken {
         guardar(llamar { registrarse(RegistroCuerpo(correo.trim(), contrasena, nombreFamilia.trim(), aceptaAviso = true)) })
     }
 
-    /** Pide ayuda con la contraseña. El servidor responde lo mismo exista o no la cuenta. */
+    /** Pide un código por correo. El servidor responde lo mismo exista o no la cuenta. */
     suspend fun recuperar(correo: String) {
         llamar { recuperar(CorreoCuerpo(correo.trim())) }
+    }
+
+    /**
+     * El código del correo + la contraseña nueva. Si sirve, el servidor cierra TODAS las sesiones
+     * de la cuenta (también esta, si hubiera): después se entra con la contraseña nueva.
+     */
+    suspend fun restablecer(correo: String, codigo: String, contrasenaNueva: String) {
+        llamar { restablecer(RestablecerCuerpo(correo.trim(), codigo.trim(), contrasenaNueva)) }.exigirExito()
+        cerrar()
     }
 
     /** El JWT para la siguiente petición; si está por vencer, primero lo renueva. */

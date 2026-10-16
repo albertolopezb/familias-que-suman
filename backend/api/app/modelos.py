@@ -377,3 +377,30 @@ class Sesion(Base):
     expira_en: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     usada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     revocada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Recuperacion(Base):
+    """Un código para recuperar la contraseña (solo su HMAC). Ver recuperacion.py y la migración V9."""
+
+    __tablename__ = "recuperaciones"
+    id: Mapped[uuid.UUID] = _id()
+    cuenta_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cuentas.id", ondelete="CASCADE"))
+    huella: Mapped[str] = mapped_column(Text)
+    creada_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    expira_en: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    usada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    intentos: Mapped[int] = mapped_column(Integer, server_default=text("0"))
+
+
+class Aviso(Base):
+    """Una urgencia de una ciudad o una actividad nueva (RF-22). Ver routers/avisos.py y la migración V9."""
+
+    __tablename__ = "avisos"
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    tipo: Mapped[str] = mapped_column(Text)
+    ciudad: Mapped[str | None] = mapped_column(Text, ForeignKey("ciudades.nombre"))
+    titulo: Mapped[str] = mapped_column(Text)
+    cuerpo: Mapped[str] = mapped_column(Text)
+    actividad_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("actividades.id", ondelete="SET NULL"))
+    creado_por: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
+    creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))

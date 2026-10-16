@@ -51,6 +51,16 @@ class Ajustes(BaseSettings):
     s3_secret_key: str = "cambia-esta-contrasena-almacen"
     s3_bucket: str = "familias"
 
+    # ── Correo (solo para recuperar la contraseña) ── En desarrollo, Mailpit: un contenedor que
+    # recibe los correos y los enseña en http://localhost:8025 sin mandarlos a nadie. Con un
+    # proveedor real: su host, puerto 587, usuario y contraseña, y SMTP_TLS=true (STARTTLS).
+    smtp_host: str = "correo"
+    smtp_puerto: int = 1025
+    smtp_usuario: str = ""
+    smtp_contrasena: str = ""
+    smtp_tls: bool = False
+    correo_remitente: str = "Familias que Suman <no-responder@familiasquesuman.com>"
+
     # Llave para seudonimizar IPs con HMAC-SHA256 en la bitácora: se pueden correlacionar
     # eventos de una misma IP sin guardar la IP (privacidad).
     hmac_secreto: str = "cambia-este-secreto-hmac"
@@ -128,6 +138,8 @@ class Ajustes(BaseSettings):
             problemas.append("JWT_SECRETO debe tener al menos 32 caracteres")
         if self.jwt_secreto == self.hmac_secreto:
             problemas.append("JWT_SECRETO y HMAC_SECRETO deben ser distintos")
+        if self.smtp_usuario and not self.smtp_tls:
+            problemas.append("Un SMTP con usuario y contraseña debe ir con SMTP_TLS=true")
         if problemas:
             raise RuntimeError("La API no arranca en producción: " + "; ".join(problemas))
 

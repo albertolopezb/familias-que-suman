@@ -334,6 +334,30 @@ class RecuperarEntrada(EntradaSesion):
     correo: CorreoObligatorio
 
 
+class RestablecerEntrada(EntradaSesion):
+    """El código de 6 dígitos que llegó por correo y la contraseña nueva (con las mismas reglas del registro)."""
+
+    correo: CorreoObligatorio
+    codigo: Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^[0-9]{6}$")]
+    contrasena: Annotated[str, StringConstraints(min_length=8, max_length=128), AfterValidator(_contrasena_nueva)]
+
+
+class AvisoEntrada(Entrada):
+    titulo: Texto(80, 3)
+    cuerpo: Texto(300, 3)
+    ciudad: Ciudad | None = None          # sin ciudad: para todas
+
+
+class AvisoSalida(BaseModel):
+    id: int
+    tipo: Literal["urgencia", "actividad_nueva"]
+    ciudad: str | None
+    titulo: str
+    cuerpo: str
+    actividad_id: uuid.UUID | None
+    creado_en: datetime
+
+
 class TokenSalida(BaseModel):
     """Lo que responde el /login de la guía (el JWT y su tipo), más cuánto dura (segundos) y el
     refresh token para renovarlo sin volver a pedir la contraseña."""

@@ -1,7 +1,9 @@
 package mx.tec.familiasquesuman.data
 
 import mx.tec.familiasquesuman.data.red.ApiExcepcion
+import mx.tec.familiasquesuman.data.red.AvisoCuerpo
 import mx.tec.familiasquesuman.data.red.CerrarSesionCuerpo
+import mx.tec.familiasquesuman.domain.AvisoDelServidor
 import mx.tec.familiasquesuman.data.red.InscripcionCuerpo
 import mx.tec.familiasquesuman.data.red.InvitacionDto
 import mx.tec.familiasquesuman.data.red.PreferenciasDto
@@ -31,6 +33,16 @@ data class Cancelacion(val liberados: Int, val antes: Int, val despues: Int)
 class CuentaRepository {
 
     suspend fun yo(): YoDto = llamar { yo() }
+
+    /** Los avisos del servidor que van después de [desde] (RF-16, RF-22). */
+    suspend fun avisos(desde: Long): List<AvisoDelServidor> = llamar { avisos(desde) }.map {
+        AvisoDelServidor(it.id, urgencia = it.tipo == "urgencia", titulo = it.titulo, cuerpo = it.cuerpo, actividadId = it.actividadId)
+    }
+
+    /** Solo admin (administrar:catalogo); el servidor lo revisa. */
+    suspend fun enviarAviso(titulo: String, cuerpo: String, ciudad: String?) {
+        llamar { crearAviso(AvisoCuerpo(titulo, cuerpo, ciudad)) }
+    }
 
     suspend fun completarPerfil(nombreFamilia: String?, titular: String?, aceptarAviso: Boolean?): YoDto =
         llamar { editarYo(YoCambiosDto(nombreFamilia = nombreFamilia, titularNombre = titular, aceptarAviso = aceptarAviso)) }

@@ -233,6 +233,9 @@ fun NavGraphBuilder.grafoInscripcion(nav: NavController) {
             ui = ui,
             onCorreoChange = cuenta::onCorreoRecuperarChange,
             onEnviarEnlace = cuenta::enviarEnlace,
+            onCodigoChange = cuenta::onCodigoRecuperarChange,
+            onContrasenaChange = cuenta::onContrasenaNuevaChange,
+            onCambiar = cuenta::cambiarContrasena,
             onVolverAIniciarSesion = {
                 if (!nav.popBackStack(RutasInscripcion.INICIAR_SESION, inclusive = false)) {
                     nav.navigate(RutasInscripcion.INICIAR_SESION) { popUpTo(RutasInscripcion.RECUPERAR) { inclusive = true } }

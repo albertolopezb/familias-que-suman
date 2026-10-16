@@ -275,6 +275,25 @@ fun NavGraphBuilder.grafoPerfil(
         val catalogo by cuentaVm.actividades.collectAsStateWithLifecycle()
         val proximas = proximasEnOrden(catalogo.filter { it.id in inscripciones.keys })
         LaunchedEffect(sesionActual?.correo) { vm.cargar(sesionActual?.correo) }
+        // RF-22 · El diálogo del admin para mandar una urgencia.
+        var mostrandoAviso by remember { mutableStateOf(false) }
+        var enviandoAviso by remember { mutableStateOf(false) }
+        val contextoAviso = LocalContext.current
+        if (mostrandoAviso) {
+            DialogoEnviarAviso(
+                ciudad = sesionActual?.ciudad ?: "Monterrey",
+                enviando = enviandoAviso,
+                onEnviar = { titulo, cuerpo, ciudad ->
+                    enviandoAviso = true
+                    cuentaVm.enviarAviso(titulo, cuerpo, ciudad) { ok, mensaje ->
+                        enviandoAviso = false
+                        if (ok) mostrandoAviso = false
+                        Toast.makeText(contextoAviso, mensaje, Toast.LENGTH_LONG).show()
+                    }
+                },
+                onCerrar = { mostrandoAviso = false }
+            )
+        }
         val selectorFoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia(), cuentaVm::cambiarFoto)
 
         // Quién es (y si es admin) lo dice el servidor, no el correo.
@@ -292,6 +311,7 @@ fun NavGraphBuilder.grafoPerfil(
             favoritosDisponibles = true,
             onSugerirClick = { nav.sugerir(TipoSugerencia.ACTIVIDAD) },
             onSugerenciasClick = { nav.navigate(RutasSugerencias.BANDEJA) { launchSingleTop = true } },
+            onEnviarAviso = { mostrandoAviso = true },
             onTestimoniosClick = { nav.navigate(RutasInicio.TESTIMONIOS) { launchSingleTop = true } },
             onRespuestasClick = { nav.navigate(RutasPerfil.respuestas()) { launchSingleTop = true } },
             onRegresar = { nav.popBackStack() },

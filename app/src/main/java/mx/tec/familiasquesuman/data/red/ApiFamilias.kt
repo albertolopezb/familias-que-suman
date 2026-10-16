@@ -41,6 +41,7 @@ interface ApiFamilias {
     @POST("v1/sesion/iniciar") suspend fun iniciarSesion(@Body cuerpo: InicioSesionCuerpo): TokenDto
     @POST("v1/sesion/registro") suspend fun registrarse(@Body cuerpo: RegistroCuerpo): TokenDto
     @POST("v1/sesion/recuperar") suspend fun recuperar(@Body cuerpo: CorreoCuerpo): Response<Unit>
+    @POST("v1/sesion/restablecer") suspend fun restablecer(@Body cuerpo: RestablecerCuerpo): Response<Unit>
     @POST("v1/sesion/cerrar") suspend fun cerrarSesion(@Body cuerpo: CerrarSesionCuerpo): Response<Unit>
     // La renovación (v1/sesion/renovar) NO va aquí: la hace ServicioSesion con su propio cliente,
     // sin interceptor ni Authenticator, para que nunca se llame a sí misma en ciclo.
@@ -85,6 +86,8 @@ interface ApiFamilias {
     @GET("v1/admin/encuestas") suspend fun todasLasEncuestas(@Query("actividad_id") actividadId: String? = null): List<EncuestaDto>
     @GET("v1/admin/sugerencias") suspend fun bandejaSugerencias(): List<SugerenciaDto>
     @PATCH("v1/admin/sugerencias/{id}") suspend fun revisarSugerencia(@Path("id") id: String, @Body c: EstadoSugerenciaCuerpo): SugerenciaDto
+    @GET("v1/avisos") suspend fun avisos(@Query("desde") desde: Long): List<AvisoDto>
+    @POST("v1/admin/avisos") suspend fun crearAviso(@Body c: AvisoCuerpo): AvisoDto
     @GET("v1/admin/testimonios") suspend fun testimoniosPorRevisar(@Query("estado") estado: String = "pendiente"): List<TestimonioDto>
     @PATCH("v1/admin/testimonios/{id}") suspend fun revisarTestimonio(@Path("id") id: String, @Body c: RevisionTestimonioCuerpo): TestimonioDto
     @POST("v1/admin/asociaciones") suspend fun crearAsociacion(@Body c: AsociacionCuerpo): AsociacionDto

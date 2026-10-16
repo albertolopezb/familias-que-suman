@@ -203,6 +203,24 @@ data class RegistroCuerpo(val correo: String, val contrasena: String, val nombre
 @Serializable
 data class CorreoCuerpo(val correo: String)
 
+/** Un aviso de Familias que Suman (GET /v1/avisos): una urgencia o una actividad nueva. */
+@Serializable
+data class AvisoDto(
+    val id: Long,
+    val tipo: String,
+    val ciudad: String? = null,
+    val titulo: String,
+    val cuerpo: String,
+    val actividadId: String? = null
+)
+
+@Serializable
+data class AvisoCuerpo(val titulo: String, val cuerpo: String, val ciudad: String? = null)
+
+/** El código de 6 dígitos que llegó por correo y la contraseña nueva. */
+@Serializable
+data class RestablecerCuerpo(val correo: String, val codigo: String, val contrasena: String)
+
 /** El JWT que firma la API (dura minutos) y el refresh token para pedir otro (dura días). */
 @Serializable
 data class TokenDto(

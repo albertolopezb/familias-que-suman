@@ -13,20 +13,21 @@ Es el `POST /login` de la guía de clase (s23), con lo que una app de verdad nec
 import logging
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from .. import esquemas as e, limites, metricas
+from .. import correo, esquemas as e, limites, metricas
 from ..bitacora import auditar
 from ..db import obtener_db
 from ..errores import ApiError
 from ..identidad import (
     SesionesCerradas, Sujeto, abrir_sesion, contrasena_correcta, emitir_token, hash_contrasena, necesita_rehash,
-    obtener_sesiones, renovar_sesion, revocar_refresh, usuario_actual,
+    obtener_sesiones, renovar_sesion, revocar_refresh, revocar_todas, usuario_actual,
 )
+from ..recuperacion import MINUTOS, nuevo_codigo, usar_codigo
 from ..limites import limitador
 from ..modelos import Cuenta, Preferencias
 
@@ -145,12 +146,51 @@ def cerrar_sesion(
 
 @router.post("/recuperar", status_code=status.HTTP_202_ACCEPTED)
 @limitador.limit(limites.RECUPERAR)
-def recuperar(request: Request, datos: e.RecuperarEntrada, db: Session = Depends(obtener_db)):
-    """Pedir ayuda con la contraseña. Responde lo MISMO exista o no el correo (nadie averigua quién
-    tiene cuenta). El proyecto no manda correos: la solicitud queda en la auditoría y la
-    administración asigna una contraseña temporal con `python -m app.herramientas contrasena`."""
+def recuperar(request: Request, datos: e.RecuperarEntrada, tareas: BackgroundTasks, db: Session = Depends(obtener_db)):
+    """Manda un código de 6 dígitos al correo. Responde lo MISMO exista o no la cuenta (nadie
+    averigua quién tiene cuenta), y el correo sale después de responder: tarda lo mismo."""
     cuenta = _por_correo(db, datos.correo)
     if cuenta is not None:
-        auditar(db, "sesion.recuperar_solicitada", "cuenta", cuenta.id, None, ip=request.state.ip_cliente)
+        codigo = nuevo_codigo(db, cuenta)
+        auditar(db, "sesion.recuperar_solicitada", "cuenta", cuenta.id, None, {"codigo_enviado": codigo is not None},
+                ip=request.state.ip_cliente)
         db.commit()
+        if codigo is not None:
+            tareas.add_task(
+                correo.enviar, cuenta.correo, "Tu código para cambiar la contraseña",
+                f"Tu código es {codigo}.\n\nEscríbelo en la app de Familias que Suman. Sirve una sola vez "
+                f"y vence en {MINUTOS} minutos.\n\nSi tú no lo pediste, ignora este correo: tu contraseña no cambia.",
+            )
     return Response(status_code=202)
+
+
+@router.post("/restablecer", status_code=status.HTTP_204_NO_CONTENT)
+@limitador.limit(limites.RESTABLECER)
+def restablecer(
+    request: Request,
+    datos: e.RestablecerEntrada,
+    tareas: BackgroundTasks,
+    sesiones: SesionesCerradas = Depends(obtener_sesiones),
+    db: Session = Depends(obtener_db),
+):
+    """El código del correo + la contraseña nueva. Si el código sirve: cambia la contraseña,
+    cierra TODAS las sesiones de la cuenta y avisa por correo. El mismo error si el correo no
+    existe o el código no es (sin enumeración)."""
+    if datos.contrasena.lower() == datos.correo or datos.contrasena.lower() == datos.correo.split("@")[0]:
+        raise ApiError(422, "Tu contraseña no puede ser tu correo.", "contrasena_debil")
+    cuenta = _por_correo(db, datos.correo)
+    if cuenta is None or not usar_codigo(db, cuenta, datos.codigo):
+        db.commit()       # guarda el intento equivocado (al 5.º, el código se quema)
+        raise ApiError(400, "El código no es válido o ya venció. Pide uno nuevo.", "codigo_invalido")
+    cuenta.contrasena_hash = hash_contrasena(datos.contrasena)
+    cuenta.tokens_validos_desde = datetime.now(UTC)      # los JWT de antes dejan de servir…
+    revocar_todas(db, cuenta.id)                         # …y los refresh tokens también
+    sesiones.limpiar_fallos(cuenta.correo)
+    auditar(db, "sesion.contrasena_restablecida", "cuenta", cuenta.id, cuenta.id, ip=request.state.ip_cliente)
+    db.commit()
+    tareas.add_task(
+        correo.enviar, cuenta.correo, "Tu contraseña cambió",
+        "La contraseña de tu cuenta de Familias que Suman acaba de cambiar y se cerraron todas tus sesiones.\n\n"
+        "Si no fuiste tú, escríbenos a hola@familiasquesuman.com.",
+    )
+    return Response(status_code=204)
