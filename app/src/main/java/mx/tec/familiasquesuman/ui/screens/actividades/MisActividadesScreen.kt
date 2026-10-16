@@ -282,6 +282,24 @@ private fun TarjetaParticipacion(
                     EnlaceAccion("Ver o eliminar", Web.Primario, onCompartirTestimonio)
                 }
 
+                EstadoParticipacion.TESTIMONIO_EN_REVISION -> Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Etiqueta("Testimonio en revisión", Web.AmbarFondo, Web.AmbarTexto)
+                    EnlaceAccion("Ver", Web.Primario, onCompartirTestimonio)
+                }
+
+                EstadoParticipacion.TESTIMONIO_RECHAZADO -> Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Etiqueta("Testimonio no publicado", Web.RojoFondo, Web.RojoTexto)
+                    EnlaceAccion("Ver", Web.Primario, onCompartirTestimonio)
+                }
+
                 EstadoParticipacion.ENCUESTA_PENDIENTE -> Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,

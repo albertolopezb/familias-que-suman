@@ -12,6 +12,7 @@ import mx.tec.familiasquesuman.data.ActividadRepository
 import mx.tec.familiasquesuman.data.EncuestaRepository
 import mx.tec.familiasquesuman.data.PerfilRepository
 import mx.tec.familiasquesuman.data.TestimonioRepository
+import mx.tec.familiasquesuman.domain.EstadoRevision
 import mx.tec.familiasquesuman.domain.ActividadConAsociacion
 import mx.tec.familiasquesuman.domain.EstadoParticipacion
 import mx.tec.familiasquesuman.domain.MomentoEncuesta
@@ -67,7 +68,7 @@ class MisActividadesViewModel(
                     }.filter { !it.actividad.yaPaso }
                         .sortedBy { fechaDeTexto(it.actividad.fecha) ?: java.time.LocalDate.MAX },
                     historial = historial.map { p ->
-                        p.copy(estado = estadoDe(p, testimonios.any { it.participacionId == p.id }, p.id in despues))
+                        p.copy(estado = estadoDe(p, testimonios.firstOrNull { it.participacionId == p.id }?.estado, p.id in despues))
                     },
                     conEncuestaPrevia = respuestas.filter { it.momento == MomentoEncuesta.ANTES }.map { it.actividadId }.toSet(),
                     conRespuestas = respuestas.map { it.actividadId }.toSet()
@@ -80,8 +81,10 @@ class MisActividadesViewModel(
      * El pendiente de una participación: si ya publicó testimonio, eso; si no, la encuesta de
      * después (hasta que se conteste) y luego el aviso de "compartir testimonio".
      */
-    private fun estadoDe(p: Participacion, conTestimonio: Boolean, encuestaContestada: Boolean) = when {
-        conTestimonio -> EstadoParticipacion.TESTIMONIO_PUBLICADO
+    private fun estadoDe(p: Participacion, testimonio: EstadoRevision?, encuestaContestada: Boolean) = when {
+        testimonio == EstadoRevision.APROBADO -> EstadoParticipacion.TESTIMONIO_PUBLICADO
+        testimonio == EstadoRevision.PENDIENTE -> EstadoParticipacion.TESTIMONIO_EN_REVISION
+        testimonio == EstadoRevision.RECHAZADO -> EstadoParticipacion.TESTIMONIO_RECHAZADO
         p.estado == EstadoParticipacion.ENCUESTA_PENDIENTE && !encuestaContestada -> EstadoParticipacion.ENCUESTA_PENDIENTE
         else -> EstadoParticipacion.SIN_PENDIENTES
     }

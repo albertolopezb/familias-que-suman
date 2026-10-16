@@ -149,8 +149,13 @@ data class TestimonioDto(
     val experiencia: String,
     val fotoUrl: String? = null,
     val fecha: String,
-    val esMio: Boolean = false
+    val esMio: Boolean = false,
+    val estado: String = "aprobado"
 )
+
+/** Lo que decide la moderación de un testimonio: "aprobado" o "rechazado". */
+@Serializable
+data class RevisionTestimonioCuerpo(val estado: String)
 
 @Serializable
 data class EnlaceDto(val url: String)
@@ -198,9 +203,21 @@ data class RegistroCuerpo(val correo: String, val contrasena: String, val nombre
 @Serializable
 data class CorreoCuerpo(val correo: String)
 
-/** El JWT que firma la API, y cuántos segundos dura. */
+/** El JWT que firma la API (dura minutos) y el refresh token para pedir otro (dura días). */
 @Serializable
-data class TokenDto(val accessToken: String, val tokenType: String = "bearer", val expiraEn: Long)
+data class TokenDto(
+    val accessToken: String,
+    val tokenType: String = "bearer",
+    val expiraEn: Long,
+    val refreshToken: String,
+    val refreshExpiraEn: Long
+)
+
+@Serializable
+data class RenovarCuerpo(val refreshToken: String)
+
+@Serializable
+data class CerrarSesionCuerpo(val refreshToken: String? = null)
 
 @Serializable
 data class AcompananteDto(val id: String, val nombre: String, val fechaNacimiento: String? = null, val edad: Int? = null, val sexo: String? = null)

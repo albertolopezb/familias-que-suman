@@ -53,12 +53,12 @@ encuestas, aportaciones a campañas, sugerencias, privacidad y administración.
 | Salida a internet | Cloudflare Tunnel (`cloudflared`) | HTTPS público sin abrir puertos |
 | Monitoreo | Prometheus 3.15 + Grafana 13.2 | Métricas, alertas de seguridad, tablero |
 | Escaneo | OWASP ZAP 2.17 | Ataque automático a la API |
-| Pruebas | pytest | 147 pruebas contra la base, Redis y el almacén reales |
+| Pruebas | pytest | 166 pruebas contra la base, Redis y el almacén reales |
 
 **Números de esta entrega:**
 
 - **69 operaciones** documentadas en OpenAPI (más la página pública de invitación y `assetlinks.json`).
-- **147 pruebas automáticas** de la API, todas en verde (§12).
+- **166 pruebas automáticas** de la API, todas en verde (§12).
 - **OWASP ZAP, sin y con sesión: 0 alertas altas, 0 medias, 0 bajas** (1 informativa) (§13).
 - **40 medidas de seguridad** catalogadas (§7), mapeadas a OWASP Top 10 2025, OWASP API Top 10
   2023 y CWE Top 25 (§8).
@@ -174,7 +174,7 @@ docker compose up -d --build
 Qué pasa, en orden (`depends_on` del compose):
 
 1. `db` arranca y espera a estar sano (`pg_isready`).
-2. `migrar` (Flyway) aplica `V1…V7` y después `afterMigrate.sql` (crea/actualiza el usuario de
+2. `migrar` (Flyway) aplica `V1…V8` y después `afterMigrate.sql` (crea/actualiza el usuario de
    mínimo privilegio de la API). Termina.
 3. `seed` carga los datos de prueba. Termina.
 4. `almacen` (RustFS) y `redis` arrancan con su *healthcheck*.
@@ -202,7 +202,8 @@ Todas están explicadas en `backend/.env.example`. Las importantes:
 | `POSTGRES_USER/PASSWORD` | Dueño de la base | Lo usan Flyway y el seed. **La API nunca lo recibe** |
 | `DB_API_USUARIO/CONTRASENA` | El usuario con el que entra la API | Mínimo privilegio (S-15) |
 | `JWT_SECRETO` | El secreto con que la API firma los tokens (HS256) | Mínimo 32 caracteres en producción y distinto de `HMAC_SECRETO` (§4.10) |
-| `JWT_MINUTOS` | Cuánto dura una sesión | `1440` (un día) |
+| `JWT_MINUTOS` | Cuánto dura el access token (JWT) | `15` |
+| `REFRESH_DIAS` | Cuánto dura el refresh token (y con él, la sesión sin volver a escribir la contraseña) | `30` |
 | `STORAGE_ROOT_USER/PASSWORD` | Llaves del almacén | |
 | `REDIS_CONTRASENA` | Contraseña de Redis | |
 | `HMAC_SECRETO` | Llave para seudonimizar IPs | Mínimo 32 caracteres en producción |
@@ -240,6 +241,11 @@ dos testimonios, una encuesta y una aportación.
 `contrasena_hash`, `permisos` y `tokens_validos_desde`, quita `auth0_sub`, y el seed les pone
 contraseña a las cuentas de prueba. Si en tu `.env` quedaron `AUTH0_*`, ya no se usan: bórralas y
 agrega `JWT_SECRETO`.
+
+**De la versión con token de 24 h:** `docker compose up -d --build` aplica la V8 (`sesiones` y la
+revisión de testimonios; lo ya publicado queda aprobado). Cambia en tu `.env` `JWT_MINUTOS=1440`
+por `JWT_MINUTOS=15` y agrega `REFRESH_DIAS=30`. Las sesiones abiertas con un token viejo siguen
+hasta que venza; después la app pide entrar una vez y ya recibe su refresh token.
 
 **De antes de la V6:** la V6 cambia mucho el esquema (las contraseñas salen de la base) y el seed cambió sus datos. Para
 empezar limpio en tu máquina: `docker compose down -v` y después `docker compose up -d --build`
@@ -299,15 +305,40 @@ sequenceDiagram
 |---|---|---|---|
 | POST | `/v1/sesion/registro` | Crea la cuenta (`correo`, `contrasena`, `nombre_familia`, `acepta_aviso`) y responde el token: la familia queda dentro | 10/h por IP |
 | POST | `/v1/sesion/iniciar` | Correo y contraseña → token. Es el `/login` de la guía | 10/min y 60/h por IP + bloqueo por correo |
-| POST | `/v1/sesion/cerrar` | 🔑 El token deja de servir desde ya | |
+| POST | `/v1/sesion/renovar` | `refresh_token` → tokens nuevos, sin contraseña. El refresh usado ya no sirve (rotación) | 30/min por IP |
+| POST | `/v1/sesion/cerrar` | 🔑 El token deja de servir desde ya; con `refresh_token` en el cuerpo, también la sesión entera | |
 | POST | `/v1/sesion/recuperar` | Pedir ayuda con la contraseña. Responde **202 siempre** | 5/h por IP |
 | GET | `/v1/yo` | 🔑 El `/me` de la guía: quién soy según el token | |
 
-La respuesta de `registro` e `iniciar` es la misma del `/login` de la guía, más la duración:
+La respuesta de `registro`, `iniciar` y `renovar` es la del `/login` de la guía, más la duración y
+el refresh token:
 
 ```json
-{ "access_token": "eyJhbGciOiJIUzI1NiIs…", "token_type": "bearer", "expira_en": 86400 }
+{ "access_token": "eyJhbGciOiJIUzI1NiIs…", "token_type": "bearer", "expira_en": 900,
+  "refresh_token": "Xb3…(64 caracteres)", "refresh_expira_en": 2592000 }
 ```
+
+**Por qué dos tokens.** El JWT (access token) no se puede "desfirmar": si alguien lo roba, sirve
+hasta que venza. Por eso dura **15 minutos**. Para no pedir la contraseña cada 15 minutos, la app
+guarda además un **refresh token** (30 días) que solo sirve para una cosa: pedir tokens nuevos en
+`/v1/sesion/renovar`. Sus reglas (`identidad.renovar_sesion`, tabla `sesiones`, V8):
+
+- Es un valor al azar (`secrets.token_urlsafe(48)`), no un JWT. En la base solo se guarda su
+  **huella SHA-256**: quien robe la tabla no obtiene sesiones.
+- **Rotación:** cada refresh sirve **una vez**; al usarlo se entrega uno nuevo de la misma
+  "familia" (un inicio de sesión = una familia).
+- **Detección de reuso:** si llega un refresh que ya se usó, alguien más lo tenía (el ladrón o la
+  app legítima, no se sabe cuál): se revoca **toda la familia** y se audita
+  `sesion.reuso_de_refresh`. Las dos partes tienen que volver a entrar con contraseña.
+- La fila se bloquea (`SELECT … FOR UPDATE`) mientras se renueva: dos renovaciones simultáneas con
+  el mismo refresh no pueden ganar las dos.
+- Cambiar la contraseña o los permisos, cerrar sesión o eliminar la cuenta revoca los refresh
+  (`identidad.revocar_todas`, `revocar_refresh`).
+
+En la app, `ServicioSesion.token()` renueva un minuto antes de que venza el JWT, y un
+`Authenticator` de OkHttp (`ClienteApi.kt`) renueva y reintenta **una vez** si la API responde 401.
+La renovación usa un cliente aparte sin interceptores (no se llama a sí misma) y está sincronizada:
+diez peticiones con el token vencido gastan un solo refresh.
 
 Código: `backend/api/app/routers/sesion.py`.
 
@@ -326,7 +357,7 @@ firma       HMAC-SHA256(encabezado.contenido, JWT_SECRETO)
 | `iss` / `aud` | Quién lo emitió (esta API) y para quién es (la app). Se exigen al verificar |
 | `sub` | El id (UUID) de la cuenta. **Nada de correo ni nombre**: el contenido de un JWT se puede leer (solo es Base64) |
 | `rol`, `permisos` | Los **atributos del sujeto** que usan las políticas ABAC (como `department` y `clearance_level` en la guía) |
-| `iat`, `exp` | Cuándo se emitió y cuándo vence (24 h por omisión, `JWT_MINUTOS`). `iat` lleva fracciones de segundo para que un cambio de contraseña invalide los tokens anteriores sin ventana |
+| `iat`, `exp` | Cuándo se emitió y cuándo vence (15 min por omisión, `JWT_MINUTOS`). `iat` lleva fracciones de segundo para que un cambio de contraseña invalide los tokens anteriores sin ventana |
 | `jti` | Id único: dos tokens nunca son iguales |
 
 Código: `identidad.emitir_token` y `identidad.verificar_token` (`backend/api/app/identidad.py`).
@@ -362,7 +393,7 @@ Los cuatro permisos viven en la cuenta (`cuentas.permisos`, V7) y **viajan dentr
 | Permiso | Qué deja hacer |
 |---|---|
 | `administrar:catalogo` | Crear, editar, duplicar y borrar asociaciones, actividades, campañas, proyectos y centros |
-| `moderar:contenido` | Borrar testimonios ajenos, revisar sugerencias, ver respuestas de todas las familias |
+| `moderar:contenido` | Aprobar o rechazar testimonios antes de publicarse, borrar testimonios ajenos, revisar sugerencias, ver respuestas de todas las familias |
 | `registrar:asistencias` | Registrar que una familia asistió (arma el historial) |
 | `atender:privacidad` | Ver y atender solicitudes de eliminación de datos |
 
@@ -412,7 +443,8 @@ docker compose exec -it api python -m app.herramientas contrasena ana.rodriguez@
 
 ```ini
 JWT_SECRETO=<python -c "import secrets; print(secrets.token_urlsafe(48))">
-JWT_MINUTOS=1440
+JWT_MINUTOS=15
+REFRESH_DIAS=30
 ```
 
 `local.properties` (raíz del repo, no se sube a Git) solo necesita dónde está la API:
@@ -479,6 +511,7 @@ La firma HMAC-SHA256 ya no coincide con el contenido alterado. Lo mismo prueba
   | `V5__sugerencias_y_privacidad.sql` | `sugerencias`, `solicitudes_eliminacion` |
   | `V6__api_completa.sql` | `ciudades`; cuentas con `auth0_sub` y **sin** `contrasena_hash` (la época de Auth0); todos los textos del sitio; `inscripcion_personas`; consentimiento de menores; opciones y puntos de entrega; `auditoria` |
   | **`V7__identidad_propia_jwt.sql`** | Vuelve `contrasena_hash` (**solo Argon2id**, con `CHECK`), `permisos` (solo los cuatro que existen), `tokens_validos_desde`; se va `auth0_sub` |
+  | **`V8__sesiones_y_revision_de_testimonios.sql`** | `sesiones` (huella SHA-256 del refresh token, familia, vencimiento, usada, revocada); `testimonios.estado` (`pendiente`/`aprobado`/`rechazado`), `revisado_en`, `revisado_por`. Lo publicado antes queda aprobado |
 
 - **`afterMigrate.sql`** (callback de Flyway, corre después de cada `migrate`): crea el usuario
   `familias_api` con la contraseña que llega como *placeholder* (`FLYWAY_PLACEHOLDERS_API_CONTRASENA`),
@@ -669,6 +702,8 @@ de 120/min por IP.
 | POST, PUT, DELETE | `/v1/admin/proyectos[/{id}]` | `administrar:catalogo` |
 | POST, PUT, DELETE | `/v1/admin/centros[/{id}]` | `administrar:catalogo` |
 | GET, PATCH | `/v1/admin/sugerencias[/{id}]` | `moderar:contenido` |
+| GET | `/v1/admin/testimonios?estado=pendiente` | `moderar:contenido` · la bandeja, lo más viejo primero |
+| PATCH | `/v1/admin/testimonios/{id}` (`{"estado": "aprobado" \| "rechazado"}`) | `moderar:contenido` · se audita `testimonio.aprobado` / `testimonio.rechazado` |
 | GET | `/v1/admin/encuestas?actividad_id=` | `moderar:contenido` |
 | POST | `/v1/admin/asistencias` | `registrar:asistencias` |
 | GET | `/v1/admin/solicitudes-eliminacion` | `atender:privacidad` |
@@ -765,7 +800,7 @@ así** y **cómo se comprueba**.
   fabricar tokens. Por eso vive solo en la variable de entorno de la API (ni en el código, ni en la
   app, ni en la base), en producción debe medir ≥ 32 caracteres y ser distinto de `HMAC_SECRETO`
   (S-17), y rotarlo invalida todos los tokens de golpe (§14.3).
-- **Comprobación:** `tests/test_identidad.py` (43 pruebas): registro, inicio de sesión, enumeración,
+- **Comprobación:** `tests/test_identidad.py` (54 pruebas): registro, inicio de sesión, enumeración,
   fuerza bruta por correo y por IP, sin token, tokens basura, `alg: none`, otro algoritmo, otro
   secreto, contenido alterado (meterse `administrar:catalogo`, la demostración de s23 §5.4),
   vencido, audiencia y emisor ajenos, cada claim obligatorio, claims raros bien firmados, cuenta
@@ -789,7 +824,7 @@ así** y **cómo se comprueba**.
   testimonio, cierre de la campaña) y del entorno (la hora **del servidor**). Las evalúa **Oso** con
   reglas **declarativas** escritas en **Polar**, como el `policy.polar` de la guía (s23 §4.2).
 - **De qué protege:** OWASP A01 (Broken Access Control) y API1 (BOLA): ver o cambiar lo ajeno, o
-  hacer algo en un momento no permitido (cancelar cuando la actividad ya empezó).
+  hacer algo en un momento no permitido (cancelar a menos de 12 horas de la actividad).
 - **Cómo:**
   - `backend/api/app/politicas.polar` tiene todas las reglas. Cada acción se escribe así:
 
@@ -797,7 +832,7 @@ así** y **cómo se comprueba**.
     allow(s: Sujeto, "cancelar", r: Cancelacion) if not motivo(s, "cancelar", r, _);
 
     motivo(s: Sujeto, "cancelar", r: Cancelacion, "no_encontrado") if r.dueno != s.id;
-    motivo(_: Sujeto, "cancelar", r: Cancelacion, "actividad_iniciada") if r.ahora >= r.inicia;
+    motivo(_: Sujeto, "cancelar", r: Cancelacion, "fuera_de_plazo") if r.ahora >= r.inicia - 43200;
     ```
 
     "Se permite si ningún `motivo` la niega", y cada `motivo` es una razón concreta que la app
@@ -812,9 +847,10 @@ así** y **cómo se comprueba**.
   | `funcion.permiso` | `usar` · `Funcion` | permiso pedido vs. `permisos` del token (S-07) |
   | `recurso.propio` | `ver` · `Recurso` | dueño del recurso vs. cuenta del token |
   | `inscripcion.guardar` | `inscribirse` · `Inscripcion` | hora vs. inicio, cupo libre + lugares propios, personas, edad mínima de cada quien, consentimiento si hay menores |
-  | `inscripcion.cancelar` | `cancelar` · `Cancelacion` | dueño + la actividad no ha empezado |
+  | `inscripcion.cancelar` | `cancelar` · `Cancelacion` | dueño + faltan **12 horas o más** (RF-19; 409 `fuera_de_plazo`) |
   | `testimonio.publicar` | `publicar_testimonio` · `Participacion` | asistencia a nombre de la cuenta + la actividad ya empezó |
   | `testimonio.eliminar` | `eliminar` · `Testimonio` | autor o permiso `moderar:contenido` |
+  | `testimonio.ver_en_revision` | `ver_en_revision` · `Testimonio` | la foto de un testimonio no aprobado: solo su autora o `moderar:contenido` (los demás, 404) |
   | `encuesta.previa` | `contestar_previa` · `EncuestaPrevia` | inscripción vigente + no ha empezado |
   | `encuesta.final` | `contestar_final` · `Participacion` | asistencia a nombre de la cuenta |
   | `encuestas.ver_todas` | `ver_todas` · `"encuestas"` | permiso `moderar:contenido` |
@@ -828,8 +864,8 @@ así** y **cómo se comprueba**.
   tienes?": depende de **de quién es** y de **cuándo** (s22, tabla de modelos de control de
   acceso). Con las reglas en Polar, fuera del código de las rutas, se leen, se prueban y se auditan
   en un solo archivo (s23 §6, "Fine-Grained Authorization Tier").
-- **Comprobación:** `tests/test_politicas.py` (20, contra Oso directo, como los casos Alice/Bob/
-  Charlie de la guía), `test_autorizacion.py` (13), `test_inscripciones.py` (9),
+- **Comprobación:** `tests/test_politicas.py` (21, contra Oso directo, como los casos Alice/Bob/
+  Charlie de la guía), `test_autorizacion.py` (13), `test_inscripciones.py` (10), `test_testimonios.py` (6),
   `test_participacion.py` (5), `test_aportaciones.py` (6).
 
 #### S-07 · Autorización por función con permisos firmados en el token
@@ -987,7 +1023,8 @@ Ver §13. Resultado, sin sesión y con la sesión de una familia: **0 altas, 0 m
   venza, y la revisa en cada petición (`SesionesCerradas`, `identidad.py`).
 - **De qué protege:** un token robado sigue sirviendo después del logout (el costo de los tokens
   sin estado, s22 "stateful vs stateless").
-- **Cómo:** `POST /v1/sesion/cerrar` (`routers/sesion.py`); la app además borra el token y la copia
+- **Cómo:** `POST /v1/sesion/cerrar` (`routers/sesion.py`), con el refresh token en el cuerpo para
+  revocar también su familia (ya no se puede renovar); la app además borra los tokens y la copia
   de los datos del teléfono (`ServicioSesion.cerrar`). Se guarda la huella, no el token (si alguien
   leyera Redis, no obtiene tokens). Sin Redis → 503 (falla cerrado). Para cerrar **todas** las
   sesiones de una cuenta (cambio de contraseña o de permisos) está `tokens_validos_desde`: todo
@@ -1187,8 +1224,13 @@ Ver §11.
   archivo de preferencias a otro teléfono, no puede descifrarlo; si lo altera, GCM lo detecta.
 - **La contraseña no se guarda** en el teléfono ni se queda en memoria después de entrar: se manda
   una vez y se borra del formulario.
-- **El token vence** (24 h): la app lo borra un minuto antes y pide entrar otra vez; si la API dice
-  401 (sesión cerrada o contraseña cambiada), también.
+- **Access token de 15 minutos + refresh token rotado de 30 días** (§4.3), los dos cifrados con
+  el Keystore. La app renueva sola un minuto antes de que venza el JWT o al recibir 401; si la
+  renovación es rechazada (sesión cerrada, contraseña cambiada, reuso detectado) borra todo y pide
+  entrar otra vez. Sin red no se pierde la sesión.
+- **"Cerca de mí" sin mandar la ubicación** (`CercaDeMi.kt`, RF-02): permiso **aproximado**
+  (`ACCESS_COARSE_LOCATION`), pedido solo al tocar el botón; la lista se ordena en el teléfono
+  (`porCercania`, haversine) y la ubicación vive solo en memoria. La API nunca la recibe.
 - **Token en el encabezado**, nunca en la URL; sin registros del cuerpo ni de los encabezados en
   Logcat (`ClienteApi.kt:71`); tiempos límite (línea 82).
 - **Solo HTTPS y solo CA del sistema** (S-12).
@@ -1206,7 +1248,7 @@ certificado de la app. Nadie más puede "robarse" los enlaces.
 
 #### S-39 · Pruebas de seguridad automatizadas
 
-147 pruebas que atacan lo mismo que un atacante: §12.
+166 pruebas que atacan lo mismo que un atacante: §12.
 
 #### S-40 · Monitoreo continuo con alertas
 
@@ -1354,7 +1396,8 @@ Ahora `Usuario.esAdmin` sale de `Sesion.esAdmin`, que llena el servidor con los 
 
 ### 9.5 Pruebas de la app
 
-`./gradlew :app:testDebugUnitTest`: **39 pruebas, 0 fallas**. Los repositorios de testimonios y
+`./gradlew :app:testDebugUnitTest`: **50 pruebas, 0 fallas** (incluye la revisión de testimonios y
+el orden por cercanía, `CercaniaTest`). Los repositorios de testimonios y
 encuestas tienen una versión en memoria solo para estas pruebas (`TestimonioRepositoryEnMemoria`,
 `EncuestaRepositoryEnMemoria`).
 
@@ -1474,17 +1517,18 @@ sesión por HTTP se prueba aparte. **No existe un "modo de prueba" en el servido
 
 | Archivo | Pruebas | Qué ataca |
 |---|---|---|
-| `test_identidad.py` | 43 | Registro (hash Argon2id, nadie se hace admin, correo ocupado, contraseñas débiles, aviso); inicio de sesión (claims, sin enumeración, fuerza bruta por correo y por IP, recuperar); cambio de contraseña y de permisos invalida tokens; tokens ausentes, basura, `alg: none`, otro algoritmo, otro secreto, alterados, vencidos, audiencia/emisor ajenos, sin cada claim obligatorio, claims raros; cerrar sesión |
-| `test_politicas.py` | 20 | Las reglas de `politicas.polar` contra Oso directo: cada permiso, propiedad, cada motivo de inscripción y su orden, cancelar, testimonios, encuestas, aportaciones, negación por omisión |
+| `test_identidad.py` | 54 | Registro (hash Argon2id, nadie se hace admin, correo ocupado, contraseñas débiles, aviso); inicio de sesión (claims, sin enumeración, fuerza bruta por correo y por IP, recuperar); cambio de contraseña y de permisos invalida tokens; tokens ausentes, basura, `alg: none`, otro algoritmo, otro secreto, alterados, vencidos, audiencia/emisor ajenos, sin cada claim obligatorio, claims raros; cerrar sesión; **refresh tokens**: JWT corto, renovar, rotación, reuso que cierra la familia, cerrar revoca, otra cuenta no revoca lo ajeno, cambio de contraseña, basura y vencidos |
+| `test_politicas.py` | 21 | Las reglas de `politicas.polar` contra Oso directo: cada permiso, propiedad, cada motivo de inscripción y su orden, cancelar (12 h), testimonios y su revisión, encuestas, aportaciones, negación por omisión |
 | `test_autorizacion.py` | 13 | BOLA, testimonios ajenos, funciones de admin, mínimo privilegio, mass assignment, correos expuestos |
 | `test_entradas.py` | 23 | SQLi en filtros, ids y cuerpos; caracteres de control; topes; rangos; fechas sin zona; enlaces `javascript:`/`intent:`; XSS en la página de invitación |
-| `test_inscripciones.py` | 9 | Cupo, edad mínima, consentimiento, modificar sin perder lugares, cancelar, idempotencia, **carrera con 8 familias a la vez** |
+| `test_inscripciones.py` | 10 | Cupo, edad mínima, consentimiento, modificar sin perder lugares, cancelar (no a menos de 12 h), idempotencia, **carrera con 8 familias a la vez** |
 | `test_fotos.py` | 7 | EXIF/GPS, HTML disfrazado, políglota, bomba de descompresión, tamaño, foto ajena, nombres raros |
 | `test_aportaciones.py` | 6 | Metas, "ya no alcanza", reintentos, ids ajenos, campaña cerrada, cantidades absurdas |
 | `test_minimo_privilegio.py` | 10 | Lo que el usuario de la base de la API NO puede hacer |
 | `test_participacion.py` | 5 | Historial e impacto desde asistencias, encuestas, eliminación de datos |
 | `test_seguridad_http.py` | 11 | Encabezados, Host, tamaño, errores sin trazas, rate limit por flujo y **global**, IP falsificada, inventario interno, sin CORS, App Links |
-| **Total** | **147** | **147 aprobadas** |
+| `test_testimonios.py` | 6 | RF-12/HU-11: nace pendiente y no es público; aprobar publica; rechazado no; editar regresa a revisión; la foto en revisión solo la ven su autora y la moderación; solo `moderar:contenido` revisa; bandeja sin correos y auditoría |
+| **Total** | **166** | **166 aprobadas** |
 
 **Dos hallazgos reales durante la verificación** (por eso se prueba):
 
@@ -1591,7 +1635,7 @@ Reporte completo: [`backend/seguridad/zap/reporte-zap.html`](../backend/segurida
 ### 13.4 Lo que este escaneo no cubre (y cómo cubrirlo)
 
 - **La administración por dentro.** La cuenta de escaneo es una familia: las rutas de
-  `/v1/admin/…` se probaron en su 403, no en su lógica. Esa lógica está cubierta por las 147
+  `/v1/admin/…` se probaron en su 403, no en su lógica. Esa lógica está cubierta por las 166
   pruebas (§12). Para escanearla, se le darían permisos a la cuenta de escaneo con
   `python -m app.herramientas permisos <correo> todos` antes de pedir el token (a una base de
   desarrollo: ZAP crearía y borraría catálogo).
@@ -1666,7 +1710,7 @@ atacante"). Esto es lo que queda, dicho con claridad:
 | La API usa las llaves de administración de RustFS | RustFS está en red interna y las claves de objeto las pone el servidor | Un usuario de RustFS con política limitada al bucket |
 | "¿Olvidaste tu contraseña?" la atiende una persona | El proyecto no tiene servidor de correo | Enviar un enlace de un solo uso por correo (token aleatorio con vencimiento, guardado como hash) |
 | HS256: el mismo secreto firma y verifica | Solo la API firma y verifica; el secreto vive solo en su entorno | RS256/EdDSA si otro servicio tuviera que verificar tokens sin poder firmarlos |
-| Un token robado sirve hasta 24 h (o hasta "Cerrar sesión") | Sin refresh tokens, una sesión más corta obligaría a entrar a cada rato | Access token de 15 min + refresh token rotado |
+| Un JWT robado sirve hasta 15 min (o hasta "Cerrar sesión") | Es el costo de los tokens sin estado; un refresh robado se detecta al reusarse (§4.3) | DPoP (abajo) |
 | Con Quick Tunnel la dirección cambia | No hay dominio todavía | Dominio propio (§10.3) |
 | El escaneo de ZAP con sesión es de una familia, no de admin | Escanear la administración por dentro crea y borra catálogo | §13.4 |
 | Contraseña de Redis visible en `docker inspect` | Solo quien administra Docker la ve | Archivo de configuración o *secrets* de Docker |

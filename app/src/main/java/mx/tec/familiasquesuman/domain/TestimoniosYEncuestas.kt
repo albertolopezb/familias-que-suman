@@ -2,7 +2,10 @@ package mx.tec.familiasquesuman.domain
 
 // Kotlin puro, como Modelos.kt. Aquí viven RF-12 (testimonio con fotografía) y RF-13 (encuesta antes y después).
 
-/** Un testimonio publicado (RF-12): la foto y la experiencia de una familia sobre una actividad. */
+/** Antes de publicarse, cada testimonio lo revisa Familias que Suman (RF-12, HU-11). */
+enum class EstadoRevision { PENDIENTE, APROBADO, RECHAZADO }
+
+/** Un testimonio (RF-12): la foto y la experiencia de una familia sobre una actividad. */
 data class Testimonio(
     val id: String,
     /** La participación (RF-11) de la que habla; una familia publica un testimonio por participación. */
@@ -15,7 +18,9 @@ data class Testimonio(
     val foto: String?,
     val fecha: String,
     /** Lo dice el servidor: la cuenta con sesión es la que lo escribió. */
-    val esMio: Boolean = false
+    val esMio: Boolean = false,
+    /** Lo público siempre viene APROBADO; la autora y la moderación ven también los otros dos. */
+    val estado: EstadoRevision = EstadoRevision.APROBADO
 )
 
 /**

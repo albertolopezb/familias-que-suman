@@ -173,7 +173,11 @@ data class ActividadConAsociacion(
 enum class EstadoParticipacion {
     SIN_PENDIENTES,
     ENCUESTA_PENDIENTE,
-    TESTIMONIO_PUBLICADO
+    TESTIMONIO_PUBLICADO,
+    /** Ya lo mandó, pero la moderación no lo ha revisado: todavía no es público. */
+    TESTIMONIO_EN_REVISION,
+    /** La moderación no lo publicó; puede eliminarlo y compartir otro. */
+    TESTIMONIO_RECHAZADO
 }
 
 /**

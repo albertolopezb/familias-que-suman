@@ -15,6 +15,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import mx.tec.familiasquesuman.FamiliasApplication
 import mx.tec.familiasquesuman.domain.MomentoEncuesta
+import mx.tec.familiasquesuman.ui.screens.perfil.RutasPerfil
 import mx.tec.familiasquesuman.ui.screens.perfil.responderEncuestaPrevia
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -187,7 +188,8 @@ fun NavGraphBuilder.grafoInscripcion(nav: NavController) {
             onIniciarSesion = {
                 nav.navigate(RutasInscripcion.INICIAR_SESION) { popUpTo(RutasInscripcion.CREAR_CUENTA) { inclusive = true } }
             },
-            onRegresar = { nav.popBackStack() }
+            onRegresar = { nav.popBackStack() },
+            onVerAviso = { nav.navigate(RutasPerfil.AVISO_PRIVACIDAD) { launchSingleTop = true } }
         )
     }
 

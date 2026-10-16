@@ -420,7 +420,7 @@ class CuentaViewModel(
      */
     fun cerrarSesion() {
         viewModelScope.launch {
-            cuentaRepository.cerrarSesion()
+            cuentaRepository.cerrarSesion(servicioSesion.refreshActual())
             servicioSesion.cerrar()
             olvidarSesionLocal()
         }
