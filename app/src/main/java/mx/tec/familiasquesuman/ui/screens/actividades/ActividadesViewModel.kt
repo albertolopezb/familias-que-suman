@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.actividades
 
+import mx.tec.familiasquesuman.domain.Coordenada
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
@@ -95,12 +96,13 @@ class ActividadesViewModel(
         cupoTotal: Int,
         lugaresDisponibles: Int,
         edadMinima: Int?,
-        ciudad: String = "Monterrey"
+        ciudad: String = "Monterrey",
+        coordenada: Coordenada? = null
     ) = admin {
         actividadRepository.guardarActividad(
             id = null, titulo = titulo, descripcion = descripcion, fecha = fecha, horario = horario,
             direccion = direccion, cupoTotal = cupoTotal, lugaresDisponibles = lugaresDisponibles,
-            edadMinima = edadMinima, ciudad = ciudad, asociacionId = null
+            edadMinima = edadMinima, ciudad = ciudad, asociacionId = null, coordenada = coordenada
         )
     }
 
@@ -115,13 +117,15 @@ class ActividadesViewModel(
         nuevaDireccion: String,
         nuevoCupoTotal: Int,
         nuevosLugaresDisponibles: Int,
-        nuevaEdadMinima: Int?
+        nuevaEdadMinima: Int?,
+        nuevaCoordenada: Coordenada?
     ) = admin {
         val actual = actividadRepository.enMemoria(id)
         actividadRepository.guardarActividad(
             id = id, titulo = nuevoTitulo, descripcion = nuevaDescripcion, fecha = nuevaFecha, horario = nuevoHorario,
             direccion = nuevaDireccion, cupoTotal = nuevoCupoTotal, lugaresDisponibles = nuevosLugaresDisponibles,
-            edadMinima = nuevaEdadMinima, ciudad = actual?.actividad?.ciudad ?: "Monterrey", asociacionId = actual?.asociacion?.id
+            edadMinima = nuevaEdadMinima, ciudad = actual?.actividad?.ciudad ?: "Monterrey", asociacionId = actual?.asociacion?.id,
+            coordenada = nuevaCoordenada
         )
     }
 

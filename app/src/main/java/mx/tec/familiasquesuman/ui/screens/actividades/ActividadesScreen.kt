@@ -1,5 +1,9 @@
 package mx.tec.familiasquesuman.ui.screens.actividades
 
+import mx.tec.familiasquesuman.ui.components.ubicacionValida
+import mx.tec.familiasquesuman.ui.components.CampoUbicacion
+import mx.tec.familiasquesuman.domain.coordenadaDeTexto
+import mx.tec.familiasquesuman.domain.Coordenada
 import androidx.compose.ui.text.style.TextAlign
 import mx.tec.familiasquesuman.domain.fechaDeTexto
 import mx.tec.familiasquesuman.domain.fechaPasadaDeTexto
@@ -187,7 +191,8 @@ fun DialogoFormularioActividad(
         direccion: String,
         cupoTotal: Int,
         lugaresDisponibles: Int,
-        edadMinima: Int?
+        edadMinima: Int?,
+        ubicacion: Coordenada?
     ) -> Unit,
     onDescartar: () -> Unit,
     onDuplicar: (() -> Unit)? = null
@@ -200,6 +205,7 @@ fun DialogoFormularioActividad(
     var cupoTotalStr by remember { mutableStateOf(actividadInicial?.cupoTotal?.toString() ?: "20") }
     var lugaresDisponiblesStr by remember { mutableStateOf(actividadInicial?.lugaresDisponibles?.toString() ?: "10") }
     var edadMinimaStr by remember { mutableStateOf(actividadInicial?.edadMinima?.toString().orEmpty()) }
+    var ubicacion by remember { mutableStateOf(actividadInicial?.coordenada?.comoTexto().orEmpty()) }
 
     AlertDialog(
         onDismissRequest = onDescartar,
@@ -266,12 +272,14 @@ fun DialogoFormularioActividad(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+                CampoUbicacion(ubicacion, { ubicacion = it })
             }
         },
         confirmButton = {
             Button(
+                enabled = ubicacionValida(ubicacion),
                 onClick = {
-                    if (titulo.isNotBlank()) {
+                    if (titulo.isNotBlank() && ubicacionValida(ubicacion)) {
                         onGuardar(
                             titulo,
                             descripcion,
@@ -280,7 +288,8 @@ fun DialogoFormularioActividad(
                             direccion,
                             cupoTotalStr.toIntOrNull() ?: 20,
                             lugaresDisponiblesStr.toIntOrNull() ?: 10,
-                            edadMinimaStr.toIntOrNull()
+                            edadMinimaStr.toIntOrNull(),
+                            coordenadaDeTexto(ubicacion)
                         )
                     }
                 }

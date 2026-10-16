@@ -151,7 +151,8 @@ fun NavGraphBuilder.grafoCampanas(nav: NavController, esAdmin: () -> Boolean = {
                     CampoAdmin("Meta total", (actual?.metaTotal ?: 0).toString(), TipoCampo.NUMERO),
                     CampoAdmin("Completados", (actual?.completados ?: 0).toString(), TipoCampo.NUMERO),
                     CampoAdmin("Ciudad", actual?.ciudad ?: "Monterrey"),
-                    CampoAdmin("Urgente", (actual?.urgente ?: false).toString(), TipoCampo.INTERRUPTOR)
+                    CampoAdmin("Urgente", (actual?.urgente ?: false).toString(), TipoCampo.INTERRUPTOR),
+                    CampoAdmin("Ubicación en el mapa", actual?.coordenada?.comoTexto().orEmpty(), TipoCampo.UBICACION)
                 ),
                 onGuardar = { valores ->
                     vm.guardarCampana(actual, valores)

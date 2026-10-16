@@ -155,7 +155,7 @@ fun NavGraphBuilder.grafoActividades(
         if (mostrandoCrear) {
             DialogoFormularioActividad(
                 tituloDialogo = "Crear Nueva Actividad",
-                onGuardar = { titulo, desc, fecha, horario, direccion, cupoTotal, libres, edadMin ->
+                onGuardar = { titulo, desc, fecha, horario, direccion, cupoTotal, libres, edadMin, ubicacion ->
                     vm.crearActividad(
                         titulo = titulo,
                         descripcion = desc,
@@ -165,7 +165,8 @@ fun NavGraphBuilder.grafoActividades(
                         cupoTotal = cupoTotal,
                         lugaresDisponibles = libres,
                         edadMinima = edadMin,
-                        ciudad = prefs.ciudad
+                        ciudad = prefs.ciudad,
+                        coordenada = ubicacion
                     )
                     mostrandoCrear = false
                 },
@@ -178,7 +179,7 @@ fun NavGraphBuilder.grafoActividades(
             DialogoFormularioActividad(
                 tituloDialogo = "Editar Actividad",
                 actividadInicial = item.actividad,
-                onGuardar = { titulo, desc, fecha, horario, direccion, cupoTotal, libres, edadMin ->
+                onGuardar = { titulo, desc, fecha, horario, direccion, cupoTotal, libres, edadMin, ubicacion ->
                     vm.editarActividad(
                         id = item.actividad.id,
                         nuevoTitulo = titulo,
@@ -188,7 +189,8 @@ fun NavGraphBuilder.grafoActividades(
                         nuevaDireccion = direccion,
                         nuevoCupoTotal = cupoTotal,
                         nuevosLugaresDisponibles = libres,
-                        nuevaEdadMinima = edadMin
+                        nuevaEdadMinima = edadMin,
+                        nuevaCoordenada = ubicacion
                     )
                     actividadAEditar = null
                 },
