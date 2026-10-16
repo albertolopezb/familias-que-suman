@@ -2,6 +2,15 @@ package mx.tec.familiasquesuman.ui.screens.inicio
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -36,7 +45,8 @@ import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
 
 /**
  * Los testimonios publicados (RF-12). Cada cuenta ve "Eliminar" en los suyos y el admin en
- * todos, para quitar lo que haga falta.
+ * todos, para quitar lo que haga falta. El admin ve además la pestaña "Por revisar" (HU-11):
+ * nada se publica sin que alguien con `moderar:contenido` lo apruebe.
  *
  * @param correoDeLaSesion la cuenta con sesión abierta, o null si no hay.
  */
@@ -46,15 +56,39 @@ fun TestimoniosScreen(
     correoDeLaSesion: String?,
     esAdmin: Boolean,
     onEliminar: (Testimonio) -> Unit,
-    onRegresar: () -> Unit
+    onRegresar: () -> Unit,
+    porRevisar: List<Testimonio> = emptyList(),
+    onRevisar: (id: String, aprobar: Boolean) -> Unit = { _, _ -> }
 ) {
     var porEliminar by remember { mutableStateOf<Testimonio?>(null) }
+    var verRevision by rememberSaveable { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().background(Web.Fondo)) {
         BarraSuperior("Testimonios", onRegresar = onRegresar)
         LazyColumn(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            if (esAdmin) {
+                item(key = "pestanas") {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Pestana("Publicados", !verRevision) { verRevision = false }
+                        Pestana("Por revisar (${porRevisar.size})", verRevision) { verRevision = true }
+                    }
+                }
+            }
+            if (esAdmin && verRevision) {
+                if (porRevisar.isEmpty()) {
+                    item(key = "sin_revision") {
+                        Text(
+                            "No hay testimonios esperando revisión.",
+                            style = TextoWeb.Cuerpo, color = Web.TextoApagado, textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp)
+                        )
+                    }
+                }
+                items(porRevisar, key = { "r" + it.id }) { t -> TarjetaPorRevisar(t, onRevisar) }
+                return@LazyColumn
+            }
             if (testimonios.isEmpty()) {
                 item(key = "vacio") {
                     Text(
@@ -89,6 +123,43 @@ fun TestimoniosScreen(
             },
             dismissButton = { TextButton(onClick = { porEliminar = null }) { Text("Cancelar") } }
         )
+    }
+}
+
+@Composable
+private fun Pestana(texto: String, activa: Boolean, onClick: () -> Unit) {
+    Text(
+        texto,
+        style = TextoWeb.Chip,
+        color = if (activa) Color.White else Web.Texto,
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(if (activa) Web.Primario else Web.Tarjeta)
+            .border(1.dp, if (activa) Web.Primario else Web.Borde, RoundedCornerShape(50))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
+    )
+}
+
+/** Un testimonio que espera revisión: se ve como se vería publicado, con Rechazar y Aprobar. */
+@Composable
+private fun TarjetaPorRevisar(t: Testimonio, onRevisar: (String, Boolean) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        TarjetaTestimonioPublico(t)
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            OutlinedButton(
+                onClick = { onRevisar(t.id, false) },
+                modifier = Modifier.weight(1f).height(44.dp),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, Web.Borde)
+            ) { Text("Rechazar", style = TextoWeb.Chip, color = Web.RojoTexto) }
+            Button(
+                onClick = { onRevisar(t.id, true) },
+                modifier = Modifier.weight(1f).height(44.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Web.Primario)
+            ) { Text("Aprobar y publicar", style = TextoWeb.Chip, color = Color.White) }
+        }
     }
 }
 

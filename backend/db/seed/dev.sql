@@ -388,11 +388,12 @@ INSERT INTO asistencias (id, cuenta_id, actividad_id) VALUES
   ('91000000-0000-0000-0000-000000000004', 'c0000000-0000-0000-0000-000000000002', 'd0000000-0000-0000-0000-000000000005')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO testimonios (id, asistencia_id, experiencia, foto_clave) VALUES
+-- Ya revisados y aprobados (RF-12): un testimonio nuevo, en cambio, nace "en revisión".
+INSERT INTO testimonios (id, asistencia_id, experiencia, foto_clave, estado, revisado_en) VALUES
   ('92000000-0000-0000-0000-000000000011', '91000000-0000-0000-0000-000000000003',
-   'Mis hijos prepararon dibujos para los niños del hospital y volvieron con ganas de ayudar más. Fue la mejor tarde en familia que hemos tenido.', NULL),
+   'Mis hijos prepararon dibujos para los niños del hospital y volvieron con ganas de ayudar más. Fue la mejor tarde en familia que hemos tenido.', NULL, 'aprobado', now()),
   ('92000000-0000-0000-0000-000000000012', '91000000-0000-0000-0000-000000000002',
-   'Entregamos kits de higiene y los niños se dieron cuenta de lo mucho que pueden aportar.', NULL)
+   'Entregamos kits de higiene y los niños se dieron cuenta de lo mucho que pueden aportar.', NULL, 'aprobado', now())
 ON CONFLICT DO NOTHING;
 -- Un seed anterior dejó un testimonio con una foto de ejemplo que nunca existió en el almacén
 -- (la app pedía una foto que da 404). En las bases que lo tengan, se queda sin foto.

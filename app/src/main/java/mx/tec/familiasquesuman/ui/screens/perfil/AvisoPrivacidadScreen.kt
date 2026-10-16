@@ -9,8 +9,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -46,6 +52,17 @@ private val IconoFotosPrivacidad = ImageVector.Builder("Fotos", 24.dp, 24.dp, 24
     }
 }.build()
 
+/**
+ * Quién es responsable de los datos (LFPDPPP art. 15-I). Un solo lugar para cambiarlo:
+ * antes de publicar la app, Familias que Suman confirma su razón social y su domicilio completo.
+ */
+object Responsable {
+    const val NOMBRE = "Familias que Suman"
+    const val DOMICILIO = "Monterrey, Nuevo León, México"
+    const val CORREO = "contacto@familiasquesuman.org"
+    const val ACTUALIZADO = "16 de octubre de 2026"
+}
+
 @Composable
 fun AvisoPrivacidadScreen(
     estado: EstadoAvisoPrivacidad,
@@ -66,30 +83,74 @@ fun AvisoPrivacidadScreen(
                         Icon(Icons.Outlined.CheckCircle, contentDescription = null, tint = ConfirmadoTexto)
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text("Solicitud enviada", style = MaterialTheme.typography.titleMedium, color = ConfirmadoTexto)
-                            Text("Tu folio es $folio. Eliminaremos tus datos en un máximo de 30 días y te avisaremos por correo.",
+                            Text("Tu folio es $folio. Guárdalo: con él puedes preguntar por tu solicitud en ${Responsable.CORREO}. " +
+                                "Respondemos en un máximo de 20 días y, si procede, tus datos se borran en los 15 siguientes.",
                                 style = MaterialTheme.typography.bodyLarge, color = ConfirmadoTexto)
                         }
                     }
                 }
             }
-            Text("En lenguaje claro: qué datos guardamos de tu familia y para qué.",
+            Text("En lenguaje claro: qué datos guardamos de tu familia, para qué y cómo puedes pedir que los cambiemos o borremos.",
                 style = MaterialTheme.typography.bodyLarge, color = TintaSuave)
-            // Contenido transcrito de P-23, no descripción de servicios ya implementados.
-            TarjetaPrivacidad("Qué guardamos",
-                "El nombre de tu familia, tu correo, y el nombre y la edad de quienes registras como acompañantes.",
+            // Aviso de privacidad integral, LFPDPPP (DOF 20-03-2025) art. 15, fracciones I a VI.
+            // Las tarjetas 1 a 4 son el aviso simplificado del art. 16-II (el que se muestra al crear la cuenta).
+            TarjetaPrivacidad("1. Quién es responsable",
+                "${Responsable.NOMBRE}, con domicilio en ${Responsable.DOMICILIO}. " +
+                    "Para cualquier tema de tus datos escríbenos a ${Responsable.CORREO}.",
+                Icons.Outlined.Home)
+            TarjetaPrivacidad("2. Qué datos guardamos",
+                "De la cuenta: tu correo, tu contraseña (guardada como huella Argon2id; nadie puede leerla), el nombre de tu familia, " +
+                    "tu nombre, fecha de nacimiento y sexo, tu ciudad y, si la subes, tu foto de perfil.\n" +
+                    "De tu familia: nombre, fecha de nacimiento o edad y sexo de quienes registras como acompañantes. " +
+                    "Si son menores de edad, guardamos que tú, como madre, padre o tutor, diste tu consentimiento.\n" +
+                    "De tu participación: inscripciones, asistencias, favoritos, ajustes de avisos, encuestas, testimonios con foto y sugerencias.\n" +
+                    "No pedimos datos sensibles (salud, religión, origen, preferencias, datos financieros ni biométricos).",
                 IconoDatosPrivacidad)
-            TarjetaPrivacidad("Para qué sirve",
-                "Para que la asociación sepa a quién esperar el día de la actividad y para armar tu historial de participación.",
+            TarjetaPrivacidad("3. Para qué los usamos",
+                "Necesarias para el servicio: crear tu cuenta e identificarte, inscribirte a actividades, avisar a quien organiza cuántas " +
+                    "personas van y de qué edades, registrar tu asistencia y armar tu historial, y proteger la app contra abusos.\n" +
+                    "Voluntarias (solo si tú las usas): publicar tu testimonio, contestar encuestas para mejorar las actividades, " +
+                    "recibir recordatorios y mandar sugerencias. No usamos tus datos para publicidad.",
                 Icons.Outlined.Info)
-            TarjetaPrivacidad("Quién lo ve",
-                "Solo Familias que Suman y la asociación de la actividad en la que te inscribes. No se vende ni se comparte con nadie más.",
+            TarjetaPrivacidad("4. Cómo limitar su uso",
+                "En Ajustes apagas los recordatorios y avisos. Testimonios, encuestas, sugerencias y foto de perfil son opcionales y puedes " +
+                    "borrarlos. \"Cerca de mí\" solo se activa si lo tocas y das permiso. Y puedes pedir que borremos todo con el botón de abajo.",
+                Icons.Outlined.Settings)
+            TarjetaPrivacidad("Quién más los ve",
+                "Solo el equipo de Familias que Suman que lo necesita para su trabajo (por ejemplo, quien registra la asistencia). " +
+                    "No vendemos ni transferimos tus datos. Para que la app llegue al servidor de forma cifrada usamos Cloudflare, " +
+                    "que actúa como encargado y no los usa para nada más. Solo los entregaríamos a una autoridad que los pida conforme a la ley.",
                 IconoVisibilidadPrivacidad)
-            TarjetaPrivacidad("Las fotos",
-                "Las fotos de los testimonios se guardan en nuestra propia infraestructura y solo se publican si tú las envías. Puedes eliminar tu testimonio cuando quieras.",
+            TarjetaPrivacidad("Tu ubicación",
+                "\"Cerca de mí\" usa tu ubicación aproximada (no la exacta) solo en tu teléfono, para ordenar las actividades por cercanía. " +
+                    "No la recibimos ni la guardamos, y si no das permiso la app funciona igual.",
+                Icons.Outlined.LocationOn)
+            TarjetaPrivacidad("Las fotos y testimonios",
+                "Se guardan en nuestra propia infraestructura. Antes de publicarse, el equipo los revisa; mientras tanto solo los ves tú. " +
+                    "Al publicarse aparecen con el nombre de tu familia, nunca con tu correo. Puedes eliminarlos cuando quieras.",
                 IconoFotosPrivacidad)
-            TarjetaPrivacidad("Tus derechos",
-                "Puedes pedir que eliminemos tus datos cuando quieras. Al solicitarlo se eliminan tu cuenta, tus acompañantes y tus inscripciones.",
+            TarjetaPrivacidad("Cómo los cuidamos",
+                "Todo viaja por HTTPS. En el teléfono, tu sesión se guarda cifrada con una llave del propio teléfono. En el servidor, " +
+                    "cada cuenta solo puede ver lo suyo, los intentos de adivinar contraseñas se bloquean y queda una bitácora de las acciones " +
+                    "sensibles (con una huella de la IP, no la IP).",
+                Icons.Outlined.Lock)
+            TarjetaPrivacidad("Cuánto tiempo los guardamos",
+                "Mientras tengas tu cuenta. La sesión del teléfono vence a los 30 días sin uso. Al eliminar tu cuenta se borran tus datos, " +
+                    "los de tus acompañantes, tus inscripciones, encuestas, testimonios y fotos. Solo se conserva la constancia de tu solicitud " +
+                    "(folio, correo y fecha) y la bitácora de seguridad, que no tiene tu nombre; tus sugerencias se quedan sin tu nombre ni contacto.",
+                Icons.Outlined.DateRange)
+            TarjetaPrivacidad("Tus derechos (ARCO)",
+                "Acceso y rectificación: tus datos están en Perfil y ahí los corriges. Cancelación: el botón de abajo genera un folio. " +
+                    "Oposición, o cualquier duda: escribe a ${Responsable.CORREO} con tu folio o el correo de tu cuenta. " +
+                    "Te respondemos en un máximo de 20 días y, si procede, se hace efectivo en los 15 días siguientes (art. 31). " +
+                    "Si no te respondemos, puedes acudir a la Secretaría Anticorrupción y Buen Gobierno.",
                 Icons.Outlined.Delete)
+            TarjetaPrivacidad("Si este aviso cambia",
+                "Publicaremos la nueva versión en esta pantalla, con su fecha, y lo anunciaremos en la app antes de que aplique.",
+                Icons.Outlined.Refresh)
+            Text("Fundamento: Ley Federal de Protección de Datos Personales en Posesión de los Particulares (DOF 20-03-2025), " +
+                    "arts. 14 a 16, 18 y 21 a 34. Última actualización: ${Responsable.ACTUALIZADO}.",
+                style = MaterialTheme.typography.bodySmall, color = TintaSuave)
             estado.mensaje?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = TintaSuave) }
         }
         Surface(color = Superficie, shadowElevation = 4.dp) {
@@ -116,7 +177,7 @@ fun AvisoPrivacidadScreen(
             title = { Text(if (conSesion) "¿Eliminar tus datos?" else "Inicia sesión primero") },
             text = {
                 Text(if (conSesion)
-                    "Enviaremos tu solicitud para borrar tu cuenta, tus acompañantes y tus inscripciones. Esta acción no se puede deshacer."
+                    "Enviaremos tu solicitud para borrar tu cuenta, tus acompañantes, inscripciones, encuestas, testimonios y fotos. Esta acción no se puede deshacer."
                 else "Para solicitar la eliminación necesitamos saber de qué cuenta son los datos.")
             },
             confirmButton = {

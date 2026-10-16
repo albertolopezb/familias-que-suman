@@ -12,7 +12,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Request, Response, status
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -24,7 +24,7 @@ from ..identidad import ADMINISTRAR_CATALOGO, ATENDER_PRIVACIDAD, Sujeto, requie
 from ..limites import limitador, por_cuenta
 from ..modelos import (
     Actividad, Asistencia, Asociacion, ArticuloMeta, Campana, Centro, Ciudad, Cuenta, FormaApoyo, Inscripcion,
-    OpcionDonacion, Proyecto, PuntoEntrega, SolicitudEliminacion, Testimonio,
+    OpcionDonacion, Proyecto, PuntoEntrega, SolicitudEliminacion, Sugerencia, Testimonio,
 )
 from .cuenta import solicitud_salida
 
@@ -347,6 +347,12 @@ def atender(request: Request, solicitud_id: uuid.UUID, s: Sujeto = Depends(requi
                 select(Testimonio.foto_clave).join(Asistencia, Testimonio.asistencia_id == Asistencia.id)
                 .where(Asistencia.cuenta_id == cuenta.id, Testimonio.foto_clave.is_not(None))
             )]
+            # Las sugerencias que mandó se quedan (son sobre causas, no sobre ella), pero sin su
+            # nombre ni su contacto: así no queda ningún dato suyo (aviso de privacidad, LFPDPPP art. 24).
+            db.execute(
+                update(Sugerencia).where(Sugerencia.cuenta_id == cuenta.id)
+                .values(sugerida_por="Familia que eliminó su cuenta", contacto="")
+            )
             db.delete(cuenta)
     solicitud.estado = "atendida"
     solicitud.atendida_en = datetime.now(UTC)

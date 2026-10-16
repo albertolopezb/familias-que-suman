@@ -58,7 +58,8 @@ allow(s: Sujeto, "cancelar", r: Cancelacion) if not motivo(s, "cancelar", r, _);
 
 motivo(s: Sujeto, "cancelar", r: Cancelacion, "no_encontrado") if r.dueno != s.id;
 
-motivo(_: Sujeto, "cancelar", r: Cancelacion, "actividad_iniciada") if r.ahora >= r.inicia;
+# Hasta 12 horas antes (RF-19, HU-09): 43200 segundos. Así la asociación alcanza a ofrecer el lugar.
+motivo(_: Sujeto, "cancelar", r: Cancelacion, "fuera_de_plazo") if r.ahora >= r.inicia - 43200;
 
 
 # ─── Participación: testimonios y encuestas ────────────────────────────────
@@ -74,6 +75,14 @@ motivo(_: Sujeto, "publicar_testimonio", p: Participacion, "actividad_no_realiza
 allow(s: Sujeto, "eliminar", t: Testimonio) if not motivo(s, "eliminar", t, _);
 
 motivo(s: Sujeto, "eliminar", t: Testimonio, "no_encontrado") if
+    t.autor != s.id and not s.puede("moderar:contenido");
+
+
+# Un testimonio EN REVISIÓN (RF-12) solo lo ven su autora y la moderación; lo aprobado es público
+# y no pasa por aquí.
+allow(s: Sujeto, "ver_en_revision", t: Testimonio) if not motivo(s, "ver_en_revision", t, _);
+
+motivo(s: Sujeto, "ver_en_revision", t: Testimonio, "no_encontrado") if
     t.autor != s.id and not s.puede("moderar:contenido");
 
 

@@ -1,7 +1,6 @@
 package mx.tec.familiasquesuman.data.red
 
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
@@ -9,6 +8,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import mx.tec.familiasquesuman.BuildConfig
+import okhttp3.Authenticator
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -32,9 +32,21 @@ class ApiExcepcion(
     fun datoEntero(nombre: String): Int? = datos?.get(nombre)?.jsonPrimitive?.intOrNull
 }
 
-/** De dónde sale el token de la sesión. Lo implementa ServicioSesion. */
-fun interface ProveedorToken {
-    suspend fun token(): String?
+/**
+ * De dónde sale el token de la sesión. Lo implementa ServicioSesion. Se llama desde los hilos de
+ * OkHttp (nunca desde el principal), así que puede tardar lo que tarde una renovación.
+ */
+interface ProveedorToken {
+    /** El JWT vigente; si está por vencer, lo renueva antes. null = sin sesión. */
+    fun token(): String?
+
+    /** El servidor rechazó [tokenUsado]: pide uno nuevo con el refresh token. null = no se pudo. */
+    fun renovar(tokenUsado: String?): String?
+}
+
+private object SinSesion : ProveedorToken {
+    override fun token(): String? = null
+    override fun renovar(tokenUsado: String?): String? = null
 }
 
 /**
@@ -62,7 +74,7 @@ object ClienteApi {
     /** La raíz de la API, siempre terminada en "/". */
     val baseUrl: String = BuildConfig.API_URL.trimEnd('/') + "/"
 
-    @Volatile private var proveedor: ProveedorToken = ProveedorToken { null }
+    @Volatile private var proveedor: ProveedorToken = SinSesion
 
     fun usarProveedorDeToken(nuevo: ProveedorToken) {
         proveedor = nuevo
@@ -70,19 +82,41 @@ object ClienteApi {
 
     private val conToken = Interceptor { cadena ->
         val original = cadena.request()
-        // OkHttp corre esto en su propio hilo: aquí sí se puede esperar a que se descifre el token.
-        val token = runCatching { runBlocking { proveedor.token() } }.getOrNull()
+        // OkHttp corre esto en su propio hilo: aquí sí se puede esperar a que se descifre (o renueve).
+        val token = runCatching { proveedor.token() }.getOrNull()
         val peticion = if (token.isNullOrBlank()) original
         else original.newBuilder().header("Authorization", "Bearer $token").build()
         cadena.proceed(peticion)
     }
 
-    val http: OkHttpClient = OkHttpClient.Builder()
+    /**
+     * Si la API responde 401 a una petición que llevaba token (venció, o el reloj del teléfono va
+     * adelantado), se renueva UNA vez y se reintenta. Las rutas de sesión no pasan por aquí: un 401
+     * al iniciar sesión es "contraseña equivocada", no "token vencido".
+     */
+    private val renovarAlRecibir401 = Authenticator { _, respuesta ->
+        val pedido = respuesta.request
+        val usado = pedido.header("Authorization")?.removePrefix("Bearer ")
+        if (usado == null || respuesta.priorResponse != null || pedido.url.encodedPath.contains("/v1/sesion/")) {
+            null
+        } else {
+            runCatching { proveedor.renovar(usado) }.getOrNull()
+                ?.let { nuevo -> pedido.newBuilder().header("Authorization", "Bearer $nuevo").build() }
+        }
+    }
+
+    /** Sin token ni Authenticator: solo para renovar la sesión (si no, se llamaría a sí mismo). */
+    val httpSinSesion: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(20, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .retryOnConnectionFailure(true)
+        .build()
+
+    /** Comparte conexiones con [httpSinSesion]; este sí pone el token y renueva al recibir 401. */
+    val http: OkHttpClient = httpSinSesion.newBuilder()
         .addInterceptor(conToken)
+        .authenticator(renovarAlRecibir401)
         .build()
 
     val api: ApiFamilias = Retrofit.Builder()

@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import mx.tec.familiasquesuman.domain.EstadoRevision
 import mx.tec.familiasquesuman.domain.Participacion
 import mx.tec.familiasquesuman.domain.Testimonio
 import mx.tec.familiasquesuman.ui.components.BarraSuperior
@@ -139,7 +140,7 @@ private fun ColumnScope.FormularioDeTestimonio(
         Surface(shape = RoundedCornerShape(16.dp), color = AcentoSuave) {
             Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Icon(Icons.Outlined.Info, contentDescription = null, tint = AcentoTexto, modifier = Modifier.size(18.dp))
-                Text("Tu testimonio se publica en cuanto lo envíes, con el nombre de tu familia. Puedes eliminarlo cuando quieras.",
+                Text("Antes de publicarse, el equipo de Familias que Suman lo revisa. Aparecerá con el nombre de tu familia (nunca tu correo) y puedes eliminarlo cuando quieras.",
                     style = MaterialTheme.typography.bodyMedium, color = AcentoTexto)
             }
         }
@@ -157,7 +158,7 @@ private fun ColumnScope.FormularioDeTestimonio(
                 Spacer(Modifier.width(10.dp))
                 Text("Enviando…", style = MaterialTheme.typography.titleLarge)
             } else {
-                Text("Publicar testimonio", style = MaterialTheme.typography.titleLarge)
+                Text("Enviar testimonio", style = MaterialTheme.typography.titleLarge)
             }
         }
     }
@@ -170,8 +171,8 @@ private fun ColumnScope.TestimonioEnviado(onListo: () -> Unit) {
         Box(Modifier.size(64.dp).clip(RoundedCornerShape(50)).background(ConfirmadoFondo), contentAlignment = Alignment.Center) {
             Icon(Icons.Filled.Check, contentDescription = null, tint = Confirmado, modifier = Modifier.size(32.dp))
         }
-        Text("Tu testimonio ya está publicado", style = MaterialTheme.typography.headlineMedium, color = Tinta, textAlign = TextAlign.Center)
-        Text("Ya aparece en la sección de testimonios. Puedes eliminarlo cuando quieras desde Mis actividades.",
+        Text("Recibimos tu testimonio", style = MaterialTheme.typography.headlineMedium, color = Tinta, textAlign = TextAlign.Center)
+        Text("Quedó en revisión: aparecerá en la sección de testimonios cuando el equipo de Familias que Suman lo apruebe. Lo puedes ver (o eliminar) en Mis actividades.",
             style = MaterialTheme.typography.bodyLarge, color = TintaSuave, textAlign = TextAlign.Center)
     }
     Surface(color = Superficie, shadowElevation = 4.dp) {
@@ -183,7 +184,7 @@ private fun ColumnScope.TestimonioEnviado(onListo: () -> Unit) {
     }
 }
 
-/** El testimonio que la cuenta ya publicó: se puede consultar y eliminar (después podrá compartir otro). */
+/** El testimonio que la cuenta ya mandó, en el estado que esté: se consulta y se elimina (después podrá compartir otro). */
 @Composable
 private fun ColumnScope.TestimonioPublicado(
     testimonio: Testimonio,
@@ -195,9 +196,13 @@ private fun ColumnScope.TestimonioPublicado(
     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("${testimonio.actividadTitulo} · ${testimonio.fecha}", style = MaterialTheme.typography.bodyLarge, color = TintaSuave)
-        Surface(shape = RoundedCornerShape(16.dp), color = ConfirmadoFondo) {
-            Text("Publicado: ya aparece en la sección de testimonios.",
-                style = MaterialTheme.typography.bodyLarge, color = ConfirmadoTexto, modifier = Modifier.padding(16.dp))
+        val (aviso, fondo, tinta) = when (testimonio.estado) {
+            EstadoRevision.APROBADO -> Triple("Publicado: ya aparece en la sección de testimonios.", ConfirmadoFondo, ConfirmadoTexto)
+            EstadoRevision.PENDIENTE -> Triple("En revisión: el equipo de Familias que Suman lo revisa antes de publicarlo.", AcentoSuave, AcentoTexto)
+            EstadoRevision.RECHAZADO -> Triple("No se publicó: no cumple con las reglas de la comunidad. Puedes eliminarlo y compartir otro.", ErrorFondo, ErrorTexto)
+        }
+        Surface(shape = RoundedCornerShape(16.dp), color = fondo) {
+            Text(aviso, style = MaterialTheme.typography.bodyLarge, color = tinta, modifier = Modifier.padding(16.dp))
         }
         testimonio.foto?.let { FotoUsuario(it, "Foto del testimonio", Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(16.dp))) }
         Text(testimonio.experiencia, style = MaterialTheme.typography.bodyLarge, color = Tinta)

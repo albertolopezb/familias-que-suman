@@ -6,6 +6,9 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Parte 3: notificaciones reales. Android 13+ lo pide en tiempo de ejecución. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- "Cerca de mí" (RF-02): solo APROXIMADA, solo cuando se toca el botón, y nunca sale del
+         teléfono (ui/screens/actividades/CercaDeMi.kt). Sin ella, la lista va por fecha. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:allowBackup="false"

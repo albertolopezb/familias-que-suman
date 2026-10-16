@@ -133,6 +133,7 @@ def testimonio_salida(t: Testimonio, familia: str, cuenta_id: uuid.UUID, sujeto:
         foto_url=convertir.foto_url(t.foto_clave),
         fecha=t.creado_en.date(),
         es_mio=sujeto is not None and sujeto.cuenta_id == cuenta_id,
+        estado=t.estado,
     )
 
 
@@ -146,6 +147,7 @@ def testimonios(
         select(Testimonio, Cuenta.nombre_familia, Cuenta.id)
         .join(Asistencia, Testimonio.asistencia_id == Asistencia.id)
         .join(Cuenta, Asistencia.cuenta_id == Cuenta.id)
+        .where(Testimonio.estado == "aprobado")            # RF-12: nada sale sin revisión
         .order_by(Testimonio.creado_en.desc())
         .limit(limite)
     ).unique()
@@ -183,8 +185,8 @@ def foto(
     sujeto: Sujeto | None = Depends(usuario_opcional),
     db: Session = Depends(obtener_db),
 ):
-    """Las fotos de testimonios son públicas (los testimonios se publican). La de perfil, solo
-    la ve su dueña o dueño."""
+    """Las fotos de testimonios APROBADOS son públicas. La de un testimonio en revisión solo la ven su
+    autora y la moderación. La de perfil, solo su dueña o dueño."""
     if not _NOMBRE.fullmatch(nombre):
         raise no_encontrado("Esa foto")
     clave = f"{carpeta}/{nombre}"
@@ -194,7 +196,17 @@ def foto(
         duena = db.scalar(select(Cuenta.id).where(Cuenta.foto_clave == clave))
         politicas.exigir(politicas.puede_ver_foto_perfil(sujeto, duena))
         return responder_foto(clave, privada=True)
-    publicada = db.scalar(select(Testimonio.id).where(Testimonio.foto_clave == clave))
-    if publicada is None:
+    fila = db.execute(
+        select(Testimonio.estado, Asistencia.cuenta_id)
+        .join(Asistencia, Testimonio.asistencia_id == Asistencia.id)
+        .where(Testimonio.foto_clave == clave)
+    ).first()
+    if fila is None:
         raise no_encontrado("Esa foto")
-    return responder_foto(clave, privada=False)
+    estado, autor = fila
+    if estado == "aprobado":
+        return responder_foto(clave, privada=False)
+    if sujeto is None:
+        raise no_encontrado("Esa foto")
+    politicas.exigir(politicas.puede_ver_testimonio_en_revision(sujeto, autor))
+    return responder_foto(clave, privada=True)

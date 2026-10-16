@@ -172,6 +172,10 @@ class Testimonio(Base):
     experiencia: Mapped[str] = mapped_column(Text)
     foto_clave: Mapped[str | None] = mapped_column(Text)
     creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    # 'pendiente' hasta que la moderación lo revisa; solo lo 'aprobado' es público (RF-12).
+    estado: Mapped[str] = mapped_column(Text, server_default=text("'pendiente'"))
+    revisado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revisado_por: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))
 
     asistencia: Mapped[Asistencia] = relationship(lazy="joined")
 
@@ -359,3 +363,17 @@ class Auditoria(Base):
     objeto_id: Mapped[str | None] = mapped_column(Text)
     detalle: Mapped[dict] = mapped_column(JSONB, server_default=text("'{}'"))
     ip_hmac: Mapped[str | None] = mapped_column(Text)
+
+
+class Sesion(Base):
+    """Un refresh token (solo su huella). Ver identidad.py y la migración V8."""
+
+    __tablename__ = "sesiones"
+    id: Mapped[uuid.UUID] = _id()
+    cuenta_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("cuentas.id", ondelete="CASCADE"))
+    familia: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    huella: Mapped[str] = mapped_column(Text, unique=True)
+    creada_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"))
+    expira_en: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    usada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revocada_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

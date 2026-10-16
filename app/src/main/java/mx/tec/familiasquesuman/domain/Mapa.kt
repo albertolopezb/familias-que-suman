@@ -3,11 +3,38 @@ package mx.tec.familiasquesuman.domain
 // Kotlin puro, igual que Modelos.kt. Vive en su propio archivo para no tocar
 // Modelos.kt mientras el equipo hace el merge; si conviene, se junta después.
 
+import kotlin.math.asin
+import kotlin.math.cos
+import kotlin.math.pow
+import kotlin.math.sin
+import kotlin.math.sqrt
+
 /** Un lugar en el mapa: latitud y longitud. */
 data class Coordenada(val latitud: Double, val longitud: Double) {
     /** Como se escribe en el formulario de administración: "25.669400, -100.309800". */
     fun comoTexto(): String = "%.6f, %.6f".format(java.util.Locale.ROOT, latitud, longitud)
+
+    /** Distancia en km en línea recta (fórmula del haversine). Para ordenar por cercanía basta. */
+    fun distanciaKm(otra: Coordenada): Double {
+        val dLat = Math.toRadians(otra.latitud - latitud)
+        val dLng = Math.toRadians(otra.longitud - longitud)
+        val a = sin(dLat / 2).pow(2) +
+            cos(Math.toRadians(latitud)) * cos(Math.toRadians(otra.latitud)) * sin(dLng / 2).pow(2)
+        return 2 * RADIO_TIERRA_KM * asin(sqrt(a))
+    }
+
+    private companion object {
+        const val RADIO_TIERRA_KM = 6371.0
+    }
 }
+
+/**
+ * "Cerca de mí" (RF-02): de lo más cercano a lo más lejano. Lo que no tiene ubicación va al
+ * final, en el orden que traía (sortedBy es estable). Se calcula en el teléfono: [aqui] nunca
+ * sale de él.
+ */
+fun <T> List<T>.porCercania(aqui: Coordenada, dondeEsta: (T) -> Coordenada?): List<T> =
+    sortedBy { dondeEsta(it)?.distanciaKm(aqui) ?: Double.MAX_VALUE }
 
 /**
  * Lo que escribe la administración en el campo "Ubicación en el mapa", convertido en coordenada.

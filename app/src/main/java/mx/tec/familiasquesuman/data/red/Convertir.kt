@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.data.red
 
+import mx.tec.familiasquesuman.domain.EstadoRevision
 import mx.tec.familiasquesuman.domain.Actividad
 import mx.tec.familiasquesuman.domain.Acompanante
 import mx.tec.familiasquesuman.domain.Aportacion
@@ -165,7 +166,12 @@ fun TestimonioDto.aDominio(foto: String?, correoPropio: String?) = Testimonio(
     experiencia = experiencia,
     foto = foto,
     fecha = fechaCortaDe(fecha),
-    esMio = esMio
+    esMio = esMio,
+    estado = when (estado) {
+        "pendiente" -> EstadoRevision.PENDIENTE
+        "rechazado" -> EstadoRevision.RECHAZADO
+        else -> EstadoRevision.APROBADO
+    }
 )
 
 fun ParticipacionDto.aDominio(): Participacion {

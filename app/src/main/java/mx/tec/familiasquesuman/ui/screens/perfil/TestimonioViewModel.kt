@@ -41,7 +41,7 @@ data class FormularioTestimonio(
 
 /**
  * El formulario "Compartir testimonio" (RF-12): una foto y una experiencia breve de una participación.
- * Se publica en cuanto se envía; quien lo escribió puede eliminarlo después.
+ * Se envía en revisión y se publica cuando la moderación lo aprueba; quien lo escribió puede eliminarlo.
  */
 class TestimonioViewModel(
     private val perfilRepository: PerfilRepository,
@@ -155,7 +155,7 @@ class TestimonioViewModel(
             } catch (cancelacion: CancellationException) {
                 throw cancelacion
             } catch (_: Exception) {
-                _formulario.update { it.copy(enviando = false, mensaje = "No se pudo publicar. Tu testimonio se conserva; intenta de nuevo.") }
+                _formulario.update { it.copy(enviando = false, mensaje = "No se pudo enviar. Tu testimonio se conserva; intenta de nuevo.") }
             }
         }
     }

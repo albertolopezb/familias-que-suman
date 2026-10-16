@@ -3,6 +3,7 @@ package mx.tec.familiasquesuman.ui.screens.inscripcion
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -15,6 +16,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -25,7 +27,9 @@ import mx.tec.familiasquesuman.ui.screens.inscripcion.componentes.BarraConRegres
 import mx.tec.familiasquesuman.ui.screens.inscripcion.componentes.BotonPrimario
 import mx.tec.familiasquesuman.ui.screens.inscripcion.componentes.CampoTexto
 import mx.tec.familiasquesuman.ui.screens.inscripcion.componentes.Casilla
+import mx.tec.familiasquesuman.ui.screens.perfil.Responsable
 import mx.tec.familiasquesuman.ui.theme.FamiliasQueSumanTheme
+import mx.tec.familiasquesuman.ui.theme.MarcaAzul
 import mx.tec.familiasquesuman.ui.theme.Fondo
 import mx.tec.familiasquesuman.ui.theme.TintaSuave
 
@@ -43,7 +47,8 @@ fun CrearCuentaScreen(
     onAceptaAvisoChange: (Boolean) -> Unit,
     onCrearCuenta: () -> Unit,
     onIniciarSesion: () -> Unit,
-    onRegresar: () -> Unit
+    onRegresar: () -> Unit,
+    onVerAviso: () -> Unit = {}
 ) {
     Column(Modifier.fillMaxSize().background(Fondo).imePadding()) {
         BarraConRegreso("Crear cuenta", onRegresar)
@@ -93,6 +98,18 @@ fun CrearCuentaScreen(
                 esContrasena = true,
                 habilitado = !ui.enviando
             )
+            // Aviso de privacidad simplificado (LFPDPPP art. 16-II): fracciones I a IV del art. 15 y dónde leer el completo.
+            Text(
+                "Aviso de privacidad simplificado. ${Responsable.NOMBRE} (${Responsable.DOMICILIO}) es responsable de tus datos: " +
+                    "tu correo, tu nombre y los de tu familia, con fechas de nacimiento y sexo, y lo que hagas en la app. " +
+                    "Los usamos para tu cuenta, tus inscripciones y tu historial; testimonios, encuestas y avisos son opcionales. " +
+                    "No pedimos datos sensibles ni los vendemos. Puedes limitar su uso en Ajustes o pedir que los borremos.",
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp),
+                color = TintaSuave
+            )
+            TextButton(onClick = onVerAviso, contentPadding = PaddingValues(0.dp)) {
+                Text("Leer el aviso de privacidad completo", style = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline), color = MarcaAzul)
+            }
         }
         // La casilla va junto al botón: así sube con el teclado y se acepta sin tener que cerrarlo.
         BarraAccionesInferior {

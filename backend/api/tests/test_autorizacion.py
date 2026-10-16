@@ -74,11 +74,12 @@ def test_mass_assignment_campos_extra_se_rechazan(cliente, familia, crear_activi
     assert r.status_code == 422
 
 
-def test_los_testimonios_publicos_no_exponen_correos(cliente, familia, crear_actividad, registrar_asistencia):
+def test_los_testimonios_publicos_no_exponen_correos(cliente, familia, admin, crear_actividad, registrar_asistencia):
     actividad = crear_actividad(dias=-3)
     asistencia = registrar_asistencia(familia.sub, actividad["id"])
-    cliente.put(f"/v1/yo/participaciones/{asistencia}/testimonio", headers=familia.headers,
-                data={"experiencia": "Un testimonio público que no debe llevar el correo."}, files={"foto": ("a.png", _png(), "image/png")})
+    r = cliente.put(f"/v1/yo/participaciones/{asistencia}/testimonio", headers=familia.headers,
+                    data={"experiencia": "Un testimonio público que no debe llevar el correo."}, files={"foto": ("a.png", _png(), "image/png")})
+    cliente.patch(f"/v1/admin/testimonios/{r.json()['id']}", headers=admin.headers, json={"estado": "aprobado"})
     publicos = cliente.get("/v1/testimonios").json()
     assert publicos and all("correo" not in t for t in publicos)
     assert "@" not in str(publicos)

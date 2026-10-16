@@ -5,7 +5,9 @@ Es el `POST /login` de la guía de clase (s23), con lo que una app de verdad nec
   · fuerza bruta frenada por IP y por correo (ver limites.py e identidad.py);
   · el mismo mensaje para "ese correo no existe" y "esa contraseña no es": así nadie averigua
     qué correos tienen cuenta (enumeración de usuarios, OWASP A07);
-  · cerrar sesión invalida el token en el servidor, no solo en el teléfono.
+  · cerrar sesión invalida el token en el servidor, no solo en el teléfono;
+  · el JWT dura 15 minutos y se renueva con un refresh token de un solo uso (rotación), como pide
+    el anexo del reto en startdroid.
 """
 
 import logging
@@ -22,8 +24,8 @@ from ..bitacora import auditar
 from ..db import obtener_db
 from ..errores import ApiError
 from ..identidad import (
-    SesionesCerradas, Sujeto, contrasena_correcta, emitir_token, hash_contrasena, necesita_rehash, obtener_sesiones,
-    usuario_actual,
+    SesionesCerradas, Sujeto, abrir_sesion, contrasena_correcta, emitir_token, hash_contrasena, necesita_rehash,
+    obtener_sesiones, renovar_sesion, revocar_refresh, usuario_actual,
 )
 from ..limites import limitador
 from ..modelos import Cuenta, Preferencias
@@ -33,9 +35,11 @@ log = logging.getLogger("familias.sesion")
 router = APIRouter(prefix="/v1/sesion", tags=["Sesión"])
 
 
-def _token(cuenta: Cuenta) -> e.TokenSalida:
+def _tokens(db: Session, cuenta: Cuenta) -> e.TokenSalida:
+    """Un JWT nuevo y un refresh token nuevo (el refresh se guarda como huella; hay que hacer commit)."""
+    refresh, refresh_segundos = abrir_sesion(db, cuenta)
     token, segundos = emitir_token(cuenta)
-    return e.TokenSalida(access_token=token, expira_en=segundos)
+    return e.TokenSalida(access_token=token, expira_en=segundos, refresh_token=refresh, refresh_expira_en=refresh_segundos)
 
 
 def _por_correo(db: Session, correo: str) -> Cuenta | None:
@@ -72,9 +76,10 @@ def registrarse(request: Request, datos: e.RegistroEntrada, db: Session = Depend
         raise ApiError(409, "Ese correo ya tiene cuenta. Inicia sesión con él.", "correo_ocupado") from error
     db.execute(insert(Preferencias).values(cuenta_id=cuenta.id).on_conflict_do_nothing())
     auditar(db, "cuenta.crear", "cuenta", cuenta.id, cuenta.id, ip=request.state.ip_cliente)
+    tokens = _tokens(db, cuenta)
     db.commit()
     metricas.operacion("registro")
-    return _token(cuenta)
+    return tokens
 
 
 @router.post("/iniciar", response_model=e.TokenSalida)
@@ -104,15 +109,37 @@ def iniciar_sesion(
     if necesita_rehash(cuenta.contrasena_hash):
         cuenta.contrasena_hash = hash_contrasena(datos.contrasena)
     cuenta.ultimo_acceso_en = datetime.now(UTC)
+    tokens = _tokens(db, cuenta)
     db.commit()
     metricas.operacion("inicio_sesion")
-    return _token(cuenta)
+    return tokens
+
+
+@router.post("/renovar", response_model=e.TokenSalida)
+@limitador.limit(limites.RENOVAR)
+def renovar(request: Request, datos: e.RenovarEntrada, db: Session = Depends(obtener_db)):
+    """Refresh token vigente → un JWT nuevo y un refresh token nuevo; el anterior deja de servir.
+    No pide el JWT viejo: justo se usa cuando ya venció."""
+    cuenta, refresh, refresh_segundos = renovar_sesion(db, datos.refresh_token, request.state.ip_cliente)
+    token, segundos = emitir_token(cuenta)
+    db.commit()
+    metricas.operacion("renovacion")
+    return e.TokenSalida(access_token=token, expira_en=segundos, refresh_token=refresh, refresh_expira_en=refresh_segundos)
 
 
 @router.post("/cerrar", status_code=status.HTTP_204_NO_CONTENT)
-def cerrar_sesion(sujeto: Sujeto = Depends(usuario_actual), sesiones: SesionesCerradas = Depends(obtener_sesiones)):
-    """El token de esta sesión deja de servir desde ya (no solo cuando venza)."""
+def cerrar_sesion(
+    datos: e.CerrarSesionEntrada | None = None,
+    sujeto: Sujeto = Depends(usuario_actual),
+    sesiones: SesionesCerradas = Depends(obtener_sesiones),
+    db: Session = Depends(obtener_db),
+):
+    """El JWT de esta sesión deja de servir desde ya (no solo cuando venza) y, si la app manda su
+    refresh token, también ese y toda su familia: ya no se puede renovar."""
     sesiones.cerrar(sujeto.huella_token, sujeto.expira_en)
+    if datos is not None and datos.refresh_token:
+        revocar_refresh(db, datos.refresh_token, sujeto.cuenta_id)
+        db.commit()
     return Response(status_code=204)
 
 

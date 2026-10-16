@@ -186,10 +186,10 @@ POLITICAS: dict[str, Politica] = {
         ),
     ),
     "cancelar": Politica(
-        "inscripcion.cancelar", "Cancelar: la inscripción es de la cuenta y la actividad no ha empezado.",
+        "inscripcion.cancelar", "Cancelar: la inscripción es de la cuenta y faltan al menos 12 horas para la actividad (RF-19).",
         (
             Motivo("no_encontrado", 404, "Eso no existe o no es tuyo."),
-            Motivo("actividad_iniciada", 409, "Ya no se puede cancelar: la actividad ya empezó."),
+            Motivo("fuera_de_plazo", 409, "Solo se puede cancelar hasta 12 horas antes de la actividad."),
         ),
     ),
     "publicar_testimonio": Politica(
@@ -204,6 +204,10 @@ POLITICAS: dict[str, Politica] = {
     "eliminar": Politica(
         "testimonio.eliminar", f"Eliminar testimonio: su autora o autor, o quien tenga '{MODERAR_CONTENIDO}'.",
         (Motivo("no_encontrado", 404, "Ese testimonio no existe o no es tuyo."),),
+    ),
+    "ver_en_revision": Politica(
+        "testimonio.ver_en_revision", f"Un testimonio en revisión (RF-12) solo lo ven su autora y quien tiene '{MODERAR_CONTENIDO}'.",
+        (Motivo("no_encontrado", 404, "Esa foto no existe."),),
     ),
     "contestar_previa": Politica(
         "encuesta.previa", "Encuesta de antes: la familia está inscrita y la actividad no ha empezado.",
@@ -290,6 +294,10 @@ def puede_publicar_testimonio(sujeto: Sujeto, cuenta_de_asistencia: Any, activid
 
 def puede_eliminar_testimonio(sujeto: Sujeto, autor: Any) -> Decision:
     return decidir(sujeto, "eliminar", Testimonio(_id(autor)))
+
+
+def puede_ver_testimonio_en_revision(sujeto: Sujeto, autor: Any) -> Decision:
+    return decidir(sujeto, "ver_en_revision", Testimonio(_id(autor)))
 
 
 def puede_contestar_previa(sujeto: Sujeto, inscrita: bool, actividad_inicia: datetime, ahora: datetime) -> Decision:

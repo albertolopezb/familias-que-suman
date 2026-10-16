@@ -242,6 +242,11 @@ class TestimonioSalida(BaseModel):
     foto_url: str | None
     fecha: date
     es_mio: bool
+    estado: Literal["pendiente", "aprobado", "rechazado"] = "aprobado"   # lo público siempre es "aprobado"
+
+
+class RevisionTestimonioEntrada(Entrada):
+    estado: Literal["aprobado", "rechazado"]
 
 
 class EnlaceSalida(BaseModel):
@@ -330,11 +335,25 @@ class RecuperarEntrada(EntradaSesion):
 
 
 class TokenSalida(BaseModel):
-    """Lo mismo que responde el /login de la guía: el JWT y su tipo. Más cuánto dura (segundos)."""
+    """Lo que responde el /login de la guía (el JWT y su tipo), más cuánto dura (segundos) y el
+    refresh token para renovarlo sin volver a pedir la contraseña."""
 
     access_token: str
     token_type: Literal["bearer"] = "bearer"
     expira_en: int
+    refresh_token: str
+    refresh_expira_en: int
+
+
+RefreshToken = Annotated[str, StringConstraints(min_length=20, max_length=200, pattern=r"^[A-Za-z0-9_-]+$")]
+
+
+class RenovarEntrada(EntradaSesion):
+    refresh_token: RefreshToken
+
+
+class CerrarSesionEntrada(EntradaSesion):
+    refresh_token: RefreshToken | None = None
 
 
 class AcompananteSalida(BaseModel):

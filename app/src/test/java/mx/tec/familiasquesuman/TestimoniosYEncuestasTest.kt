@@ -3,6 +3,7 @@ package mx.tec.familiasquesuman
 import kotlinx.coroutines.runBlocking
 import mx.tec.familiasquesuman.data.EncuestaRepositoryEnMemoria
 import mx.tec.familiasquesuman.data.TestimonioRepositoryEnMemoria
+import mx.tec.familiasquesuman.domain.EstadoRevision
 import mx.tec.familiasquesuman.domain.MomentoEncuesta
 import mx.tec.familiasquesuman.domain.RespuestaEncuesta
 import mx.tec.familiasquesuman.domain.RespuestaPregunta
@@ -18,12 +19,39 @@ class TestimoniosYEncuestasTest {
         correo = correo, experiencia = "Fue una tarde muy bonita en familia.", foto = null, fecha = "5 oct 2026"
     )
 
-    // ── RF-12: se publica al enviar y se puede eliminar, solo por su autora o autor o por el admin ──
+    // ── RF-12 / HU-11: se envía en revisión, se publica al aprobarse y se puede eliminar,
+    //    solo por su autora o autor o por el admin ──
 
-    @Test fun unTestimonioSePublicaAlEnviarse() = runBlocking {
+    @Test fun unTestimonioNuevoQuedaEnRevisionYNoEsPublico() = runBlocking {
         val repo = TestimonioRepositoryEnMemoria()
         repo.publicar(testimonio(participacion = "p9"))
+        assertTrue(repo.getTodos().none { it.participacionId == "p9" })
+        assertEquals(EstadoRevision.PENDIENTE, repo.getDeFamilia("a@correo.com").single().estado)
+        assertEquals(1, repo.porRevisar().size)
+    }
+
+    @Test fun alAprobarloSePublica() = runBlocking {
+        val repo = TestimonioRepositoryEnMemoria()
+        repo.publicar(testimonio(participacion = "p9"))
+        assertTrue(repo.revisar(repo.porRevisar().single().id, aprobar = true))
         assertTrue(repo.getTodos().any { it.participacionId == "p9" })
+        assertTrue(repo.porRevisar().isEmpty())
+    }
+
+    @Test fun rechazadoNoSePublicaYSuAutoraLoVe() = runBlocking {
+        val repo = TestimonioRepositoryEnMemoria()
+        repo.publicar(testimonio(participacion = "p9"))
+        repo.revisar(repo.porRevisar().single().id, aprobar = false)
+        assertTrue(repo.getTodos().isEmpty())
+        assertEquals(EstadoRevision.RECHAZADO, repo.getDeFamilia("a@correo.com").single().estado)
+    }
+
+    @Test fun editarUnoAprobadoLoRegresaARevision() = runBlocking {
+        val repo = TestimonioRepositoryEnMemoria()
+        repo.publicar(testimonio(participacion = "p9"))
+        repo.revisar(repo.porRevisar().single().id, aprobar = true)
+        repo.publicar(testimonio(participacion = "p9").copy(experiencia = "Lo cuento de nuevo, con más detalle."))
+        assertTrue(repo.getTodos().isEmpty())
     }
 
     @Test fun publicarDeNuevoLaMismaParticipacionLaReemplaza() = runBlocking {
@@ -40,7 +68,7 @@ class TestimoniosYEncuestasTest {
         repo.publicar(testimonio(participacion = "p9"))
         val id = repo.getDeFamilia("a@correo.com").single { it.participacionId == "p9" }.id
         assertTrue(repo.eliminar(id, "A@Correo.com", esAdmin = false))
-        assertTrue(repo.getTodos().none { it.id == id })
+        assertTrue(repo.getDeFamilia("a@correo.com").none { it.id == id })
     }
 
     @Test fun otraFamiliaOUnVisitanteNoPuedenEliminarTestimoniosAjenos() = runBlocking {
@@ -49,7 +77,7 @@ class TestimoniosYEncuestasTest {
         val id = repo.getDeFamilia("a@correo.com").single { it.participacionId == "p9" }.id
         assertFalse(repo.eliminar(id, "otra@correo.com", esAdmin = false))
         assertFalse(repo.eliminar(id, null, esAdmin = false))
-        assertTrue(repo.getTodos().any { it.id == id })
+        assertTrue(repo.getDeFamilia("a@correo.com").any { it.id == id })
     }
 
     @Test fun elAdminPuedeEliminarCualquierTestimonio() = runBlocking {
@@ -57,7 +85,7 @@ class TestimoniosYEncuestasTest {
         repo.publicar(testimonio(participacion = "p9"))
         val id = repo.getDeFamilia("a@correo.com").single { it.participacionId == "p9" }.id
         assertTrue(repo.eliminar(id, "admin@correo.com", esAdmin = true))
-        assertTrue(repo.getTodos().none { it.id == id })
+        assertTrue(repo.getDeFamilia("a@correo.com").none { it.id == id })
     }
 
     @Test fun eliminarUnoQueNoExisteNoHaceNada() = runBlocking {

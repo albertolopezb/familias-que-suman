@@ -148,7 +148,8 @@ services:
       S3_SECRET_KEY: ${STORAGE_ROOT_PASSWORD:-cambia-esta-contrasena-almacen}
       # El secreto con que la API firma los JWT (HS256). Solo lo tiene la API: ni la base ni la app.
       JWT_SECRETO: ${JWT_SECRETO:-cambia-este-secreto-jwt-de-desarrollo-32+}
-      JWT_MINUTOS: ${JWT_MINUTOS:-1440}
+      JWT_MINUTOS: ${JWT_MINUTOS:-15}        # el JWT (access token)
+      REFRESH_DIAS: ${REFRESH_DIAS:-30}      # el refresh token, si no se usa
       HMAC_SECRETO: ${HMAC_SECRETO:-cambia-este-secreto-hmac-de-desarrollo}
       IP_TUNEL: ${IP_TUNEL:-172.31.250.10}
       HOSTS_PERMITIDOS: ${HOSTS_PERMITIDOS:-localhost,127.0.0.1,10.0.2.2,api,*.trycloudflare.com}

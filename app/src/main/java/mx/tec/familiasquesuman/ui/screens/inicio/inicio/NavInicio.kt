@@ -395,13 +395,16 @@ fun NavGraphBuilder.grafoInicio(
     composable(RutasInicio.TESTIMONIOS) {
         val vm: TestimoniosViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val testimonios by vm.testimonios.collectAsStateWithLifecycle()
+        val porRevisar by vm.porRevisar.collectAsStateWithLifecycle()
         val sesion by cuentaViewModel().sesion.collectAsStateWithLifecycle()
-        LaunchedEffect(Unit) { vm.cargar() }
+        LaunchedEffect(Unit) { vm.cargar(esAdmin()) }
         TestimoniosScreen(
             testimonios = testimonios,
             correoDeLaSesion = sesion?.correo,
             esAdmin = esAdmin(),
             onEliminar = { vm.eliminar(it.id, sesion?.correo, esAdmin()) },
+            porRevisar = porRevisar,
+            onRevisar = vm::revisar,
             onRegresar = { nav.popBackStack() }
         )
     }

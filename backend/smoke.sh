@@ -45,6 +45,7 @@ revisar() {
 }
 
 token_de() { printf '%s' "$CUERPO" | sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p'; }
+refresh_de() { printf '%s' "$CUERPO" | sed -n 's/.*"refresh_token":"\([^"]*\)".*/\1/p'; }
 id_de() { printf '%s' "$CUERPO" | sed -n 's/^{"id":"\([^"]*\)".*/\1/p'; }
 
 CORREO="smoke-$(date +%s)-$RANDOM@pruebas.mx"
@@ -55,6 +56,7 @@ echo
 echo "Público"
 pedir GET /v1/salud;                                   revisar "La API está viva" 200 '"estado":"ok"'
 pedir GET "/v1/actividades?cuando=proximas";           revisar "El catálogo es público" 200
+pedir GET /v1/testimonios;                             revisar "Lo público es solo lo aprobado (RF-12)" 200 '"estado":"aprobado"'
 
 echo "Identificación (JWT)"
 pedir GET /v1/yo;                                      revisar "Sin token: 401 con WWW-Authenticate" 401 "www-authenticate: bearer"
@@ -70,7 +72,7 @@ pedir POST /v1/sesion/iniciar "" "{\"correo\":\"nadie-$RANDOM@pruebas.mx\",\"con
 revisar "Correo inexistente: el mismo 401 (sin enumeración)" 401 "credenciales_invalidas"
 pedir POST /v1/sesion/iniciar "" "{\"correo\":\"$CORREO\",\"contrasena\":\"$CONTRASENA\"}"
 revisar "Iniciar sesión: 200 con el token" 200 '"access_token"'
-FAMILIA="$(token_de)"
+FAMILIA="$(token_de)"; REFRESH="$(refresh_de)"
 pedir GET /v1/yo "$FAMILIA";                           revisar "Con token: /v1/yo responde la cuenta y no es admin" 200 '"es_admin":false'
 CABEZA="${FAMILIA%%.*}"; RESTO="${FAMILIA#*.}"; FIRMA="${RESTO#*.}"
 ALTERADO="$CABEZA.eyJzdWIiOiJ5byIsInJvbCI6ImFkbWluIn0.$FIRMA"
@@ -103,7 +105,14 @@ pedir GET /v1/salud "" "" "Host: evil.example.com"
 if [ "$CODIGO" = "403" ] && printf '%s' "$CUERPO" | grep -qi cloudflare; then CODIGO=400; CUERPO='host_invalido (lo rechazó Cloudflare)'; fi
 revisar "Host ajeno: rechazado" 400 "host_invalido"
 
-echo "Sesión"
+echo "Sesión (refresh token)"
+pedir POST /v1/sesion/renovar "" "{\"refresh_token\":\"$REFRESH\"}"
+revisar "Renovar: tokens nuevos sin pedir la contraseña" 200 '"refresh_token"'
+VIEJO="$REFRESH"; FAMILIA="$(token_de)"; REFRESH="$(refresh_de)"
+pedir POST /v1/sesion/renovar "" "{\"refresh_token\":\"$VIEJO\"}"
+revisar "Reusar un refresh token viejo: 401 y se cierra la sesión" 401 "sesion_cerrada"
+pedir POST /v1/sesion/renovar "" "{\"refresh_token\":\"$REFRESH\"}"
+revisar "Tras el reuso, el refresh bueno tampoco sirve" 401 "sesion_cerrada"
 pedir POST /v1/sesion/cerrar "$FAMILIA";               revisar "Cerrar sesión: 204" 204
 pedir GET /v1/yo "$FAMILIA";                           revisar "El token cerrado ya no sirve: 401" 401 "sesion_cerrada"
 

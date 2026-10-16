@@ -35,7 +35,7 @@ def _inscripcion(**cambios):
 def test_cada_politica_del_catalogo_tiene_descripcion():
     assert set(politicas.CATALOGO) >= {
         "funcion.permiso", "recurso.propio", "inscripcion.guardar", "inscripcion.cancelar", "testimonio.publicar",
-        "testimonio.eliminar", "encuesta.previa", "encuesta.final", "encuestas.ver_todas", "aportacion.crear", "foto.perfil",
+        "testimonio.eliminar", "testimonio.ver_en_revision", "encuesta.previa", "encuesta.final", "encuestas.ver_todas", "aportacion.crear", "foto.perfil",
     }
     assert all(len(d) > 20 for d in politicas.CATALOGO.values())
 
@@ -96,7 +96,14 @@ def test_los_lugares_propios_cuentan_al_modificar():
 def test_cancelar():
     assert politicas.puede_cancelar(ANA, ANA.cuenta_id, MANANA, AHORA).permitido
     assert politicas.puede_cancelar(ANA, BETO.cuenta_id, MANANA, AHORA).codigo == "no_encontrado"
-    assert politicas.puede_cancelar(ANA, ANA.cuenta_id, AYER, AHORA).codigo == "actividad_iniciada"
+    assert politicas.puede_cancelar(ANA, ANA.cuenta_id, AYER, AHORA).codigo == "fuera_de_plazo"
+
+
+def test_cancelar_solo_hasta_12_horas_antes():
+    """RF-19 / HU-09: con 13 horas de margen se puede; con 11, ya no."""
+    assert politicas.puede_cancelar(ANA, ANA.cuenta_id, AHORA + timedelta(hours=13), AHORA).permitido
+    tarde = politicas.puede_cancelar(ANA, ANA.cuenta_id, AHORA + timedelta(hours=11), AHORA)
+    assert (tarde.codigo, tarde.status) == ("fuera_de_plazo", 409)
 
 
 def test_testimonios():
@@ -106,6 +113,10 @@ def test_testimonios():
     assert politicas.puede_eliminar_testimonio(ANA, ANA.cuenta_id).permitido
     assert politicas.puede_eliminar_testimonio(MODERACION, ANA.cuenta_id).permitido
     assert politicas.puede_eliminar_testimonio(BETO, ANA.cuenta_id).status == 404
+    # En revisión: solo su autora y la moderación.
+    assert politicas.puede_ver_testimonio_en_revision(ANA, ANA.cuenta_id).permitido
+    assert politicas.puede_ver_testimonio_en_revision(MODERACION, ANA.cuenta_id).permitido
+    assert not politicas.puede_ver_testimonio_en_revision(BETO, ANA.cuenta_id).permitido
 
 
 def test_encuestas():

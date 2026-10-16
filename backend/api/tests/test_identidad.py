@@ -237,3 +237,82 @@ def test_los_permisos_vienen_del_token_no_del_cuerpo(cliente, familia):
     r = cliente.patch("/v1/yo", headers=familia.headers, json={"es_admin": True})
     assert r.status_code == 422                              # mass assignment: campo no permitido
     assert cliente.get("/v1/yo", headers=familia.headers).json()["es_admin"] is False
+
+
+# ─── Refresh tokens: renovar sin volver a pedir la contraseña ───────────────
+
+def _entrar(c, persona) -> dict:
+    r = c.post("/v1/sesion/iniciar", json={"correo": persona.correo, "contrasena": CONTRASENA})
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def test_iniciar_sesion_da_un_jwt_corto_y_un_refresh_token():
+    t = _entrar(_cliente_propio(), crear_cuenta())
+    assert t["expira_en"] == 15 * 60 and t["refresh_expira_en"] == 30 * 24 * 3600
+    assert t["refresh_token"].count(".") == 0                   # no es un JWT: es un número al azar
+    with conectar_como_dueno() as db:
+        guardado = db.execute("SELECT huella FROM sesiones ORDER BY creada_en DESC LIMIT 1").fetchone()[0]
+    assert guardado != t["refresh_token"] and len(guardado) == 64   # solo la huella SHA-256
+
+
+def test_renovar_da_tokens_nuevos_y_el_viejo_ya_no_sirve():
+    c = _cliente_propio()
+    t = _entrar(c, crear_cuenta())
+    r = c.post("/v1/sesion/renovar", json={"refresh_token": t["refresh_token"]})
+    assert r.status_code == 200
+    nuevo = r.json()
+    assert nuevo["refresh_token"] != t["refresh_token"] and nuevo["access_token"] != t["access_token"]
+    assert _pedir(c, nuevo["access_token"]).status_code == 200
+
+
+def test_reusar_un_refresh_token_cierra_toda_la_sesion():
+    """Si alguien robó el refresh token y la app ya lo había cambiado (o al revés), se corta todo."""
+    c = _cliente_propio()
+    t = _entrar(c, crear_cuenta())
+    segundo = c.post("/v1/sesion/renovar", json={"refresh_token": t["refresh_token"]}).json()
+    reuso = c.post("/v1/sesion/renovar", json={"refresh_token": t["refresh_token"]})
+    assert reuso.status_code == 401 and reuso.json()["codigo"] == "sesion_cerrada"
+    # El que sí era bueno también deja de servir: hay que volver a entrar con contraseña.
+    r = c.post("/v1/sesion/renovar", json={"refresh_token": segundo["refresh_token"]})
+    assert r.status_code == 401 and r.json()["codigo"] == "sesion_cerrada"
+
+
+def test_cerrar_sesion_revoca_tambien_el_refresh_token():
+    c = _cliente_propio()
+    t = _entrar(c, crear_cuenta())
+    r = c.post("/v1/sesion/cerrar", headers={"Authorization": f"Bearer {t['access_token']}"},
+               json={"refresh_token": t["refresh_token"]})
+    assert r.status_code == 204
+    assert c.post("/v1/sesion/renovar", json={"refresh_token": t["refresh_token"]}).status_code == 401
+
+
+def test_no_se_cierra_la_sesion_de_otra_cuenta_con_su_refresh_token():
+    c = _cliente_propio()
+    ana, beto = _entrar(c, crear_cuenta()), _entrar(c, crear_cuenta())
+    c.post("/v1/sesion/cerrar", headers={"Authorization": f"Bearer {ana['access_token']}"}, json={"refresh_token": beto["refresh_token"]})
+    assert c.post("/v1/sesion/renovar", json={"refresh_token": beto["refresh_token"]}).status_code == 200
+
+
+def test_cambiar_la_contrasena_corta_los_refresh_tokens():
+    c = _cliente_propio()
+    persona = crear_cuenta()
+    t = _entrar(c, persona)
+    assert cambiar_contrasena(persona.correo, "otra frase distinta 2026") == 0
+    assert c.post("/v1/sesion/renovar", json={"refresh_token": t["refresh_token"]}).status_code == 401
+
+
+@pytest.mark.parametrize("basura", ["corto", "x" * 300, "con espacios y signos!!", "a.b.c" * 10])
+def test_refresh_token_basura(basura):
+    r = _cliente_propio().post("/v1/sesion/renovar", json={"refresh_token": basura})
+    assert r.status_code in (401, 422)
+
+
+def test_refresh_token_vencido():
+    c = _cliente_propio()
+    t = _entrar(c, crear_cuenta())
+    with conectar_como_dueno() as db:
+        db.execute("UPDATE sesiones SET creada_en = now() - interval '40 days', expira_en = now() - interval '1 day' "
+                   "WHERE huella = encode(sha256(%s::bytea), 'hex')", (t["refresh_token"],))
+    r = c.post("/v1/sesion/renovar", json={"refresh_token": t["refresh_token"]})
+    assert r.status_code == 401 and r.json()["codigo"] == "token_expirado"

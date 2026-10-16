@@ -6,6 +6,7 @@ un permiso aparte (`registrar:asistencias`).
 """
 
 import uuid
+from typing import Literal
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, File, Form, Query, Request, Response, status
@@ -18,7 +19,7 @@ from .. import almacen, esquemas as e, imagenes, limites, metricas, politicas
 from ..bitacora import auditar
 from ..db import obtener_db
 from ..errores import ApiError, no_encontrado
-from ..identidad import REGISTRAR_ASISTENCIAS, Sujeto, requiere, usuario_actual
+from ..identidad import MODERAR_CONTENIDO, REGISTRAR_ASISTENCIAS, Sujeto, requiere, usuario_actual
 from ..limites import limitador, por_cuenta
 from ..modelos import Actividad, Asistencia, Cuenta, Inscripcion, RespuestaEncuesta, Testimonio
 from .catalogo import testimonio_salida
@@ -88,7 +89,8 @@ def publicar_testimonio(
     sujeto: Sujeto = Depends(usuario_actual),
     db: Session = Depends(obtener_db),
 ):
-    """Un testimonio por participación: si ya había uno, se reemplaza (con su foto)."""
+    """Un testimonio por participación: si ya había uno, se reemplaza (con su foto). Siempre queda
+    EN REVISIÓN: solo se publica cuando la moderación lo aprueba (RF-12, HU-11)."""
     asistencia = _asistencia_propia(db, sujeto, asistencia_id)
     politicas.exigir(politicas.puede_publicar_testimonio(sujeto, asistencia.cuenta_id, asistencia.actividad.inicia_en, datetime.now(UTC)))
     texto = e._sin_control(experiencia.strip())
@@ -102,10 +104,12 @@ def publicar_testimonio(
     anterior = db.scalar(select(Testimonio).where(Testimonio.asistencia_id == asistencia_id))
     foto_vieja = anterior.foto_clave if anterior else None
     if anterior is None:
-        anterior = Testimonio(asistencia_id=asistencia_id, experiencia=texto, foto_clave=clave)
+        anterior = Testimonio(asistencia_id=asistencia_id, experiencia=texto, foto_clave=clave, estado="pendiente")
         db.add(anterior)
     else:
         anterior.experiencia, anterior.foto_clave, anterior.creado_en = texto, clave, datetime.now(UTC)
+        # Cambiar el texto o la foto lo regresa a revisión: lo aprobado era otra cosa.
+        anterior.estado, anterior.revisado_en, anterior.revisado_por = "pendiente", None, None
     db.commit()
     almacen.borrar(foto_vieja)
     metricas.operacion("testimonio")
@@ -130,6 +134,47 @@ def eliminar_testimonio(
     db.commit()
     almacen.borrar(foto)
     return Response(status_code=204)
+
+
+# ─── Revisión de testimonios (moderación) ───────────────────────────────────
+
+@router.get("/admin/testimonios", response_model=list[e.TestimonioSalida], tags=["Administración"])
+def testimonios_por_revisar(
+    estado: Literal["pendiente", "aprobado", "rechazado"] = Query("pendiente"),
+    sujeto: Sujeto = Depends(requiere(MODERAR_CONTENIDO)),
+    db: Session = Depends(obtener_db),
+):
+    """La bandeja de la moderación: por omisión, lo que espera revisión (lo más viejo primero)."""
+    filas = db.execute(
+        select(Testimonio, Cuenta.nombre_familia, Cuenta.id)
+        .join(Asistencia, Testimonio.asistencia_id == Asistencia.id)
+        .join(Cuenta, Asistencia.cuenta_id == Cuenta.id)
+        .where(Testimonio.estado == estado)
+        .order_by(Testimonio.creado_en).limit(200)
+    ).unique()
+    return [testimonio_salida(t, familia, cuenta_id, sujeto) for t, familia, cuenta_id in filas]
+
+
+@router.patch("/admin/testimonios/{testimonio_id}", response_model=e.TestimonioSalida, tags=["Administración"])
+@limitador.limit(limites.ADMIN, key_func=por_cuenta)
+def revisar_testimonio(
+    request: Request,
+    testimonio_id: uuid.UUID,
+    datos: e.RevisionTestimonioEntrada,
+    sujeto: Sujeto = Depends(requiere(MODERAR_CONTENIDO)),
+    db: Session = Depends(obtener_db),
+):
+    """Aprobar (se publica) o rechazar (no se publica; su autora lo ve como rechazado y puede
+    mandar otro). Queda en la auditoría quién lo decidió."""
+    t = db.get(Testimonio, testimonio_id)
+    if t is None:
+        raise no_encontrado("Ese testimonio")
+    t.estado, t.revisado_en, t.revisado_por = datos.estado, datetime.now(UTC), sujeto.cuenta_id
+    auditar(db, f"testimonio.{datos.estado}", "testimonio", t.id, sujeto.cuenta_id, ip=request.state.ip_cliente)
+    db.commit()
+    metricas.operacion("revision_testimonio", datos.estado)
+    familia = db.scalar(select(Cuenta.nombre_familia).where(Cuenta.id == t.asistencia.cuenta_id)) or ""
+    return testimonio_salida(t, familia, t.asistencia.cuenta_id, sujeto)
 
 
 # ─── Encuestas ──────────────────────────────────────────────────────────────

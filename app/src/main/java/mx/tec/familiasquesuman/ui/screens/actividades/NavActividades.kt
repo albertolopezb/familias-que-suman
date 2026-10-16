@@ -104,6 +104,8 @@ fun NavGraphBuilder.grafoActividades(
         var actividadADuplicar by remember { mutableStateOf<ActividadConAsociacion?>(null) }
         // La actividad que se está por compartir: abre la vista previa de la invitación.
         var porCompartir by remember { mutableStateOf<ActividadConAsociacion?>(null) }
+        // "Cerca de mí": la ubicación aproximada vive aquí, en memoria; nunca va al ViewModel ni a la API.
+        val cerca = rememberCercaDeMi()
         val cuentaLista = cuentaViewModel()
         val sesionLista by cuentaLista.sesion.collectAsStateWithLifecycle()
         val inscripcionesLista by cuentaLista.inscripciones.collectAsStateWithLifecycle()
@@ -123,6 +125,10 @@ fun NavGraphBuilder.grafoActividades(
             onVerAsociaciones = onVerAsociaciones,
             onForzarEstado = vm::siguienteModoDePrueba,
             onSugerir = { nav.sugerir(TipoSugerencia.ACTIVIDAD) },
+            cercaDeMi = cerca.aqui,
+            buscandoUbicacion = cerca.buscando,
+            avisoUbicacion = cerca.aviso,
+            onCercaDeMi = cerca::alternar,
             onCrearActividad = { mostrandoCrear = true },
             onEditarActividad = { id ->
                 if (estado is UiState.Exito) {

@@ -13,7 +13,8 @@ campos como "permisos" (asignación masiva, OWASP API3). Hay que tener acceso al
 "¿Olvidaste tu contraseña?"). Se escribe sin que se vea en pantalla y NO va en la línea de
 comandos: así no se queda en el historial de la terminal.
 
-Las dos invalidan los tokens que la cuenta ya tenía (`tokens_validos_desde`): los permisos viajan
+Las dos invalidan los tokens que la cuenta ya tenía (`tokens_validos_desde` para los JWT y
+`revocar_todas` para los refresh tokens): los permisos viajan
 dentro del JWT, así que un cambio de permisos solo cuenta de verdad si los tokens viejos dejan de servir.
 """
 
@@ -26,7 +27,7 @@ from sqlalchemy import func, select
 from . import esquemas
 from .bitacora import auditar
 from .db import SesionLocal
-from .identidad import PERMISOS_ADMIN, hash_contrasena, rol_de
+from .identidad import PERMISOS_ADMIN, hash_contrasena, revocar_todas, rol_de
 from .modelos import Cuenta
 
 
@@ -56,6 +57,7 @@ def dar_permisos(correo: str, pedidos: list[str]) -> int:
         cuenta.permisos = sorted(nuevos)
         cuenta.rol = rol_de(nuevos)
         cuenta.tokens_validos_desde = datetime.now(UTC)
+        revocar_todas(db, cuenta.id)              # y ya no se pueden renovar
         auditar(db, "cuenta.cambiar_permisos", "cuenta", cuenta.id, None, {"antes": antes, "despues": sorted(nuevos)})
         db.commit()
         print(f"Listo: {cuenta.correo} ahora tiene {sorted(nuevos) or 'ningún permiso'} (rol {cuenta.rol}). "
@@ -75,6 +77,7 @@ def cambiar_contrasena(correo: str, nueva: str) -> int:
             return 1
         cuenta.contrasena_hash = hash_contrasena(nueva)
         cuenta.tokens_validos_desde = datetime.now(UTC)
+        revocar_todas(db, cuenta.id)              # y ya no se pueden renovar
         auditar(db, "cuenta.cambiar_contrasena", "cuenta", cuenta.id, None)
         db.commit()
         print(f"Listo: {cuenta.correo} ya puede entrar con la contraseña nueva. Sus sesiones abiertas se cerraron.")

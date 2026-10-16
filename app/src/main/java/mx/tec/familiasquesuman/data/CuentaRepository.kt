@@ -1,6 +1,7 @@
 package mx.tec.familiasquesuman.data
 
 import mx.tec.familiasquesuman.data.red.ApiExcepcion
+import mx.tec.familiasquesuman.data.red.CerrarSesionCuerpo
 import mx.tec.familiasquesuman.data.red.InscripcionCuerpo
 import mx.tec.familiasquesuman.data.red.InvitacionDto
 import mx.tec.familiasquesuman.data.red.PreferenciasDto
@@ -85,6 +86,6 @@ class CuentaRepository {
         llamar { guardarPreferencias(PreferenciasDto(recordatorio, favoritos, urgencias)) }
     }
 
-    /** El servidor deja de aceptar este token desde ya (no solo cuando venza). */
-    suspend fun cerrarSesion() { runCatching { llamar { cerrarSesion() } } }
+    /** El servidor deja de aceptar este JWT desde ya y, con el refresh token, ya no se puede renovar. */
+    suspend fun cerrarSesion(refreshToken: String?) { runCatching { llamar { cerrarSesion(CerrarSesionCuerpo(refreshToken)) } } }
 }
