@@ -1258,6 +1258,7 @@ Ver §11.
 - **Token en el encabezado**, nunca en la URL; sin registros del cuerpo ni de los encabezados en
   Logcat (`ClienteApi.kt:71`); tiempos límite (línea 82).
 - **Solo HTTPS y solo CA del sistema** (S-12).
+- **Solo TLS 1.2 y 1.3 con cifrados AEAD** (`ConnectionSpec.RESTRICTED_TLS` en `ClienteApi.kt`): el borde del Quick Tunnel todavía acepta TLS 1.1 si un cliente lo fuerza (medido con `openssl s_client -tls1_1`), pero la app nunca baja de 1.2. Con dominio propio se pone también el mínimo en Cloudflare.
 - **El admin lo decide el servidor:** se eliminó `UsuariosHardcodeados`, que hacía admin a
   cualquier correo con la palabra "admin", y el interruptor para "cambiar a admin" desde el
   teléfono (§9.4).
