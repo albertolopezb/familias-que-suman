@@ -9,6 +9,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import mx.tec.familiasquesuman.BuildConfig
 import okhttp3.Authenticator
+import okhttp3.ConnectionSpec
 import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -107,6 +108,10 @@ object ClienteApi {
 
     /** Sin token ni Authenticator: solo para renovar la sesión (si no, se llamaría a sí mismo). */
     val httpSinSesion: OkHttpClient = OkHttpClient.Builder()
+        // Solo TLS 1.3 y 1.2 con cifrados AEAD modernos (AES-GCM, ChaCha20-Poly1305): aunque el
+        // servidor aceptara TLS 1.0/1.1 (el borde del Quick Tunnel todavía los acepta), la app no
+        // baja. CLEARTEXT solo sirve en debug hacia 10.0.2.2; en release lo prohíbe seguridad_red.xml.
+        .connectionSpecs(listOf(ConnectionSpec.RESTRICTED_TLS, ConnectionSpec.CLEARTEXT))
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(20, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
