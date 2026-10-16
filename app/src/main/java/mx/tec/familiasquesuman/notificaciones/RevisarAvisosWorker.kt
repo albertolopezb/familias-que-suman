@@ -15,16 +15,21 @@ import mx.tec.familiasquesuman.data.FavoritosStore
 import mx.tec.familiasquesuman.domain.QueAvisar
 import mx.tec.familiasquesuman.domain.TipoAviso
 import mx.tec.familiasquesuman.domain.avisosDelDia
+import mx.tec.familiasquesuman.domain.avisosDelServidor
+import mx.tec.familiasquesuman.domain.ultimoAvisoDelServidor
 import mx.tec.familiasquesuman.domain.juntarAvisos
 import mx.tec.familiasquesuman.domain.porNotificar
 import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 /**
- * Corre cada pocas horas aunque la app esté cerrada: ve si a la cuenta con sesión le toca algún
- * aviso (recordatorio, favoritos, urgencias), lo deja en su bandeja y lo manda como notificación
- * del teléfono. Con la app abierta, CuentaViewModel hace lo mismo con lo que tiene en memoria.
- * Lee el catálogo de la API (público) y, de la cuenta, solo la copia local de a qué va.
+ * Corre cada 15 minutos aunque la app esté cerrada (como en la Práctica 8 de startdroid, sin
+ * Firebase): ve si a la cuenta con sesión le toca algún aviso, lo deja en su bandeja y lo manda
+ * como notificación del teléfono. Con la app abierta, CuentaViewModel hace lo mismo.
+ *  · Los recordatorios y avisos de favoritos los calcula el teléfono con el catálogo (público).
+ *  · Las urgencias y actividades nuevas las manda Familias que Suman: se piden a la API con la
+ *    sesión (`GET /v1/avisos?desde=`), solo los que van después del último que ya llegó.
+ * Android decide el momento exacto (ahorro de batería): puede tardar un poco más de 15 minutos.
  */
 class RevisarAvisosWorker(contexto: Context, parametros: WorkerParameters) : CoroutineWorker(contexto, parametros) {
 
@@ -40,14 +45,14 @@ class RevisarAvisosWorker(contexto: Context, parametros: WorkerParameters) : Cor
         fun programar(contexto: Context) {
             WorkManager.getInstance(contexto).enqueueUniquePeriodicWork(
                 NOMBRE,
-                ExistingPeriodicWorkPolicy.KEEP,
-                PeriodicWorkRequestBuilder<RevisarAvisosWorker>(3, TimeUnit.HOURS).build()
+                ExistingPeriodicWorkPolicy.UPDATE,      // si venía de la versión de cada 3 horas, se actualiza
+                PeriodicWorkRequestBuilder<RevisarAvisosWorker>(15, TimeUnit.MINUTES).build()
             )
         }
 
         /**
          * Para probarlo: revisa una sola vez dentro de [segundos], aunque cierren la app mientras
-         * tanto (la periódica ya corrió y no vuelve hasta dentro de 3 horas).
+         * tanto (la periódica corre cada 15 minutos, pero Android decide cuándo).
          */
         fun probarEn(contexto: Context, segundos: Long = 20) {
             WorkManager.getInstance(contexto).enqueueUniqueWork(
@@ -69,7 +74,11 @@ class RevisarAvisosWorker(contexto: Context, parametros: WorkerParameters) : Cor
             val campanas = runCatching { container.campanaRepository.getCampanas() }.getOrDefault(emptyList())
             val asociaciones = runCatching { container.actividadRepository.getTodasLasAsociaciones() }.getOrDefault(emptyList())
 
-            val nuevos = avisosDelDia(
+            val queAvisar = QueAvisar(prefs.recordatorioActividades, prefs.avisosFavoritos, prefs.urgenciasCiudad)
+            val guardados = avisosStore.cargar(correo)
+            val delServidor = runCatching { container.cuentaRepository.avisos(ultimoAvisoDelServidor(guardados)) }
+                .getOrDefault(emptyList())
+            val nuevos = avisosDelServidor(delServidor, queAvisar) + avisosDelDia(
                 ahora = ahora,
                 actividades = actividades,
                 campanas = campanas,
@@ -78,9 +87,9 @@ class RevisarAvisosWorker(contexto: Context, parametros: WorkerParameters) : Cor
                 favoritas = FavoritosStore(contexto).cargar(correo).orEmpty(),
                 lugares = { it.lugaresDisponibles },
                 ciudad = prefs.ciudad,
-                queAvisar = QueAvisar(prefs.recordatorioActividades, prefs.avisosFavoritos, prefs.urgenciasCiudad)
+                queAvisar = queAvisar
             )
-            val (bandeja, llegaron) = juntarAvisos(avisosStore.cargar(correo), nuevos, reemplazar = false, System.currentTimeMillis())
+            val (bandeja, llegaron) = juntarAvisos(guardados, nuevos, reemplazar = false, System.currentTimeMillis())
             if (llegaron.isNotEmpty()) avisosStore.guardar(correo, bandeja)
 
             val enviados = porNotificar(bandeja, avisosStore.notificados(correo), ahora).filter { aviso ->

@@ -19,6 +19,7 @@ import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -84,6 +85,7 @@ fun PerfilScreen(
     favoritosDisponibles: Boolean = accesosDisponibles,
     onSugerirClick: () -> Unit = {},
     onSugerenciasClick: () -> Unit = {},
+    onEnviarAviso: () -> Unit = {},
     onRegresar: (() -> Unit)? = null,
     onTestimoniosClick: () -> Unit = {},
     onRespuestasClick: () -> Unit = {},
@@ -115,6 +117,7 @@ fun PerfilScreen(
                 onSwitchCuenta = onSwitchCuenta,
                 onSugerirClick = onSugerirClick,
                 onSugerenciasClick = onSugerenciasClick,
+                onEnviarAviso = onEnviarAviso,
                 onTestimoniosClick = onTestimoniosClick,
                 onRespuestasClick = onRespuestasClick,
                 familiares = familiares,
@@ -145,6 +148,7 @@ private fun ContenidoPerfil(
     onSwitchCuenta: (Boolean) -> Unit,
     onSugerirClick: () -> Unit,
     onSugerenciasClick: () -> Unit,
+    onEnviarAviso: () -> Unit,
     onTestimoniosClick: () -> Unit,
     onRespuestasClick: () -> Unit,
     familiares: List<Acompanante>,
@@ -220,6 +224,10 @@ private fun ContenidoPerfil(
             }
             AccesoPerfil(
                 "Sugerencias recibidas", Icons.Outlined.Email, onSugerenciasClick,
+                true, Modifier.fillMaxWidth()
+            )
+            AccesoPerfil(
+                "Enviar aviso a las familias", Icons.Outlined.Notifications, onEnviarAviso,
                 true, Modifier.fillMaxWidth()
             )
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

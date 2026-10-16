@@ -39,6 +39,8 @@ import mx.tec.familiasquesuman.domain.avisoBienvenida
 import mx.tec.familiasquesuman.domain.avisoCancelacion
 import mx.tec.familiasquesuman.domain.avisoInscripcion
 import mx.tec.familiasquesuman.domain.avisosDelDia
+import mx.tec.familiasquesuman.domain.avisosDelServidor
+import mx.tec.familiasquesuman.domain.ultimoAvisoDelServidor
 import mx.tec.familiasquesuman.domain.juntarAvisos
 import java.time.LocalDateTime
 
@@ -119,9 +121,26 @@ data class IniciarSesionUi(
     val puedeEnviar: Boolean get() = !enviando && esCorreoValido(correo) && contrasena.isNotEmpty()
 }
 
-data class RecuperarUi(val correo: String = "", val enviando: Boolean = false, val enviado: Boolean = false) {
+/**
+ * P-27 · Recuperar contraseña, en dos pasos: (1) pedir un código al correo; (2) escribir el código
+ * de 6 dígitos y la contraseña nueva. La contraseña solo vive aquí mientras se escribe.
+ */
+data class RecuperarUi(
+    val correo: String = "",
+    val enviando: Boolean = false,
+    val enviado: Boolean = false,
+    val codigo: String = "",
+    val contrasena: String = "",
+    val cambiando: Boolean = false,
+    val cambiada: Boolean = false,
+    val error: String? = null
+) {
     val errorCorreo: String?
         get() = if (correo.isNotEmpty() && !esCorreoValido(correo)) "Escribe un correo válido, por ejemplo familia@correo.com" else null
+    val errorContrasena: String?
+        get() = if (contrasena.isNotEmpty() && contrasena.length < 8) "Mínimo 8 caracteres" else null
+    val puedeCambiar: Boolean
+        get() = !cambiando && codigo.length == 6 && contrasena.length >= 8 && esCorreoValido(correo)
 }
 
 /** A qué inscripción regresar después de crear cuenta o entrar (P-04 → P-05/P-26 → P-06). */
@@ -489,19 +508,47 @@ class CuentaViewModel(
         if (_recuperar.value.correo.isEmpty() && correo.isNotEmpty()) _recuperar.update { it.copy(correo = correo) }
     }
 
-    fun onCorreoRecuperarChange(v: String) = _recuperar.update { it.copy(correo = v, enviado = false) }
+    fun onCorreoRecuperarChange(v: String) = _recuperar.update { it.copy(correo = v, enviado = false, error = null) }
+    fun onCodigoRecuperarChange(v: String) = _recuperar.update { it.copy(codigo = v.filter(Char::isDigit).take(6), error = null) }
+    fun onContrasenaNuevaChange(v: String) = _recuperar.update { it.copy(contrasena = v.take(128), error = null) }
 
     /**
-     * Le avisa al equipo de Familias que Suman que esta familia necesita una contraseña nueva. Se
-     * responde lo mismo exista o no el correo (y aunque falle): así nadie averigua quién tiene cuenta.
+     * Paso 1: pide el código. Se muestra lo mismo exista o no el correo (y aunque falle la red):
+     * así nadie averigua quién tiene cuenta.
      */
     fun enviarEnlace() {
         val correo = _recuperar.value.correo
         if (!esCorreoValido(correo)) return
         viewModelScope.launch {
-            _recuperar.update { it.copy(enviando = true) }
+            _recuperar.update { it.copy(enviando = true, error = null) }
             runCatching { servicioSesion.recuperar(correo) }
             _recuperar.update { it.copy(enviando = false, enviado = true) }
+        }
+    }
+
+    /** Paso 2: el código y la contraseña nueva. Si sale bien, se olvida la contraseña escrita. */
+    fun cambiarContrasena() {
+        val f = _recuperar.value
+        if (!f.puedeCambiar) return
+        viewModelScope.launch {
+            _recuperar.update { it.copy(cambiando = true, error = null) }
+            try {
+                servicioSesion.restablecer(f.correo, f.codigo, f.contrasena)
+                olvidarSesionLocal()
+                _recuperar.value = RecuperarUi(correo = f.correo, cambiada = true)
+                _entrar.update { it.copy(correo = f.correo, contrasena = "", error = null) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: ApiExcepcion) {
+                val mensaje = when {
+                    e.codigo == "contrasena_debil" || (e.codigo == "dato_invalido" && "contrasena" in e.message) ->
+                        "Esa contraseña es muy fácil de adivinar. Usa una frase o mezcla palabras y números."
+                    else -> e.message
+                }
+                _recuperar.update { it.copy(cambiando = false, error = mensaje) }
+            } catch (e: Exception) {
+                _recuperar.update { it.copy(cambiando = false, error = mensajeDe(e)) }
+            }
         }
     }
 
@@ -596,6 +643,26 @@ class CuentaViewModel(
                 ?: QueAvisar()
         )
         recibirAvisos(nuevos, reemplazar = false)
+        // Y los que manda Familias que Suman (urgencias, actividades nuevas), con la sesión.
+        val queAvisar = prefs?.let { QueAvisar(it.recordatorioActividades, it.avisosFavoritos, it.urgenciasCiudad) } ?: QueAvisar()
+        viewModelScope.launch {
+            runCatching { cuentaRepository.avisos(ultimoAvisoDelServidor(_avisos.value)) }
+                .onSuccess { recibirAvisos(avisosDelServidor(it, queAvisar), reemplazar = false) }
+        }
+    }
+
+    /** RF-22 · El admin manda una urgencia. [alTerminar] recibe el mensaje para la persona. */
+    fun enviarAviso(titulo: String, cuerpo: String, ciudad: String?, alTerminar: (Boolean, String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                cuentaRepository.enviarAviso(titulo, cuerpo, ciudad)
+                alTerminar(true, "Aviso enviado. Llega a las familias en menos de 15 minutos.")
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                alTerminar(false, mensajeDe(e))
+            }
+        }
     }
 
     /**

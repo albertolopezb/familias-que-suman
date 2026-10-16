@@ -136,6 +136,32 @@ fun juntarAvisos(actuales: List<Aviso>, nuevos: List<Aviso>, reemplazar: Boolean
     return bandeja to conHora
 }
 
+/** Un aviso que mandó Familias que Suman desde el servidor: una urgencia de la ciudad o una actividad nueva. */
+data class AvisoDelServidor(val id: Long, val urgencia: Boolean, val titulo: String, val cuerpo: String, val actividadId: String?)
+
+private const val PREFIJO_SERVIDOR = "servidor-"
+
+/** El último aviso del servidor que ya está en la bandeja: se piden solo los que siguen (`?desde=`). */
+fun ultimoAvisoDelServidor(bandeja: List<Aviso>): Long =
+    bandeja.mapNotNull { if (it.id.startsWith(PREFIJO_SERVIDOR)) it.id.removePrefix(PREFIJO_SERVIDOR).toLongOrNull() else null }
+        .maxOrNull() ?: 0L
+
+/**
+ * Los avisos del servidor como avisos de la bandeja, respetando Ajustes: las urgencias solo si la
+ * familia las prendió, y las actividades nuevas con los avisos de favoritos. El id es estable:
+ * aunque se vuelvan a pedir, no llegan dos veces.
+ */
+fun avisosDelServidor(lista: List<AvisoDelServidor>, queAvisar: QueAvisar): List<Aviso> =
+    lista.filter { if (it.urgencia) queAvisar.urgencias else queAvisar.favoritos }.map {
+        Aviso(
+            id = "$PREFIJO_SERVIDOR${it.id}",
+            tipo = if (it.urgencia) TipoAviso.URGENCIA else TipoAviso.FAVORITO,
+            titulo = it.titulo,
+            texto = it.cuerpo,
+            actividadId = it.actividadId
+        )
+    }
+
 /** Los que también salen como notificación del teléfono; los demás pasan con la app abierta. */
 private val TIPOS_DEL_TELEFONO = setOf(TipoAviso.RECORDATORIO, TipoAviso.FAVORITO, TipoAviso.CIERRE, TipoAviso.URGENCIA)
 
