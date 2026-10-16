@@ -10,7 +10,12 @@ plugins {
 // sube a Git) o de gradle.properties / -P. Ver docs/guia-backend.md §App.
 //
 //   api.url          dónde está la API. Emulador: http://10.0.2.2:8000 · Teléfono: la URL del túnel.
+//   api.url.release  la de la versión de entrega (solo HTTPS): la del túnel o la del servidor.
+//                    Si no se pone, se usa api.url.
 //   enlaces.dominio  el dominio de los enlaces para compartir, cuando haya uno propio (App Links)
+//   firma.archivo, firma.alias, firma.contrasena
+//                    la llave con la que se firma el APK de entrega. Vive FUERA del repo; quien no
+//                    la tenga compila igual, pero su APK release sale sin firmar.
 //
 // Ningún secreto va aquí: lo que se compila dentro del APK lo puede leer cualquiera. El secreto
 // que firma los JWT vive solo en el servidor (backend/.env).
@@ -43,11 +48,27 @@ android {
         manifestPlaceholders["enlacesDominio"] = config("enlaces.dominio", "enlaces.familiasquesuman.invalid")
     }
 
+    // La firma del APK de entrega. Android solo instala apps firmadas, y cada actualización debe ir
+    // firmada con la MISMA llave: perderla = no poder actualizar la app. Respáldala.
+    val llave = config("firma.archivo").takeIf { it.isNotBlank() }?.let { rootProject.file(it) }?.takeIf { it.exists() }
+    signingConfigs {
+        if (llave != null) {
+            create("entrega") {
+                storeFile = llave
+                storePassword = config("firma.contrasena")
+                keyAlias = config("firma.alias")
+                keyPassword = config("firma.contrasena")
+            }
+        }
+    }
+
     buildTypes {
         release {
             optimization {
                 enable = false
             }
+            if (llave != null) signingConfig = signingConfigs.getByName("entrega")
+            buildConfigField("String", "API_URL", "\"${config("api.url.release", config("api.url", "http://10.0.2.2:8000"))}\"")
         }
     }
     compileOptions {

@@ -1317,6 +1317,22 @@ api.url=http://10.0.2.2:8000                     # emulador; teléfono: https://
 
 La versión de **entrega** (release) solo habla HTTPS: ahí `api.url` tiene que ser `https://…`.
 
+**APK de entrega firmado.** Android solo instala apps firmadas, y cada actualización tiene que ir
+firmada con la **misma** llave. La llave vive fuera del repo y se configura en `local.properties`:
+
+```properties
+api.url.release=https://<algo>.trycloudflare.com   # la API por HTTPS (túnel o servidor)
+firma.archivo=D\:/TEC/.llaves/familias-que-suman-release.jks
+firma.alias=familias-release
+firma.contrasena=<la contraseña de la llave>
+```
+
+Con eso, `./gradlew :app:assembleRelease` deja `app/build/outputs/apk/release/app-release.apk`
+firmado (`app/build.gradle.kts`, bloque `signingConfigs`). Sin la llave, el APK release sale sin
+firmar. **Respalda la llave y su contraseña**: si se pierden, no se puede publicar una actualización.
+Con Quick Tunnel la dirección cambia cada vez que se levanta el túnel: hay que volver a compilar con
+la nueva `api.url.release` (o usar un túnel con nombre, §10.3).
+
 **Android 17 (targetSdk 37) y la red local:** para hablar con la API en tu máquina (`10.0.2.2`
 desde el emulador) la app necesita el permiso `ACCESS_LOCAL_NETWORK`. Solo la versión de
 depuración lo declara (`app/src/debug/AndroidManifest.xml`) y lo pide al abrir
