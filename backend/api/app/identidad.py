@@ -1,11 +1,14 @@
 """Identificación: ¿quién eres? Con JWT emitidos y verificados por esta misma API.
 
-Es el esquema de la guía de clase (s23 · "Stateless Identity: JWT Authentication in FastAPI"):
+Es el esquema de la guía de clase (s23 · "Stateless Identity: JWT Authentication in FastAPI"),
+con el access token corto + refresh token que pide el anexo del reto en startdroid:
 
   1. La app manda correo y contraseña UNA vez a `POST /v1/sesion/iniciar` (por HTTPS).
   2. La API busca la cuenta, compara la contraseña contra su hash Argon2id y, si coincide,
      firma un JWT con HMAC-SHA256 (HS256) usando un secreto que solo ella conoce.
   3. La app guarda ese token y lo manda en cada petición: `Authorization: Bearer <token>`.
+     El JWT dura 15 minutos. Junto con él llega un REFRESH TOKEN (30 días) que solo sirve para
+     pedir otro JWT en `POST /v1/sesion/renovar`; cada uso lo cambia por uno nuevo (rotación).
   4. La API vuelve a calcular la firma: si alguien cambió UN solo carácter del contenido (por
      ejemplo `"permisos": []` → `["administrar:catalogo"]`), la firma ya no coincide y es 401.
      Así la API no tiene que guardar sesiones: el token se defiende solo ("stateless").
@@ -31,6 +34,7 @@ Si Redis no responde, la API NO deja pasar a nadie: responde 503 (falla cerrado,
 
 import hashlib
 import logging
+import secrets
 import time
 import uuid
 from dataclasses import dataclass
@@ -42,12 +46,14 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
+from .bitacora import auditar
 from .config import ajustes
 from .db import obtener_db
 from .errores import ApiError
-from .modelos import Cuenta
+from .modelos import Cuenta, Sesion
 
 log = logging.getLogger("familias.identidad")
 
@@ -199,6 +205,69 @@ def verificar_token(token: str) -> dict:
     if claims.get("rol") not in ("familia", "admin") or isinstance(claims["iat"], bool) or not isinstance(claims["iat"], int | float):
         raise _token_invalido()
     return claims
+
+
+# ─── Refresh tokens: sesiones que se renuevan sin volver a pedir la contraseña ──
+# El refresh token es un número al azar de 384 bits (no un JWT): no lleva nada adentro y solo
+# sirve contra la tabla `sesiones`, donde se guarda su HUELLA SHA-256, nunca el token. Así, aunque
+# alguien se llevara la tabla, no tendría tokens que usar.
+#
+# Rotación y detección de reuso (OWASP, "refresh token rotation"): cada refresh token sirve UNA
+# vez. Al usarlo se marca como usado y nace otro de la misma "familia". Si llega uno ya usado,
+# alguien más lo tenía (la app legítima ya lo había cambiado): se cierra toda la familia y las
+# dos partes tienen que volver a entrar con contraseña.
+
+def _ahora() -> datetime:
+    return datetime.now(UTC)
+
+
+def abrir_sesion(db: Session, cuenta: Cuenta, familia: uuid.UUID | None = None) -> tuple[str, int]:
+    """Crea un refresh token para la cuenta. Devuelve el token (solo esta vez se ve) y su duración."""
+    refresh = secrets.token_urlsafe(48)
+    segundos = ajustes.refresh_dias * 24 * 3600
+    db.add(Sesion(
+        cuenta_id=cuenta.id, familia=familia or uuid.uuid4(), huella=huella(refresh),
+        expira_en=_ahora() + timedelta(seconds=segundos),
+    ))
+    return refresh, segundos
+
+
+def revocar_familia(db: Session, familia: uuid.UUID) -> None:
+    db.execute(update(Sesion).where(Sesion.familia == familia, Sesion.revocada_en.is_(None)).values(revocada_en=_ahora()))
+
+
+def revocar_todas(db: Session, cuenta_id: uuid.UUID) -> None:
+    """Cierra todas las sesiones de una cuenta (cambio de contraseña o de permisos)."""
+    db.execute(update(Sesion).where(Sesion.cuenta_id == cuenta_id, Sesion.revocada_en.is_(None)).values(revocada_en=_ahora()))
+
+
+def revocar_refresh(db: Session, refresh: str, cuenta_id: uuid.UUID) -> None:
+    """Cerrar sesión: la familia de ESE refresh token, solo si es de quien cierra."""
+    fila = db.scalar(select(Sesion).where(Sesion.huella == huella(refresh), Sesion.cuenta_id == cuenta_id))
+    if fila is not None:
+        revocar_familia(db, fila.familia)
+
+
+def renovar_sesion(db: Session, refresh: str, ip: str | None = None) -> tuple[Cuenta, str, int]:
+    """Cambia un refresh token vigente por otro nuevo. 401 si no existe, venció, se cerró o ya se usó."""
+    # FOR UPDATE: dos renovaciones a la vez con el mismo token no pueden ganar las dos.
+    fila = db.scalar(select(Sesion).where(Sesion.huella == huella(refresh)).with_for_update())
+    if fila is None:
+        raise _token_invalido()
+    if fila.revocada_en is not None:
+        raise _token_invalido("sesion_cerrada")
+    if fila.usada_en is not None:
+        revocar_familia(db, fila.familia)
+        auditar(db, "sesion.reuso_de_refresh", "cuenta", fila.cuenta_id, fila.cuenta_id, ip=ip)
+        db.commit()
+        log.warning("Refresh token reusado: se cerró la sesión completa", extra={"evento": "refresh_reusado"})
+        raise _token_invalido("sesion_cerrada")
+    if fila.expira_en <= _ahora():
+        raise _token_invalido("token_expirado")
+    cuenta = db.get(Cuenta, fila.cuenta_id)
+    fila.usada_en = _ahora()
+    nuevo, segundos = abrir_sesion(db, cuenta, fila.familia)
+    return cuenta, nuevo, segundos
 
 
 # ─── Redis: sesiones cerradas e intentos fallidos ────────────────────────────

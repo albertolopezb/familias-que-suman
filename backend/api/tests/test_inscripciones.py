@@ -93,3 +93,11 @@ def test_toctou_varias_familias_a_la_vez_no_sobrepasan_el_cupo(familia, nueva_pe
     assert codigos.count(200) == 3
     assert codigos.count(409) == 5
     assert TestClient(app).get(f"/v1/actividades/{actividad['id']}").json()["lugares_disponibles"] == 0
+
+
+def test_no_se_cancela_a_menos_de_12_horas(cliente, familia, crear_actividad):
+    """RF-19 / HU-09: la familia cancela hasta 12 horas antes; después, la asociación ya contaba con ella."""
+    actividad = crear_actividad(dias=0.3)                      # empieza en ~7 horas
+    assert cliente.put(f"/v1/yo/inscripciones/{actividad['id']}", headers=familia.headers, json={"acompanantes": []}).status_code == 200
+    r = cliente.delete(f"/v1/yo/inscripciones/{actividad['id']}", headers=familia.headers)
+    assert r.status_code == 409 and r.json()["codigo"] == "fuera_de_plazo"

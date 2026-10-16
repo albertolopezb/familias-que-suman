@@ -48,6 +48,7 @@ limitador = Limiter(
 INICIAR_SESION = "10/minute;60/hour"  # por IP; el bloqueo por correo va aparte (identidad.py)
 REGISTRARSE = "10/hour"             # crear cuentas en masa (bots, spam) desde una IP
 RECUPERAR = "5/hour"
+RENOVAR = "30/minute"               # la app renueva cada 15 min; más que esto desde una IP no es normal
 SUGERIR = "5/hour"                  # público y anónimo: lo más estricto
 INSCRIBIR = "30/hour"               # inscribirse, modificar y cancelar
 APORTAR = "30/hour"

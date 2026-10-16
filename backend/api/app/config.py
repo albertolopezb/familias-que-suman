@@ -34,10 +34,11 @@ class Ajustes(BaseSettings):
     jwt_secreto: str = "cambia-este-secreto-jwt-de-desarrollo-32+"
     jwt_emisor: str = "familias-que-suman-api"          # claim `iss`: quién lo firmó
     jwt_audiencia: str = "familias-que-suman-app"       # claim `aud`: para quién es
-    # Cuánto dura una sesión. La app no pide la contraseña cada hora: un día es el punto medio
-    # entre comodidad y riesgo (un token robado sirve como mucho 24 h, y "Cerrar sesión" lo
-    # invalida al instante; ver identidad.SesionesCerradas).
-    jwt_minutos: int = 1440
+    # Cuánto dura el access token (el JWT). Corto a propósito: si alguien lo roba, sirve minutos.
+    # La app pide otro sola con el refresh token, sin volver a pedir la contraseña.
+    jwt_minutos: int = 15
+    # Cuánto dura el refresh token si no se usa. Cada uso lo cambia por uno nuevo (rotación).
+    refresh_dias: int = 30
 
     # ── Fuerza bruta contra el inicio de sesión ── Tras N contraseñas equivocadas seguidas para
     # un mismo correo, ese correo queda bloqueado unos minutos (desde cualquier IP).
@@ -80,8 +81,15 @@ class Ajustes(BaseSettings):
     @field_validator("jwt_minutos")
     @classmethod
     def _duracion_razonable(cls, v: int) -> int:
-        if not 5 <= v <= 7 * 24 * 60:
-            raise ValueError("JWT_MINUTOS debe estar entre 5 minutos y 7 días")
+        if not 1 <= v <= 24 * 60:
+            raise ValueError("JWT_MINUTOS debe estar entre 1 minuto y 24 horas")
+        return v
+
+    @field_validator("refresh_dias")
+    @classmethod
+    def _refresh_razonable(cls, v: int) -> int:
+        if not 1 <= v <= 90:
+            raise ValueError("REFRESH_DIAS debe estar entre 1 y 90")
         return v
 
     @property
