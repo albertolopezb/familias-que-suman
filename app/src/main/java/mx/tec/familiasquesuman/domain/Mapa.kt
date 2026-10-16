@@ -4,7 +4,35 @@ package mx.tec.familiasquesuman.domain
 // Modelos.kt mientras el equipo hace el merge; si conviene, se junta después.
 
 /** Un lugar en el mapa: latitud y longitud. */
-data class Coordenada(val latitud: Double, val longitud: Double)
+data class Coordenada(val latitud: Double, val longitud: Double) {
+    /** Como se escribe en el formulario de administración: "25.669400, -100.309800". */
+    fun comoTexto(): String = "%.6f, %.6f".format(java.util.Locale.ROOT, latitud, longitud)
+}
+
+/**
+ * Lo que escribe la administración en el campo "Ubicación en el mapa", convertido en coordenada.
+ * Acepta las coordenadas tal cual ("25.6694, -100.3098", lo que copia Google Maps al dejar el dedo
+ * sobre un punto) o un enlace largo de Google Maps: primero el pin exacto (`!3d<lat>!4d<lng>`) y,
+ * si no lo trae, el centro de la vista (`@<lat>,<lng>`). Los enlaces cortos (maps.app.goo.gl) no
+ * traen coordenadas: con ellos, y con cualquier cosa fuera de rango, regresa null.
+ */
+fun coordenadaDeTexto(texto: String): Coordenada? {
+    val limpio = texto.trim()
+    if (limpio.isEmpty()) return null
+    val numero = """(-?\d{1,3}(?:\.\d+)?)"""
+    val patrones = listOf(
+        Regex("""!3d$numero!4d$numero"""),
+        Regex("""@$numero,\s*$numero"""),
+        Regex("""^$numero\s*,\s*$numero$""")
+    )
+    for (patron in patrones) {
+        val m = patron.find(limpio) ?: continue
+        val lat = m.groupValues[1].toDoubleOrNull() ?: continue
+        val lng = m.groupValues[2].toDoubleOrNull() ?: continue
+        if (lat in -90.0..90.0 && lng in -180.0..180.0) return Coordenada(lat, lng)
+    }
+    return null
+}
 
 /** Las tres cosas que enseña el mapa de la ciudad. Cada una trae sus textos. */
 enum class TipoDePunto(

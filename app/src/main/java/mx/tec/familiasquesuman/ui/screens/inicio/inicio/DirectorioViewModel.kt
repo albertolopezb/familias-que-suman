@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
+import mx.tec.familiasquesuman.domain.coordenadaDeTexto
 import mx.tec.familiasquesuman.ui.state.intentar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -46,7 +47,8 @@ class DirectorioViewModel(
                 beneficiarios = v[2].trim().ifBlank { null },
                 ciudad = v[3].trim(),
                 vigencia = v[4].trim().ifBlank { null },
-                activo = v[5] == "true"
+                activo = v[5] == "true",
+                coordenada = coordenadaDeTexto(v[6])          // vacío = no sale en el mapa
             )
             intentar { if (original == null) actividadRepository.agregarProyecto(nuevo) else actividadRepository.editarProyecto(nuevo) }
             cargar()

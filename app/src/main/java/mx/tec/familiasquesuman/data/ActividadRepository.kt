@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.data
 
+import mx.tec.familiasquesuman.domain.Coordenada
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -97,7 +98,8 @@ class ActividadRepository {
         lugaresDisponibles: Int,
         edadMinima: Int?,
         ciudad: String,
-        asociacionId: String?
+        asociacionId: String?,
+        coordenada: Coordenada?
     ) {
         val zona = ZoneId.of(getCiudades().firstOrNull { it.nombre == ciudad }?.zonaHoraria ?: "America/Monterrey")
         val dia = fechaDeTexto(fecha) ?: throw ApiExcepcion(422, "fecha_invalida", "Escribe la fecha como \"sábado, 3 de octubre\".")
@@ -133,8 +135,9 @@ class ActividadRepository {
                 put("que_llevar", base.queLlevar)
                 put("recomendaciones", base.recomendaciones)
                 put("imagen", base.foto.orEmpty())
-                base.coordenada?.let { put("latitud", it.latitud); put("longitud", it.longitud) }
             }
+            // Dónde sale en el mapa: lo que escribió la administración (vacío = no sale).
+            coordenada?.let { put("latitud", it.latitud); put("longitud", it.longitud) }
         }
         if (id == null) llamar { crearActividad(cuerpo) } else llamar { editarActividad(id, cuerpo) }
     }

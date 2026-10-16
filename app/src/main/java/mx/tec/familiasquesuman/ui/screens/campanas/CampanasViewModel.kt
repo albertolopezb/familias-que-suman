@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.campanas
 
+import mx.tec.familiasquesuman.domain.coordenadaDeTexto
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -129,7 +130,8 @@ class CampanasViewModel(
                 metaTotal = v[5].toIntOrNull() ?: base.metaTotal,
                 completados = v[6].toIntOrNull() ?: base.completados,
                 ciudad = v[7].trim().ifBlank { base.ciudad },
-                urgente = v[8] == "true"
+                urgente = v[8] == "true",
+                coordenada = coordenadaDeTexto(v[9])          // vacío = no sale en el mapa
             )
             intentar { if (original == null) repo.agregarCampana(nueva) else repo.editarCampana(nueva) }
             intentar { repo.getCampanas() }.onSuccess { carga.value = UiState.Exito(it) }

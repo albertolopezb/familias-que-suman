@@ -328,7 +328,8 @@ fun NavGraphBuilder.grafoInicio(
                     CampoAdmin("Beneficiarios (ej. 25 Mujeres)", actual?.beneficiarios.orEmpty()),
                     CampoAdmin("Ciudad", actual?.ciudad ?: "Monterrey, N.L."),
                     CampoAdmin("Vigencia (ej. Hasta 29 jun 2026)", actual?.vigencia.orEmpty()),
-                    CampoAdmin("Activo", (actual?.activo ?: true).toString(), TipoCampo.INTERRUPTOR)
+                    CampoAdmin("Activo", (actual?.activo ?: true).toString(), TipoCampo.INTERRUPTOR),
+                    CampoAdmin("Ubicación en el mapa", actual?.coordenada?.comoTexto().orEmpty(), TipoCampo.UBICACION)
                 ),
                 onGuardar = { valores ->
                     vm.guardarProyecto(actual, valores)

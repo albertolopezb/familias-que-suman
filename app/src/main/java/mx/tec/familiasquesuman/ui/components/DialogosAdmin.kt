@@ -29,8 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import mx.tec.familiasquesuman.domain.coordenadaDeTexto
 
-enum class TipoCampo { TEXTO, NUMERO, MULTILINEA, INTERRUPTOR }
+enum class TipoCampo { TEXTO, NUMERO, MULTILINEA, INTERRUPTOR, UBICACION }
 
 /** Un renglón del formulario de administración. El primero es obligatorio. */
 data class CampoAdmin(
@@ -38,6 +39,33 @@ data class CampoAdmin(
     val valor: String = "",
     val tipo: TipoCampo = TipoCampo.TEXTO
 )
+
+/** Vacío = sin lugar en el mapa (válido); con texto, tiene que entenderse como coordenada. */
+fun ubicacionValida(texto: String): Boolean = texto.isBlank() || coordenadaDeTexto(texto) != null
+
+/**
+ * El campo "Ubicación en el mapa": coordenadas o un enlace largo de Google Maps. Lo usan los
+ * formularios de actividades, proyectos y campañas para que lo nuevo aparezca en el mapa.
+ */
+@Composable
+fun CampoUbicacion(valor: String, onValorChange: (String) -> Unit, modifier: Modifier = Modifier) {
+    val valida = ubicacionValida(valor)
+    OutlinedTextField(
+        value = valor,
+        onValueChange = onValorChange,
+        label = { Text("Ubicación en el mapa (opcional)") },
+        placeholder = { Text("25.6694, -100.3098") },
+        isError = !valida,
+        supportingText = {
+            Text(
+                if (valida) "En Google Maps, deja el dedo sobre el lugar y copia las coordenadas, o pega el enlace largo. Vacío: no sale en el mapa."
+                else "No se entiende. Escribe \"latitud, longitud\" o pega el enlace largo de Google Maps (los enlaces cortos maps.app.goo.gl no traen coordenadas)."
+            )
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+        modifier = modifier.fillMaxWidth()
+    )
+}
 
 /** Lo que devuelve un interruptor dentro de la lista de valores. */
 fun String.comoBooleano(): Boolean = this == "true"
@@ -54,6 +82,7 @@ fun DialogoFormularioAdmin(
     onDescartar: () -> Unit
 ) {
     val valores = remember { mutableStateListOf<String>().also { l -> campos.forEach { l.add(it.valor) } } }
+    val todoValido = campos.indices.all { i -> campos[i].tipo != TipoCampo.UBICACION || ubicacionValida(valores[i]) }
 
     AlertDialog(
         onDismissRequest = onDescartar,
@@ -77,6 +106,8 @@ fun DialogoFormularioAdmin(
                             )
                         }
 
+                        TipoCampo.UBICACION -> CampoUbicacion(valores[i], { valores[i] = it })
+
                         else -> OutlinedTextField(
                             value = valores[i],
                             onValueChange = { valores[i] = it },
@@ -92,7 +123,10 @@ fun DialogoFormularioAdmin(
             }
         },
         confirmButton = {
-            Button(onClick = { if (valores.first().isNotBlank()) onGuardar(valores.toList()) }) {
+            Button(
+                onClick = { if (valores.first().isNotBlank() && todoValido) onGuardar(valores.toList()) },
+                enabled = todoValido
+            ) {
                 Text("Guardar")
             }
         },
