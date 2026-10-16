@@ -20,18 +20,17 @@ ZAP by [Checkmarx](https://checkmarx.com/).
 | Level | Reason | Site | Description | Statistic |
 | --- | --- | --- | --- | --- |
 | Low | Warning |  | ZAP errors logged - see the zap.log file for details | 1    |
-| Low | Warning |  | ZAP warnings logged - see the zap.log file for details | 6    |
-| Low | Exceeded High | http://127.0.0.1:8000 | Percentage of responses with status code 4xx | 92 % |
-| Info | Informational | http://127.0.0.1:8000 | Percentage of responses with status code 2xx | 5 % |
+| Low | Warning |  | ZAP warnings logged - see the zap.log file for details | 10    |
+| Low | Exceeded High | http://127.0.0.1:8000 | Percentage of responses with status code 4xx | 91 % |
+| Info | Informational | http://127.0.0.1:8000 | Percentage of responses with status code 2xx | 7 % |
 | Info | Informational | http://127.0.0.1:8000 | Percentage of responses with status code 3xx | 1 % |
 | Info | Informational | http://127.0.0.1:8000 | Percentage of endpoints with content type application/json | 75 % |
-| Info | Informational | http://127.0.0.1:8000 | Percentage of endpoints with method DELETE | 21 % |
-| Info | Informational | http://127.0.0.1:8000 | Percentage of endpoints with method GET | 37 % |
+| Info | Informational | http://127.0.0.1:8000 | Percentage of endpoints with method DELETE | 20 % |
+| Info | Informational | http://127.0.0.1:8000 | Percentage of endpoints with method GET | 36 % |
 | Info | Informational | http://127.0.0.1:8000 | Percentage of endpoints with method PATCH | 3 % |
-| Info | Informational | http://127.0.0.1:8000 | Percentage of endpoints with method POST | 15 % |
-| Info | Informational | http://127.0.0.1:8000 | Percentage of endpoints with method PUT | 21 % |
-| Info | Informational | http://127.0.0.1:8000 | Count of total endpoints | 88    |
-| Info | Informational | http://127.0.0.1:8000 | Percentage of slow responses | 1 % |
+| Info | Informational | http://127.0.0.1:8000 | Percentage of endpoints with method POST | 18 % |
+| Info | Informational | http://127.0.0.1:8000 | Percentage of endpoints with method PUT | 20 % |
+| Info | Informational | http://127.0.0.1:8000 | Count of total endpoints | 91    |
 
 
 

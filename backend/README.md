@@ -53,7 +53,7 @@ docker compose logs tunel | grep trycloudflare          # la dirección pública
 docker compose --profile pruebas run --rm --build pruebas    # las pruebas automáticas (147)
 bash smoke.sh                                           # prueba de contrato contra la API (27 casos)
 bash smoke.sh https://<algo>.trycloudflare.com          # la misma, por el túnel
-docker compose --profile zap run --rm zap               # el escaneo de OWASP ZAP → seguridad/zap/
+bash seguridad/zap/escanear.sh                          # OWASP ZAP sin y con sesión → seguridad/zap/
 docker compose exec db psql -U familias -d familias     # entrar a la base
 docker compose exec api python -m app.herramientas permisos <correo> todos    # hacer admin a una cuenta
 docker compose exec -it api python -m app.herramientas contrasena <correo>    # ponerle contraseña nueva

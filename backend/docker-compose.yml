@@ -5,7 +5,7 @@
 #   docker compose --profile tunel up -d    además, el túnel HTTPS de Cloudflare (internet)
 #   docker compose logs tunel               ahí aparece la dirección https://…trycloudflare.com
 #   docker compose --profile pruebas run --rm pruebas     las pruebas automáticas de la API
-#   docker compose --profile zap run --rm zap             el escaneo de OWASP ZAP → seguridad/zap/
+#   bash seguridad/zap/escanear.sh                        el escaneo de OWASP ZAP (sin y con sesión) → seguridad/zap/
 #
 # La guía completa (qué es cada pieza, cómo protege y por qué): ../docs/guia-backend.md
 #
@@ -264,7 +264,8 @@ services:
     environment:
       OBJETIVO: http://api:8000
       REPORTES: /zap/wrk
-    # El mismo plan que se puede correr con ZAP instalado (seguridad/zap/plan-zap.yaml).
+    # El mismo plan que se puede correr con ZAP instalado (seguridad/zap/plan-zap.yaml). Para la
+    # pasada con sesión, seguridad/zap/escanear.sh le pasa una copia del plan con el token.
     command: ["zap.sh", "-cmd", "-autorun", "/zap/wrk/plan-zap.yaml"]
     volumes:
       - ./seguridad/zap:/zap/wrk:rw
