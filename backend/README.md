@@ -27,6 +27,7 @@ datos de prueba, prepara el almacén y Redis, y levanta la API, Prometheus y Gra
 | Grafana | http://localhost:3000 | `admin` / la de `GRAFANA_CONTRASENA` |
 | Prometheus | http://localhost:9090 | Alertas en `/alerts` |
 | Consola del almacén | http://localhost:9001 | Usuario y contraseña: `STORAGE_ROOT_*` |
+| Correo de desarrollo (Mailpit) | http://localhost:8025 | Sin contraseña: solo escucha en tu máquina. Ahí llegan los códigos para recuperar la contraseña |
 
 Sin `.env` funciona con valores de desarrollo. Para cambiar puertos o contraseñas: copia
 `.env.example` a `.env` (ahí va también `JWT_SECRETO`, el secreto que firma los tokens).
@@ -50,8 +51,8 @@ contraseña a las cuentas de prueba; las variables `AUTH0_*` de tu `.env` ya no 
 ```bash
 docker compose --profile tunel up -d                    # el túnel HTTPS (internet → API)
 docker compose logs tunel | grep trycloudflare          # la dirección pública
-docker compose --profile pruebas run --rm --build pruebas    # las pruebas automáticas (166)
-bash smoke.sh                                           # prueba de contrato contra la API (31 casos)
+docker compose --profile pruebas run --rm --build pruebas    # las pruebas automáticas (180)
+bash smoke.sh                                           # prueba de contrato contra la API (35 casos)
 bash smoke.sh https://<algo>.trycloudflare.com          # la misma, por el túnel
 bash seguridad/zap/escanear.sh                          # OWASP ZAP sin y con sesión → seguridad/zap/
 docker compose exec db psql -U familias -d familias     # entrar a la base

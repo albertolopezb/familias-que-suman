@@ -47,18 +47,19 @@ encuestas, aportaciones a campañas, sugerencias, privacidad y administración.
 | Base de datos | PostgreSQL 16 | Los datos |
 | Migraciones | Flyway 11 | Crear y cambiar las tablas en orden, versionado en Git |
 | Fotos | RustFS (compatible con S3) | Fotos de perfil y de testimonios |
+| Correo | Mailpit en desarrollo; cualquier SMTP con STARTTLS en producción | El código para recuperar la contraseña |
 | Contadores | Redis 8.8 | Rate limit, intentos fallidos de inicio de sesión y sesiones cerradas |
 | Identidad | **JWT propio** (PyJWT, HS256) + **Argon2id** | Registro, inicio de sesión, hash de contraseñas, emisión y verificación de tokens |
 | Autorización | **Oso** (reglas en Polar) | Políticas ABAC declarativas con los atributos del token |
 | Salida a internet | Cloudflare Tunnel (`cloudflared`) | HTTPS público sin abrir puertos |
 | Monitoreo | Prometheus 3.15 + Grafana 13.2 | Métricas, alertas de seguridad, tablero |
 | Escaneo | OWASP ZAP 2.17 | Ataque automático a la API |
-| Pruebas | pytest | 166 pruebas contra la base, Redis y el almacén reales |
+| Pruebas | pytest | 180 pruebas contra la base, Redis y el almacén reales |
 
 **Números de esta entrega:**
 
 - **69 operaciones** documentadas en OpenAPI (más la página pública de invitación y `assetlinks.json`).
-- **166 pruebas automáticas** de la API, todas en verde (§12).
+- **180 pruebas automáticas** de la API, todas en verde (§12).
 - **OWASP ZAP, sin y con sesión: 0 alertas altas, 0 medias, 0 bajas** (1 informativa) (§13).
 - **40 medidas de seguridad** catalogadas (§7), mapeadas a OWASP Top 10 2025, OWASP API Top 10
   2023 y CWE Top 25 (§8).
@@ -206,7 +207,8 @@ Todas están explicadas en `backend/.env.example`. Las importantes:
 | `REFRESH_DIAS` | Cuánto dura el refresh token (y con él, la sesión sin volver a escribir la contraseña) | `30` |
 | `STORAGE_ROOT_USER/PASSWORD` | Llaves del almacén | |
 | `REDIS_CONTRASENA` | Contraseña de Redis | |
-| `HMAC_SECRETO` | Llave para seudonimizar IPs | Mínimo 32 caracteres en producción |
+| `HMAC_SECRETO` | Llave para seudonimizar IPs y para la huella de los códigos de recuperación | Mínimo 32 caracteres en producción |
+| `SMTP_HOST`, `SMTP_PUERTO`, `SMTP_USUARIO`, `SMTP_CONTRASENA`, `SMTP_TLS` | El servidor de correo | Vacío = Mailpit (`correo:1025`). Con usuario, en producción exige `SMTP_TLS=true` |
 | `GRAFANA_USUARIO/CONTRASENA` | Acceso a Grafana | |
 | `LIMITE_GLOBAL` | Peticiones por minuto por IP | `120/minute` |
 | `ENLACES_BASE`, `APP_HUELLAS_SHA256`, `TUNNEL_TOKEN` | Enlaces y App Links con dominio propio | §10 |
@@ -307,7 +309,8 @@ sequenceDiagram
 | POST | `/v1/sesion/iniciar` | Correo y contraseña → token. Es el `/login` de la guía | 10/min y 60/h por IP + bloqueo por correo |
 | POST | `/v1/sesion/renovar` | `refresh_token` → tokens nuevos, sin contraseña. El refresh usado ya no sirve (rotación) | 30/min por IP |
 | POST | `/v1/sesion/cerrar` | 🔑 El token deja de servir desde ya; con `refresh_token` en el cuerpo, también la sesión entera | |
-| POST | `/v1/sesion/recuperar` | Pedir ayuda con la contraseña. Responde **202 siempre** | 5/h por IP |
+| POST | `/v1/sesion/recuperar` | Manda un código de 6 dígitos al correo. Responde **202 siempre**, exista o no la cuenta | 5/h por IP + 3 códigos por hora por cuenta |
+| POST | `/v1/sesion/restablecer` | `correo`, `codigo` y `contrasena` nueva → 204 y se cierran todas las sesiones; 400 `codigo_invalido` si no | 10/h por IP + el código se quema al 5.º intento |
 | GET | `/v1/yo` | 🔑 El `/me` de la guía: quién soy según el token | |
 
 La respuesta de `registro`, `iniciar` y `renovar` es la del `/login` de la guía, más la duración y
@@ -423,15 +426,33 @@ En un servidor real no se carga el seed: las familias se registran desde la app.
 
 ### 4.9 "¿Olvidaste tu contraseña?"
 
-El proyecto no manda correos. `POST /v1/sesion/recuperar` responde lo mismo exista o no el correo y,
-si existe, deja la solicitud en la `auditoria` (`sesion.recuperar_solicitada`). El equipo la ve con:
+Con un **código de un solo uso por correo**, como dice el anexo del reto ("con correo, hay un
+token de un solo uso"), en dos pasos (`routers/sesion.py`, `recuperacion.py`, migración V9):
 
-```bash
-docker compose exec db psql -U familias -d familias -c "select ocurrio_en, objeto_id from auditoria where accion = 'sesion.recuperar_solicitada' order by 1 desc"
-```
+1. `POST /v1/sesion/recuperar {correo}` → **202 siempre**. Si la cuenta existe, se genera un código
+   de 6 dígitos con `secrets` (generador criptográfico), se anulan los anteriores y se manda por
+   correo **después** de responder (la respuesta tarda lo mismo exista o no la cuenta).
+2. `POST /v1/sesion/restablecer {correo, codigo, contrasena}` → 204. La contraseña nueva pasa las
+   mismas reglas del registro; se guarda con Argon2id; `tokens_validos_desde` y `revocar_todas`
+   cierran **todas** las sesiones; se limpia el bloqueo por fuerza bruta y se manda un correo de
+   "tu contraseña cambió".
 
-y le pone una contraseña temporal (se escribe sin que se vea y no queda en el historial de la
-terminal; cierra las sesiones abiertas de esa cuenta):
+| Regla | Qué ataque cierra |
+|---|---|
+| Del código solo se guarda su **HMAC-SHA256** (con `HMAC_SECRETO`), no un SHA-256 a secas | Con la tabla robada, un millón de combinaciones se prueban en un segundo; sin la llave del HMAC, no |
+| Dura **15 minutos**, sirve **una vez** y se quema al **5.º intento** equivocado (5 de 1 000 000) | Adivinar el código (fuerza bruta) |
+| Máximo **3 códigos por hora** por cuenta y rate limit por IP en las dos rutas | Llenarle el buzón a alguien; adivinar pidiendo códigos sin fin |
+| Mismo 202 y mismo 400 exista o no la cuenta; el correo sale en segundo plano | Averiguar qué correos tienen cuenta (enumeración) |
+| Comparación en tiempo constante (`hmac.compare_digest`) y `SELECT … FOR UPDATE` | Medir tiempos; gastar el mismo código dos veces a la vez |
+| El correo no lleva enlaces, solo el código | Phishing con enlaces parecidos |
+
+**El correo:** en desarrollo es **Mailpit** (servicio `correo`), que recibe los correos y los
+enseña en `http://localhost:8025` sin mandarlos a nadie; la API le habla por la red interna `datos`.
+En producción se apunta `SMTP_HOST` a un proveedor real con `SMTP_TLS=true` (STARTTLS, puerto 587):
+la API se niega a arrancar si hay usuario SMTP sin TLS.
+
+La herramienta de antes sigue para el equipo (contraseña temporal escrita sin que se vea; cierra
+las sesiones de esa cuenta):
 
 ```bash
 docker compose exec -it api python -m app.herramientas contrasena ana.rodriguez@correo.com
@@ -511,6 +532,7 @@ La firma HMAC-SHA256 ya no coincide con el contenido alterado. Lo mismo prueba
   | `V5__sugerencias_y_privacidad.sql` | `sugerencias`, `solicitudes_eliminacion` |
   | `V6__api_completa.sql` | `ciudades`; cuentas con `auth0_sub` y **sin** `contrasena_hash` (la época de Auth0); todos los textos del sitio; `inscripcion_personas`; consentimiento de menores; opciones y puntos de entrega; `auditoria` |
   | **`V7__identidad_propia_jwt.sql`** | Vuelve `contrasena_hash` (**solo Argon2id**, con `CHECK`), `permisos` (solo los cuatro que existen), `tokens_validos_desde`; se va `auth0_sub` |
+  | **`V9__recuperacion_y_avisos.sql`** | `recuperaciones` (HMAC del código, vencimiento, usado, intentos) y `avisos` (urgencia o actividad nueva, ciudad o todas, título y texto) |
   | **`V8__sesiones_y_revision_de_testimonios.sql`** | `sesiones` (huella SHA-256 del refresh token, familia, vencimiento, usada, revocada); `testimonios.estado` (`pendiente`/`aprobado`/`rechazado`), `revisado_en`, `revisado_por`. Lo publicado antes queda aprobado |
 
 - **`afterMigrate.sql`** (callback de Flyway, corre después de cada `migrate`): crea el usuario
@@ -683,6 +705,7 @@ de 120/min por IP.
 | POST | `/v1/yo/invitaciones` | 60/h |
 | GET / POST | `/v1/yo/eliminacion` | POST: 3 por día |
 | POST | `/v1/sesion/cerrar` | |
+| GET | `/v1/avisos?desde=N` | Los de la ciudad de la cuenta y los generales, de los últimos 7 días |
 | GET | `/v1/yo/inscripciones` | |
 | PUT / DELETE | `/v1/yo/inscripciones/{actividad}` | 30/h |
 | GET | `/v1/yo/historial`, `/v1/yo/testimonios`, `/v1/yo/encuestas` | |
@@ -703,6 +726,7 @@ de 120/min por IP.
 | POST, PUT, DELETE | `/v1/admin/centros[/{id}]` | `administrar:catalogo` |
 | GET, PATCH | `/v1/admin/sugerencias[/{id}]` | `moderar:contenido` |
 | GET | `/v1/admin/testimonios?estado=pendiente` | `moderar:contenido` · la bandeja, lo más viejo primero |
+| POST / DELETE | `/v1/admin/avisos[/{id}]` | `administrar:catalogo` · una urgencia para una ciudad o para todas; se audita `aviso.crear` / `aviso.borrar` |
 | PATCH | `/v1/admin/testimonios/{id}` (`{"estado": "aprobado" \| "rechazado"}`) | `moderar:contenido` · se audita `testimonio.aprobado` / `testimonio.rechazado` |
 | GET | `/v1/admin/encuestas?actividad_id=` | `moderar:contenido` |
 | POST | `/v1/admin/asistencias` | `registrar:asistencias` |
@@ -1248,7 +1272,7 @@ certificado de la app. Nadie más puede "robarse" los enlaces.
 
 #### S-39 · Pruebas de seguridad automatizadas
 
-166 pruebas que atacan lo mismo que un atacante: §12.
+180 pruebas que atacan lo mismo que un atacante: §12.
 
 #### S-40 · Monitoreo continuo con alertas
 
@@ -1528,7 +1552,9 @@ sesión por HTTP se prueba aparte. **No existe un "modo de prueba" en el servido
 | `test_participacion.py` | 5 | Historial e impacto desde asistencias, encuestas, eliminación de datos |
 | `test_seguridad_http.py` | 11 | Encabezados, Host, tamaño, errores sin trazas, rate limit por flujo y **global**, IP falsificada, inventario interno, sin CORS, App Links |
 | `test_testimonios.py` | 6 | RF-12/HU-11: nace pendiente y no es público; aprobar publica; rechazado no; editar regresa a revisión; la foto en revisión solo la ven su autora y la moderación; solo `moderar:contenido` revisa; bandeja sin correos y auditoría |
-| **Total** | **166** | **166 aprobadas** |
+| `test_recuperacion.py` | 8 | RF-18: misma respuesta exista o no la cuenta; el código cambia la contraseña una sola vez y cierra las sesiones; se guarda como HMAC; 5 intentos lo queman; vencido no sirve; pedir otro anula el anterior y hay tope por hora; el de una cuenta no sirve en otra; contraseña débil o código raro no lo gastan |
+| `test_avisos.py` | 6 | RF-16/RF-22: sin sesión 401; cada familia recibe los de su ciudad y los generales; `desde`; solo `administrar:catalogo` crea y borra (auditado); validación; una actividad nueva genera su aviso |
+| **Total** | **180** | **180 aprobadas** |
 
 **Dos hallazgos reales durante la verificación** (por eso se prueba):
 
@@ -1635,7 +1661,7 @@ Reporte completo: [`backend/seguridad/zap/reporte-zap.html`](../backend/segurida
 ### 13.4 Lo que este escaneo no cubre (y cómo cubrirlo)
 
 - **La administración por dentro.** La cuenta de escaneo es una familia: las rutas de
-  `/v1/admin/…` se probaron en su 403, no en su lógica. Esa lógica está cubierta por las 166
+  `/v1/admin/…` se probaron en su 403, no en su lógica. Esa lógica está cubierta por las 180
   pruebas (§12). Para escanearla, se le darían permisos a la cuenta de escaneo con
   `python -m app.herramientas permisos <correo> todos` antes de pedir el token (a una base de
   desarrollo: ZAP crearía y borraría catálogo).
@@ -1708,7 +1734,8 @@ atacante"). Esto es lo que queda, dicho con claridad:
 |---|---|---|
 | El tramo `cloudflared → api` va en HTTP | Es dentro de la misma máquina, en una red de Docker aislada | mTLS entre el túnel y la API, o una malla de servicios |
 | La API usa las llaves de administración de RustFS | RustFS está en red interna y las claves de objeto las pone el servidor | Un usuario de RustFS con política limitada al bucket |
-| "¿Olvidaste tu contraseña?" la atiende una persona | El proyecto no tiene servidor de correo | Enviar un enlace de un solo uso por correo (token aleatorio con vencimiento, guardado como hash) |
+| El correo de desarrollo es Mailpit: no llega a buzones reales | Para el reto basta demostrar el flujo; un proveedor real pide cuenta y dominio | `SMTP_*` de un proveedor con STARTTLS (ya soportado) |
+| Los avisos tardan hasta 15 minutos y Android puede retrasarlos (Doze) | Sin Firebase no hay push con la app cerrada (Práctica 8 de startdroid) | FCM o UnifiedPush si un aviso tuviera que llegar al instante |
 | HS256: el mismo secreto firma y verifica | Solo la API firma y verifica; el secreto vive solo en su entorno | RS256/EdDSA si otro servicio tuviera que verificar tokens sin poder firmarlos |
 | Un JWT robado sirve hasta 15 min (o hasta "Cerrar sesión") | Es el costo de los tokens sin estado; un refresh robado se detecta al reusarse (§4.3) | DPoP (abajo) |
 | Con Quick Tunnel la dirección cambia | No hay dominio todavía | Dominio propio (§10.3) |

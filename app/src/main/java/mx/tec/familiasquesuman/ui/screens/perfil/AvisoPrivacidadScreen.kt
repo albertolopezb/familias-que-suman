@@ -111,10 +111,11 @@ fun AvisoPrivacidadScreen(
                     "No pedimos datos sensibles (salud, religión, origen, preferencias, datos financieros ni biométricos).",
                 IconoDatosPrivacidad)
             TarjetaPrivacidad("3. Para qué los usamos",
-                "Necesarias para el servicio: crear tu cuenta e identificarte, inscribirte a actividades, avisar a quien organiza cuántas " +
+                "Necesarias para el servicio: crear tu cuenta e identificarte, mandarte a tu correo el código para cambiar tu contraseña " +
+                    "cuando lo pides, inscribirte a actividades, avisar a quien organiza cuántas " +
                     "personas van y de qué edades, registrar tu asistencia y armar tu historial, y proteger la app contra abusos.\n" +
                     "Voluntarias (solo si tú las usas): publicar tu testimonio, contestar encuestas para mejorar las actividades, " +
-                    "recibir recordatorios y mandar sugerencias. No usamos tus datos para publicidad.",
+                    "recibir recordatorios y avisos de tu ciudad y mandar sugerencias. No usamos tus datos para publicidad.",
                 Icons.Outlined.Info)
             TarjetaPrivacidad("4. Cómo limitar su uso",
                 "En Ajustes apagas los recordatorios y avisos. Testimonios, encuestas, sugerencias y foto de perfil son opcionales y puedes " +
@@ -123,7 +124,8 @@ fun AvisoPrivacidadScreen(
             TarjetaPrivacidad("Quién más los ve",
                 "El equipo de Familias que Suman que lo necesita para su trabajo (por ejemplo, quien registra la asistencia) y, " +
                     "solo para coordinar una actividad, la institución que la organiza: recibe lo indispensable, como los nombres y " +
-                    "edades de quienes van. No vendemos tus datos ni los usamos para publicidad. Para que la app llegue al servidor " +
+                    "edades de quienes van. No vendemos tus datos ni los usamos para publicidad. Para mandar el código de tu contraseña " +
+                    "usamos un servicio de correo, que solo recibe tu dirección y ese mensaje. Para que la app llegue al servidor " +
                     "de forma cifrada usamos Cloudflare, " +
                     "que actúa como encargado y no los usa para nada más. Solo los entregaríamos a una autoridad que los pida conforme a la ley.",
                 IconoVisibilidadPrivacidad)
