@@ -26,6 +26,7 @@ from ..modelos import (
     Actividad, Asistencia, Asociacion, ArticuloMeta, Campana, Centro, Ciudad, Cuenta, FormaApoyo, Inscripcion,
     OpcionDonacion, Proyecto, PuntoEntrega, SolicitudEliminacion, Sugerencia, Testimonio,
 )
+from .avisos import aviso_de_actividad_nueva
 from .cuenta import solicitud_salida
 
 router = APIRouter(prefix="/v1/admin", tags=["Administración"])
@@ -121,6 +122,7 @@ def crear_actividad(request: Request, d: e.ActividadEntrada, s: Sujeto = Depends
     _aplicar_actividad(db, a, d)
     db.add(a)
     db.flush()
+    aviso_de_actividad_nueva(db, a.id, a.titulo, a.ciudad, s.cuenta_id)
     auditar(db, "actividad.crear", "actividad", a.id, s.cuenta_id, ip=request.state.ip_cliente)
     db.commit()
     db.refresh(a)

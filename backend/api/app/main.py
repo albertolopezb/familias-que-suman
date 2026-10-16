@@ -20,7 +20,7 @@ from . import almacen, bitacora, errores, metricas
 from .config import ajustes
 from .errores import ApiError
 from .limites import LimiteGlobal, limitador
-from .routers import admin, aportaciones, catalogo, cuenta, enlaces, inscripciones, participacion, salud, sesion, sugerencias
+from .routers import admin, aportaciones, avisos, catalogo, cuenta, enlaces, inscripciones, participacion, salud, sesion, sugerencias
 from .seguridad import CapturarErrores, EncabezadosSeguridad, HostValido, LimiteCuerpo, Registro
 
 log = logging.getLogger("familias")
@@ -63,7 +63,7 @@ app.add_middleware(Registro)
 # Sin CORSMiddleware a propósito: la API la usa una app nativa, no un sitio web. Sin CORS, el
 # navegador no deja que una página ajena llame a la API con los datos de quien la visita.
 
-for modulo in (salud, sesion, catalogo, enlaces, cuenta, inscripciones, participacion, aportaciones, sugerencias, admin):
+for modulo in (salud, sesion, catalogo, enlaces, cuenta, inscripciones, participacion, aportaciones, sugerencias, avisos, admin):
     app.include_router(modulo.router)
 
 

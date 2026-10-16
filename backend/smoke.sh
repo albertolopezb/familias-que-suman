@@ -9,7 +9,7 @@
 # Solo necesita bash y curl (Git Bash en Windows). Usa la cuenta admin@correo.com del seed.
 #
 # Ojo, los límites también se prueban aquí: el registro acepta 10 por hora por IP y el inicio de
-# sesión 10 por minuto. Si lo corres muchas veces seguidas, algún paso puede dar 429: es el rate
+# sesión 10 por minuto, y "¿olvidaste tu contraseña?" 5 por hora. Si lo corres muchas veces seguidas, algún paso puede dar 429: es el rate
 # limit funcionando. Espera un minuto (o una hora para el registro) y vuelve a correrlo.
 
 set -u
@@ -115,6 +115,14 @@ pedir POST /v1/sesion/renovar "" "{\"refresh_token\":\"$REFRESH\"}"
 revisar "Tras el reuso, el refresh bueno tampoco sirve" 401 "sesion_cerrada"
 pedir POST /v1/sesion/cerrar "$FAMILIA";               revisar "Cerrar sesión: 204" 204
 pedir GET /v1/yo "$FAMILIA";                           revisar "El token cerrado ya no sirve: 401" 401 "sesion_cerrada"
+
+echo "Recuperar la contraseña y avisos"
+pedir POST /v1/sesion/recuperar "" "{\"correo\":\"nadie-$RANDOM@pruebas.mx\"}"
+revisar "Recuperar: 202 aunque el correo no exista (sin enumeración)" 202
+pedir POST /v1/sesion/restablecer "" "{\"correo\":\"$CORREO\",\"codigo\":\"000000\",\"contrasena\":\"$CONTRASENA nueva\"}"
+revisar "Código que nadie pidió: 400" 400 "codigo_invalido"
+pedir GET /v1/avisos;                                  revisar "Avisos sin token: 401" 401
+pedir GET /v1/avisos "$ADMIN";                         revisar "Avisos con token: 200" 200
 
 echo "Fuerza bruta"
 for _ in 1 2 3 4 5; do pedir POST /v1/sesion/iniciar "" "{\"correo\":\"$CORREO\",\"contrasena\":\"adivinando\"}"; done
