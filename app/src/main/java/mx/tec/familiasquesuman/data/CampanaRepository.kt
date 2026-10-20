@@ -32,7 +32,7 @@ class CampanaRepository {
     suspend fun getCampana(id: String): Campana = try {
         CatalogoLocal.conRespaldo("campana/$id", CampanaDto.serializer()) { llamar { campana(id) } }.aDominio()
     } catch (e: ApiExcepcion) {
-        if (e.sinConexion) {
+        if (e.sinServidor) {
             CatalogoLocal.leer(CLAVE_CAMPANAS, ListSerializer(CampanaDto.serializer()))
                 ?.firstOrNull { it.id == id }?.let { return it.aDominio() }
         }

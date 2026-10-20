@@ -82,8 +82,9 @@ object CatalogoLocal {
 
     /**
      * Pide [red] a la API y guarda la respuesta bajo [clave]. Si no hay conexión, regresa lo último
-     * guardado (y lo avisa en [mostrandoGuardado]); si nunca se guardó, deja pasar el error.
-     * Los errores del servidor (404, 422…) no se tapan con lo guardado: se ven tal cual.
+     * guardado (y lo avisa en [mostrandoGuardado]); si nunca se guardó, deja pasar el error. Lo
+     * mismo si el servidor está caído (5xx). Las respuestas de "no" del servidor (404, 422…) no se
+     * tapan con lo guardado: se ven tal cual.
      */
     suspend fun <T> conRespaldo(clave: String, serializador: KSerializer<T>, red: suspend () -> T): T {
         val tabla = dao
@@ -97,7 +98,9 @@ object CatalogoLocal {
         } catch (e: CancellationException) {
             throw e
         } catch (e: ApiExcepcion) {
-            if (!e.sinConexion) throw e
+            // Sin internet, o el servidor no responde (502/503/504 del túnel cuando la API está
+            // caída): se enseña lo guardado. Un 4xx (no existe, datos inválidos) se ve tal cual.
+            if (!e.sinServidor) throw e
             leer(clave, serializador) ?: throw e
         }
     }

@@ -1,0 +1,9 @@
+Pruebas instrumentadas (Compose UI Test) · ./gradlew :app:connectedDebugAndroidTest
+Dispositivo físico: Samsung SM-S947B, Android 16 (API 36), por depuración inalámbrica · 2026-10-20 01:33
+
+DonarNavegacionUiTest.donarDesdeBarraInferiorYBackRegresaAInicioSinDestinosDeFiltros PASSED
+TengoAlgoParaDonarUiTest.cambiarModoConservaEstadoDeCentrosYEstadoDeCampanas PASSED
+TengoAlgoParaDonarUiTest.filtrosExpansionYAccionesEntreganLosDatosOriginales PASSED
+TengoAlgoParaDonarUiTest.loadingErrorReintentoYEmptyTienenRepresentacionSeparada PASSED
+
+4 de 4 pasaron.

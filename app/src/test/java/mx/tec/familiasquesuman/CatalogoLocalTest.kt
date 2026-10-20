@@ -88,4 +88,14 @@ class CatalogoLocalTest {
             assertEquals(404, e.estado)
         }
     }
+
+    @Test
+    fun con_el_servidor_caido_tambien_sale_lo_guardado() = runBlocking {
+        CatalogoLocal.conRespaldo("proyectos", lista) { listOf("Bibliotecas Infantiles") }
+
+        val r = CatalogoLocal.conRespaldo("proyectos", lista) { throw ApiExcepcion(502, "http_502", "Bad gateway") }
+
+        assertEquals(listOf("Bibliotecas Infantiles"), r)
+        assertNotNull(CatalogoLocal.mostrandoGuardado.value)
+    }
 }

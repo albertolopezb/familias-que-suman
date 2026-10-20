@@ -58,7 +58,7 @@ class ActividadRepository {
         ActividadConAsociacion(dto.aDominio(), dto.asociacion.aDominio())
     } catch (e: ApiExcepcion) {
         // Sin conexión y sin esa ficha guardada: puede venir en la última lista guardada.
-        if (e.sinConexion) {
+        if (e.sinServidor) {
             CatalogoLocal.leer(CLAVE_ACTIVIDADES, ListSerializer(ActividadDto.serializer()))
                 ?.firstOrNull { it.id == id }
                 ?.let { return ActividadConAsociacion(it.aDominio(), it.asociacion.aDominio()) }
@@ -85,7 +85,7 @@ class ActividadRepository {
     suspend fun getAsociacion(id: String): Asociacion = try {
         CatalogoLocal.conRespaldo("asociacion/$id", AsociacionDto.serializer()) { llamar { asociacion(id) } }.aDominio()
     } catch (e: ApiExcepcion) {
-        if (!e.sinConexion) throw e
+        if (!e.sinServidor) throw e
         CatalogoLocal.leer(CLAVE_TODAS, ListSerializer(AsociacionDto.serializer()))
             ?.firstOrNull { it.id == id }?.aDominio() ?: throw e
     }

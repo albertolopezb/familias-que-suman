@@ -30,6 +30,8 @@ class ApiExcepcion(
     val datos: JsonObject? = null
 ) : Exception(message) {
     val sinConexion: Boolean get() = estado == 0
+    /** Sin internet, o el servidor caído (502/503/504 del túnel): lo guardado sirve igual. */
+    val sinServidor: Boolean get() = sinConexion || estado in 500..599
     fun datoEntero(nombre: String): Int? = datos?.get(nombre)?.jsonPrimitive?.intOrNull
 }
 
