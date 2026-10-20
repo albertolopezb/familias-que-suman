@@ -21,7 +21,8 @@ arma con estas secciones; aquí viven versionadas junto al código que describen
 | Archivo | Qué es |
 |---|---|
 | [`../evidencia/pytest-servidor.txt`](../evidencia/pytest-servidor.txt) | Las 182 pruebas del servidor, una por línea |
-| [`../evidencia/pruebas-app.txt`](../evidencia/pruebas-app.txt) | Las 56 pruebas locales de la app |
+| [`../evidencia/pruebas-app.txt`](../evidencia/pruebas-app.txt) | Las 60 pruebas locales de la app |
+| [`../evidencia/pruebas-instrumentadas.txt`](../evidencia/pruebas-instrumentadas.txt) | Las 4 pruebas de interfaz, corridas en el teléfono físico |
 | [`../evidencia/smoke.txt`](../evidencia/smoke.txt) | Prueba de contrato (35 casos) |
 | [`../evidencia/secretos.txt`](../evidencia/secretos.txt) | Búsqueda de secretos en todo el historial (gitleaks) |
 | [`../../backend/seguridad/zap/`](../../backend/seguridad/zap/) | Reportes de OWASP ZAP (HTML, Markdown, JSON) |
