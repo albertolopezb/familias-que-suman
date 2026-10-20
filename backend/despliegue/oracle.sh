@@ -28,7 +28,7 @@ echo "1/6 Docker en la VM…"
 "${SSH[@]}" 'command -v docker >/dev/null || { sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq docker.io docker-compose-v2 >/dev/null && true; }; sudo systemctl enable --now docker >/dev/null'
 
 echo "2/6 Código (commit $(git rev-parse --short HEAD))…"
-git archive --format=tar HEAD backend | "${SSH[@]}" 'mkdir -p ~/familias && tar -x -C ~/familias'
+git -c core.autocrlf=false archive --format=tar HEAD backend | "${SSH[@]}" 'mkdir -p ~/familias && tar -x -C ~/familias'
 
 echo "3/6 Secretos de producción (solo la primera vez)…"
 # La huella del certificado con que se firma el APK: App Links (assetlinks.json) solo la acepta a ella.
