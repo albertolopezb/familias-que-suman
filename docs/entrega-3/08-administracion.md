@@ -9,12 +9,14 @@ entrega). Captura del tablero final en la sección 10.
 |---|---|---|---|---|
 | Requerimientos funcionales (RF-01 a RF-28) | 28 | 28 | 0 | 0 |
 | Compromiso del acta: fichas sin conexión (ACTA-01) | 1 | 1 | 0 | 0 |
-| Requerimientos no funcionales (RNF-01 a RNF-07) | 7 | 4 + los que pasen en el teléfono | RNF-05 (no se probó en Android 10 exacto) | 0 |
+| Requerimientos no funcionales (RNF-01 a RNF-07) | 7 | 5 (RNF-01, 02, 04, 06 y 07) | 2: RNF-03 (cumple en el código; la rotación se demuestra en la presentación) y RNF-05 (no se probó en Android 10 exacto) | 0 |
 | Historias de usuario (HU-01 a HU-14) | 14 | 14 | 0 | 0 |
 | Tareas técnicas (TT-01 a TT-16) | 16 | 16 | 0 | 0 |
 
-El estado de cada uno, con su prueba, está en la matriz de trazabilidad (§3). RNF-01 y RNF-07 (tiempos
-en el teléfono) se miden con el APK de entrega en el dispositivo físico.
+El estado de cada uno, con su prueba, está en la matriz de trazabilidad (§3). RNF-01 y RNF-07 se
+midieron el 20 de octubre con el APK de entrega en un Samsung con Android 16, contra el servidor de
+Azure: arranque en frío de 117 ms en promedio (meta 1.5 s) y confirmación de inscripción en ~0.2 s
+(meta 2 s).
 
 **Ajustes al backlog durante el proyecto:**
 
