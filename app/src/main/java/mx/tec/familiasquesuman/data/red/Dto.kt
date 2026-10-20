@@ -349,9 +349,22 @@ data class SugerenciaDto(
 data class EstadoSugerenciaCuerpo(val estado: String)
 
 @Serializable
-data class SolicitudEliminacionDto(val id: String, val folio: String, val estado: String, val creadaEn: String)
+/** [correo] solo llega en la bandeja de la administración (para poder avisarle a la familia). */
+data class SolicitudEliminacionDto(val id: String, val folio: String, val estado: String, val creadaEn: String, val correo: String? = null)
 
 // ─── Administración ─────────────────────────────────────────────────────────
+
+/** RF-06: una familia inscrita y quiénes van (sin correo: lo que la asociación necesita y nada más). */
+@Serializable
+data class InscritoDto(
+    val cuentaId: String,
+    val familia: String,
+    val personas: Int,
+    val integrantes: List<String>,
+    val hayMenores: Boolean,
+    val asistenciaRegistrada: Boolean,
+    val inscritaEn: String
+)
 
 @Serializable
 data class AsociacionCuerpo(

@@ -1,11 +1,9 @@
 package mx.tec.familiasquesuman.ui.screens.perfil
 
+import mx.tec.familiasquesuman.ui.components.rememberElegirFoto
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -68,6 +66,7 @@ object RutasPerfil {
     const val AVISO_PRIVACIDAD = "perfil/aviso_privacidad"
     const val AJUSTES = "perfil/ajustes"
     const val NOTIFICACIONES = "perfil/notificaciones"
+    const val SOLICITUDES_ELIMINACION = "perfil/solicitudes_eliminacion"
     fun testimonio(participacionId: String) = "perfil/testimonio/${Uri.encode(participacionId)}"
     fun encuestaFinal(participacionId: String, titulo: String) =
         "perfil/encuesta_final/${Uri.encode(participacionId)}?titulo=${Uri.encode(titulo)}"
@@ -174,6 +173,17 @@ fun NavGraphBuilder.grafoPerfil(
             onRegresar = { nav.popBackStack() }
         )
     }
+    composable(RutasPerfil.SOLICITUDES_ELIMINACION) {
+        val vm: SolicitudesEliminacionViewModel = viewModel(factory = AppViewModelProvider.Factory)
+        val estado by vm.estado.collectAsStateWithLifecycle()
+        val mensaje by vm.mensaje.collectAsStateWithLifecycle()
+        LaunchedEffect(Unit) { vm.cargar() }
+        SolicitudesEliminacionScreen(
+            estado = estado, mensaje = mensaje,
+            onAtender = vm::atender, onMensajeVisto = vm::mensajeVisto,
+            onReintentar = vm::cargar, onRegresar = { nav.popBackStack() }
+        )
+    }
     composable(RutasPerfil.AJUSTES) {
         val vm: AjustesViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val ciudad by vm.ciudad.collectAsStateWithLifecycle()
@@ -239,12 +249,12 @@ fun NavGraphBuilder.grafoPerfil(
         val sesion by cuentaViewModel().sesion.collectAsStateWithLifecycle()
         val correo = sesion?.correo
         LaunchedEffect(id, correo) { vm.cargar(id, correo) }
-        val selector = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia(), vm::seleccionarFoto)
+        val elegirFoto = rememberElegirFoto(vm::seleccionarFoto)   // galería o cámara
         TestimonioScreen(
             actividad = participacion, formulario = formulario, existente = existente,
             onVolver = { nav.popBackStack() }, onReintentar = { vm.cargar(id, correo) },
             onExperienciaChange = vm::cambiarExperiencia,
-            onAgregarFoto = { selector.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+            onAgregarFoto = elegirFoto,
             onEnviar = { sesion?.let { vm.publicar(id, it.correo, it.familia) } },
             onEliminar = { sesion?.let { s -> vm.eliminar(s.correo) { nav.popBackStack() } } }
         )
@@ -294,7 +304,7 @@ fun NavGraphBuilder.grafoPerfil(
                 onCerrar = { mostrandoAviso = false }
             )
         }
-        val selectorFoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia(), cuentaVm::cambiarFoto)
+        val elegirFotoPerfil = rememberElegirFoto(cuentaVm::cambiarFoto)   // galería o cámara
 
         // Quién es (y si es admin) lo dice el servidor, no el correo.
         val usuarioCalculado = sesionActual.comoUsuario()
@@ -314,12 +324,13 @@ fun NavGraphBuilder.grafoPerfil(
             onEnviarAviso = { mostrandoAviso = true },
             onTestimoniosClick = { nav.navigate(RutasInicio.TESTIMONIOS) { launchSingleTop = true } },
             onRespuestasClick = { nav.navigate(RutasPerfil.respuestas()) { launchSingleTop = true } },
+            onSolicitudesEliminacionClick = { nav.navigate(RutasPerfil.SOLICITUDES_ELIMINACION) { launchSingleTop = true } },
             onRegresar = { nav.popBackStack() },
             familiares = familiares,
             onAgregarFamiliar = cuentaVm::agregarFamiliar,
             onQuitarFamiliar = cuentaVm::quitarFamiliar,
             foto = foto,
-            onCambiarFoto = { selectorFoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+            onCambiarFoto = elegirFotoPerfil,
             onQuitarFoto = cuentaVm::quitarFoto,
             proximas = proximas,
             onProximaClick = { id -> nav.navigate(RutasActividades.detalle(id)) },

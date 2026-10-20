@@ -87,5 +87,5 @@ fun CancelarScreen(
 @Preview(showBackground = true, heightDp = 780, name = "P-20 · Cancelar inscripción")
 @Composable
 private fun CancelarPreview() {
-    FamiliasQueSumanTheme { CancelarScreen(3, CuentaDePrueba.FALTA_PARA_ACTIVIDAD, false, {}, {}, conVelo = true) }
+    FamiliasQueSumanTheme { CancelarScreen(3, "Faltan 3 días para la actividad, todavía estás a tiempo.", false, {}, {}, conVelo = true) }
 }

@@ -105,7 +105,7 @@ fun IniciarSesionScreen(
 private fun IniciarSesionPreview() {
     FamiliasQueSumanTheme {
         IniciarSesionScreen(
-            IniciarSesionUi("ana.rodriguez@correo.com", "familia123"),
+            IniciarSesionUi("ana.rodriguez@correo.com", "ejemplo-de-vista-previa"),
             "Preparar despensas de fin de mes · Sáb 12 sep",
             {}, {}, {}, {}, {}, {}
         )

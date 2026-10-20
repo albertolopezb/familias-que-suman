@@ -112,7 +112,7 @@ private fun CampoTextoPreview() {
         Column {
             CampoTexto("Correo", "ana.rodriguez@correo", {}, error = "Escribe un correo válido, por ejemplo familia@correo.com")
             Spacer(Modifier.height(12.dp))
-            CampoTexto("Contraseña", "familia123", {}, esContrasena = true)
+            CampoTexto("Contraseña", "ejemplo-de-vista-previa", {}, esContrasena = true)
         }
     }
 }

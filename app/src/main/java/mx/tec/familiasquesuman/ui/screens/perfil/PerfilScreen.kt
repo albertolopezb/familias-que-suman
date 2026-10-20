@@ -1,5 +1,7 @@
 package mx.tec.familiasquesuman.ui.screens.perfil
 
+import androidx.compose.material.icons.outlined.Delete
+import mx.tec.familiasquesuman.BuildConfig
 import mx.tec.familiasquesuman.ui.components.BarraSuperior
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
@@ -89,6 +91,7 @@ fun PerfilScreen(
     onRegresar: (() -> Unit)? = null,
     onTestimoniosClick: () -> Unit = {},
     onRespuestasClick: () -> Unit = {},
+    onSolicitudesEliminacionClick: () -> Unit = {},
     familiares: List<Acompanante> = emptyList(),
     onAgregarFamiliar: (Acompanante) -> Unit = {},
     onQuitarFamiliar: (Acompanante) -> Unit = {},
@@ -120,6 +123,7 @@ fun PerfilScreen(
                 onEnviarAviso = onEnviarAviso,
                 onTestimoniosClick = onTestimoniosClick,
                 onRespuestasClick = onRespuestasClick,
+                onSolicitudesEliminacionClick = onSolicitudesEliminacionClick,
                 familiares = familiares,
                 onAgregarFamiliar = onAgregarFamiliar,
                 onQuitarFamiliar = onQuitarFamiliar,
@@ -151,6 +155,7 @@ private fun ContenidoPerfil(
     onEnviarAviso: () -> Unit,
     onTestimoniosClick: () -> Unit,
     onRespuestasClick: () -> Unit,
+    onSolicitudesEliminacionClick: () -> Unit,
     familiares: List<Acompanante>,
     onAgregarFamiliar: (Acompanante) -> Unit,
     onQuitarFamiliar: (Acompanante) -> Unit,
@@ -240,6 +245,10 @@ private fun ContenidoPerfil(
                     true, Modifier.weight(1f)
                 )
             }
+            AccesoPerfil(
+                "Solicitudes de eliminación de datos", Icons.Outlined.Delete, onSolicitudesEliminacionClick,
+                true, Modifier.fillMaxWidth()
+            )
         } else {
             // --- VISTA DETALLADA DE LA FAMILIA ---
             EtiquetaSeccion("TU IMPACTO")
@@ -294,7 +303,9 @@ private fun ContenidoPerfil(
             )
         }
 
-        ProbarNotificaciones()
+        // Para probar las notificaciones sin esperar: en la versión de depuración, y en la de
+        // entrega solo para la administración (la demostración). Una familia no ve botones de prueba.
+        if (BuildConfig.DEBUG || usuarioActual.esAdmin) ProbarNotificaciones()
     }
 }
 

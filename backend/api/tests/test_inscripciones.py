@@ -101,3 +101,30 @@ def test_no_se_cancela_a_menos_de_12_horas(cliente, familia, crear_actividad):
     assert cliente.put(f"/v1/yo/inscripciones/{actividad['id']}", headers=familia.headers, json={"acompanantes": []}).status_code == 200
     r = cliente.delete(f"/v1/yo/inscripciones/{actividad['id']}", headers=familia.headers)
     assert r.status_code == 409 and r.json()["codigo"] == "fuera_de_plazo"
+
+
+def test_quien_registra_asistencias_ve_quienes_van_sin_correos(cliente, familia, otra_familia, nueva_persona, crear_actividad):
+    """RF-06: la asociación recibe la lista con lo que necesita para organizarse, y nada más."""
+    actividad = crear_actividad(cupo=10)
+    assert _inscribir(cliente, familia, actividad["id"], [("Mateo Pérez", 9)], consentimiento=True).status_code == 200
+    assert _inscribir(cliente, otra_familia, actividad["id"]).status_code == 200
+    assert cliente.delete(f"/v1/yo/inscripciones/{actividad['id']}", headers=otra_familia.headers).status_code == 200
+
+    asistencias = nueva_persona("registrar:asistencias", nombre="Registro")
+    r = cliente.get(f"/v1/admin/actividades/{actividad['id']}/inscritos", headers=asistencias.headers)
+
+    assert r.status_code == 200, r.text
+    lista = r.json()
+    assert len(lista) == 1                                  # la que canceló ya no aparece
+    assert lista[0]["personas"] == 2
+    assert "Mateo Pérez (9 años)" in lista[0]["integrantes"]
+    assert lista[0]["hay_menores"] is True
+    assert "@" not in r.text                                # ni un correo
+
+
+def test_una_familia_o_el_admin_del_catalogo_no_ven_quienes_van(cliente, familia, nueva_persona, crear_actividad):
+    actividad = crear_actividad()
+    catalogo = nueva_persona("administrar:catalogo", nombre="Catálogo")
+    for persona in (familia, catalogo):
+        r = cliente.get(f"/v1/admin/actividades/{actividad['id']}/inscritos", headers=persona.headers)
+        assert r.status_code == 403

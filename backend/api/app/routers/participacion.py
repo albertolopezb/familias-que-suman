@@ -23,7 +23,7 @@ from ..identidad import MODERAR_CONTENIDO, REGISTRAR_ASISTENCIAS, Sujeto, requie
 from ..limites import limitador, por_cuenta
 from ..modelos import Actividad, Asistencia, Cuenta, Inscripcion, RespuestaEncuesta, Testimonio
 from .catalogo import testimonio_salida
-from .cuenta import leer_subida
+from .cuenta import edad, leer_subida
 
 router = APIRouter(prefix="/v1", tags=["Participación"])
 
@@ -269,3 +269,38 @@ def registrar_asistencia(request: Request, datos: e.AsistenciaEntrada,
     auditar(db, "asistencia.registrar", "asistencia", f"{datos.cuenta_id}:{datos.actividad_id}", sujeto.cuenta_id, ip=request.state.ip_cliente)
     db.commit()
     return db.scalar(select(Asistencia).where(Asistencia.cuenta_id == datos.cuenta_id, Asistencia.actividad_id == datos.actividad_id))
+
+
+@router.get("/admin/actividades/{actividad_id}/inscritos", response_model=list[e.InscritoSalida], tags=["Administración"])
+@limitador.limit(limites.ADMIN, key_func=por_cuenta)
+def inscritos(request: Request, actividad_id: uuid.UUID,
+              sujeto: Sujeto = Depends(requiere(REGISTRAR_ASISTENCIAS)), db: Session = Depends(obtener_db)):
+    """RF-06: quiénes van a una actividad, para que la asociación sepa a quién esperar y registre
+    la asistencia. Lo ve quien registra asistencias (el mismo permiso), no cualquier admin del
+    catálogo. Son datos de familias y de menores: cada consulta queda en la auditoría."""
+    actividad = db.get(Actividad, actividad_id)
+    if actividad is None:
+        raise no_encontrado("Esa actividad")
+    filas = db.execute(
+        select(Inscripcion, Cuenta)
+        .join(Cuenta, Inscripcion.cuenta_id == Cuenta.id)
+        .where(Inscripcion.actividad_id == actividad_id, Inscripcion.cancelada_en.is_(None))
+        .order_by(Inscripcion.creada_en)
+    ).all()
+    asistieron = set(db.scalars(select(Asistencia.cuenta_id).where(Asistencia.actividad_id == actividad_id)))
+    salida = []
+    for inscripcion, cuenta in filas:
+        titular = cuenta.titular_nombre or cuenta.nombre_familia
+        acompanantes = [(p.nombre, edad(p.fecha_nacimiento, p.edad)) for p in inscripcion.integrantes]
+        salida.append(e.InscritoSalida(
+            cuenta_id=cuenta.id,
+            familia=cuenta.nombre_familia,
+            personas=inscripcion.personas,
+            integrantes=[titular] + [f"{n} ({a} años)" if a is not None else n for n, a in acompanantes],
+            hay_menores=any(a is not None and a < 18 for _, a in acompanantes),
+            asistencia_registrada=cuenta.id in asistieron,
+            inscrita_en=inscripcion.creada_en,
+        ))
+    auditar(db, "inscritos.consultar", "actividad", actividad_id, sujeto.cuenta_id, {"familias": len(salida)}, request.state.ip_cliente)
+    db.commit()
+    return salida

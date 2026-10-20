@@ -1,5 +1,8 @@
 package mx.tec.familiasquesuman.ui.screens.actividades
 
+import androidx.compose.material.icons.outlined.Person
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import mx.tec.familiasquesuman.data.local.CatalogoLocal
 import mx.tec.familiasquesuman.ui.components.ubicacionValida
 import mx.tec.familiasquesuman.ui.components.CampoUbicacion
 import mx.tec.familiasquesuman.domain.coordenadaDeTexto
@@ -70,6 +73,7 @@ fun ActividadesScreen(
     onDuplicarActividad: (String) -> Unit = {},
     onEditarActividad: (String) -> Unit = {},
     onBorrarActividad: (String) -> Unit = {},
+    onVerInscritos: (String) -> Unit = {},
     onSugerir: () -> Unit = {},
     /** "Cerca de mí": la ubicación aproximada, solo en el teléfono (ver CercaDeMi.kt). null = por fecha. */
     cercaDeMi: Coordenada? = null,
@@ -160,7 +164,8 @@ fun ActividadesScreen(
                             onCompartir = onCompartir,
                             onDuplicarActividad = onDuplicarActividad,
                             onEditarActividad = onEditarActividad,
-                            onBorrarActividad = onBorrarActividad
+                            onBorrarActividad = onBorrarActividad,
+                            onVerInscritos = onVerInscritos
                         )
 
                         if (pasadas.isNotEmpty()) {
@@ -181,6 +186,7 @@ fun ActividadesScreen(
                                 onDuplicarActividad = onDuplicarActividad,
                                 onEditarActividad = onEditarActividad,
                                 onBorrarActividad = onBorrarActividad,
+                                onVerInscritos = onVerInscritos,
                                 separacion = 12,
                                 opacidad = 0.6f
                             )
@@ -366,13 +372,17 @@ private fun LazyListScope.tarjetasAdmin(
     onDuplicarActividad: (String) -> Unit,
     onEditarActividad: (String) -> Unit,
     onBorrarActividad: (String) -> Unit,
+    onVerInscritos: (String) -> Unit = {},
     separacion: Int = 16,
     opacidad: Float = 1f
 ) {
     items(actividades, key = { it.actividad.id }) { item ->
+        // Lo guardado en el teléfono no sabe cuántos lugares quedan ahorita: no se presume.
+        val guardado by CatalogoLocal.mostrandoGuardado.collectAsStateWithLifecycle()
         Column(modifier = Modifier.padding(bottom = separacion.dp)) {
             TarjetaActividad(
                 item = item,
+                cupoEnVivo = guardado == null,
                 onClick = { onActividadClick(item.actividad.id) },
                 onUnirme = { onUnirme(item.actividad.id) },
                 onCompartir = { onCompartir(item) },
@@ -388,6 +398,15 @@ private fun LazyListScope.tarjetasAdmin(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Quiénes van (RF-06): para saber a quién esperar y registrar la asistencia.
+                    IconButton(onClick = { onVerInscritos(item.actividad.id) }) {
+                        Icon(
+                            imageVector = Icons.Outlined.Person,
+                            contentDescription = "Ver quiénes van",
+                            tint = Web.Primario
+                        )
+                    }
+
                     // Ícono de Duplicar (al lado del lápiz)
                     IconButton(onClick = { onDuplicarActividad(item.actividad.id) }) {
                         Icon(

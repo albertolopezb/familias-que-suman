@@ -671,6 +671,19 @@ class AsistenciaEntrada(Entrada):
     actividad_id: uuid.UUID
 
 
+class InscritoSalida(BaseModel):
+    """Una familia inscrita a una actividad, con quienes van. Sin correo ni teléfono: a quien
+    organiza le basta saber a quién esperar (minimización, LFPDPPP)."""
+
+    cuenta_id: uuid.UUID
+    familia: str
+    personas: int
+    integrantes: list[str]
+    hay_menores: bool
+    asistencia_registrada: bool
+    inscrita_en: datetime
+
+
 class AsistenciaSalida(Salida):
     id: uuid.UUID
     cuenta_id: uuid.UUID

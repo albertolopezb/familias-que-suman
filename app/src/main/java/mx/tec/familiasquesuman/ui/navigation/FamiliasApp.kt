@@ -67,6 +67,8 @@ import mx.tec.familiasquesuman.ui.theme.AzulEncabezado
 import androidx.compose.runtime.MutableState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.tec.familiasquesuman.domain.Usuario
+import mx.tec.familiasquesuman.data.local.CatalogoLocal
+import mx.tec.familiasquesuman.ui.components.AvisoSinConexion
 import mx.tec.familiasquesuman.ui.screens.campanas.RutasCampanas
 import mx.tec.familiasquesuman.ui.screens.campanas.grafoCampanas
 import mx.tec.familiasquesuman.ui.screens.inicio.RutasInicio
@@ -100,6 +102,7 @@ fun FamiliasApp() {
     // Quién es y si es admin lo dice el SERVIDOR (permisos firmados en el token). La app solo lo
     // usa para enseñar u ocultar botones; cada acción de admin la vuelve a revisar la API.
     val usuarioActual = sesion.comoUsuario()
+    val guardadoEn by CatalogoLocal.mostrandoGuardado.collectAsStateWithLifecycle()
 
     val abrirConSesion: (String) -> Unit = { ruta ->
         if (cuenta.sesion.value == null) {
@@ -162,55 +165,59 @@ fun FamiliasApp() {
                 }
             }
         ) { padding ->
-            NavHost(
-                navController = nav,
-                startDestination = RutasInicio.SPLASH,
-                modifier = Modifier.padding(padding).deslizarEntrePestanas(rutaActual) { ruta -> nav.irA(ruta) },
-                enterTransition = { entrada(initialState, targetState) },
-                exitTransition = { salida(initialState, targetState) },
-                popEnterTransition = { entradaAlRegresar(initialState, targetState) },
-                popExitTransition = { salidaAlRegresar(initialState, targetState) }
-            ) {
-                // Pasamos usuarioActual y el handler para cambiar la cuenta desde el Perfil
-                // grafoPerfil en FamiliasApp.kt
-                grafoPerfil(
-                    nav = nav,
-                    usuarioActual = { usuarioActual },
-                    // Ya no se puede "cambiar a admin" desde el teléfono.
-                    onSwitchCuenta = {}
-                )
+            Column(modifier = Modifier.padding(padding)) {
+                // Sin conexión, las pantallas enseñan lo guardado en el teléfono: se avisa arriba.
+                guardadoEn?.let { AvisoSinConexion(it) }
+                NavHost(
+                    navController = nav,
+                    startDestination = RutasInicio.SPLASH,
+                    modifier = Modifier.weight(1f).deslizarEntrePestanas(rutaActual) { ruta -> nav.irA(ruta) },
+                    enterTransition = { entrada(initialState, targetState) },
+                    exitTransition = { salida(initialState, targetState) },
+                    popEnterTransition = { entradaAlRegresar(initialState, targetState) },
+                    popExitTransition = { salidaAlRegresar(initialState, targetState) }
+                ) {
+                    // Pasamos usuarioActual y el handler para cambiar la cuenta desde el Perfil
+                    // grafoPerfil en FamiliasApp.kt
+                    grafoPerfil(
+                        nav = nav,
+                        usuarioActual = { usuarioActual },
+                        // Ya no se puede "cambiar a admin" desde el teléfono.
+                        onSwitchCuenta = {}
+                    )
 
-                grafoInicio(
-                    nav = nav,
-                    onNavegarAActividades = { nav.irA(RutasActividades.LISTA) },
-                    onNavegarACampanas = { nav.irA(RutasCampanas.LISTA) },
-                    // "Ver agenda" es lo de la familia: Mis actividades (pide sesión).
-                    onVerAgenda = { abrirConSesion(Rutas.MIS_ACTIVIDADES) },
-                    esAdmin = { usuarioActual.esAdmin }
-                )
+                    grafoInicio(
+                        nav = nav,
+                        onNavegarAActividades = { nav.irA(RutasActividades.LISTA) },
+                        onNavegarACampanas = { nav.irA(RutasCampanas.LISTA) },
+                        // "Ver agenda" es lo de la familia: Mis actividades (pide sesión).
+                        onVerAgenda = { abrirConSesion(Rutas.MIS_ACTIVIDADES) },
+                        esAdmin = { usuarioActual.esAdmin }
+                    )
 
-                // Pasamos esAdmin dinámicamente según la cuenta activa
-                grafoActividades(
-                    nav = nav,
-                    esAdmin = { usuarioActual.esAdmin }, // <--- Se actualiza automáticamente cuando usuarioActual cambia
-                    onIrAInicio = {
-                        if (!nav.popBackStack(RutasInicio.INICIO, inclusive = false)) {
-                            nav.navigate(RutasInicio.INICIO)
-                        }
-                    },
-                    onVerAsociaciones = { nav.navigate(RutasInicio.EXPLORAR) },
-                    onInscribirme = { id -> nav.navigate(RutasInscripcion.inscribirse(id)) },
-                    onInscribirmeConPrueba = { id, sinCupo -> nav.navigate(RutasInscripcion.inscribirse(id, sinCupo)) },
-                    onCancelarInscripcion = { id -> nav.navigate(RutasInscripcion.cancelar(id)) },
-                    onResponderEncuesta = nav::responderEncuestaFinal,
-                    onCompartirTestimonio = nav::compartirTestimonio,
-                    onEncuestaPrevia = nav::responderEncuestaPrevia,
-                    onVerRespuestas = { id -> nav.navigate(RutasPerfil.respuestas(id)) { launchSingleTop = true } }
-                )
+                    // Pasamos esAdmin dinámicamente según la cuenta activa
+                    grafoActividades(
+                        nav = nav,
+                        esAdmin = { usuarioActual.esAdmin }, // <--- Se actualiza automáticamente cuando usuarioActual cambia
+                        onIrAInicio = {
+                            if (!nav.popBackStack(RutasInicio.INICIO, inclusive = false)) {
+                                nav.navigate(RutasInicio.INICIO)
+                            }
+                        },
+                        onVerAsociaciones = { nav.navigate(RutasInicio.EXPLORAR) },
+                        onInscribirme = { id -> nav.navigate(RutasInscripcion.inscribirse(id)) },
+                        onInscribirmeConPrueba = { id, sinCupo -> nav.navigate(RutasInscripcion.inscribirse(id, sinCupo)) },
+                        onCancelarInscripcion = { id -> nav.navigate(RutasInscripcion.cancelar(id)) },
+                        onResponderEncuesta = nav::responderEncuestaFinal,
+                        onCompartirTestimonio = nav::compartirTestimonio,
+                        onEncuestaPrevia = nav::responderEncuestaPrevia,
+                        onVerRespuestas = { id -> nav.navigate(RutasPerfil.respuestas(id)) { launchSingleTop = true } }
+                    )
 
-                grafoCampanas(nav, esAdmin = { usuarioActual.esAdmin })
-                grafoInscripcion(nav)
-                grafoSugerencias(nav, esAdmin = { usuarioActual.esAdmin })
+                    grafoCampanas(nav, esAdmin = { usuarioActual.esAdmin })
+                    grafoInscripcion(nav)
+                    grafoSugerencias(nav, esAdmin = { usuarioActual.esAdmin })
+                }
             }
         }
     }

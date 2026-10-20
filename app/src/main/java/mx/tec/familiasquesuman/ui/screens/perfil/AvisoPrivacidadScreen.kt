@@ -63,7 +63,7 @@ object Responsable {
     const val DOMICILIO = "Monterrey, Nuevo León, México"
     const val CORREO = "hola@familiasquesuman.com"
     const val AVISO_DEL_SITIO = "familiasquesuman.com/aviso-de-privacidad"
-    const val ACTUALIZADO = "16 de octubre de 2026"
+    const val ACTUALIZADO = "19 de octubre de 2026"
 }
 
 @Composable
@@ -126,19 +126,19 @@ fun AvisoPrivacidadScreen(
                     "solo para coordinar una actividad, la institución que la organiza: recibe lo indispensable, como los nombres y " +
                     "edades de quienes van. No vendemos tus datos ni los usamos para publicidad. Para mandar el código de tu contraseña " +
                     "usamos un servicio de correo, que solo recibe tu dirección y ese mensaje. Para que la app llegue al servidor " +
-                    "de forma cifrada usamos Cloudflare, " +
-                    "que actúa como encargado y no los usa para nada más. Solo los entregaríamos a una autoridad que los pida conforme a la ley.",
+                    "de forma cifrada usamos Cloudflare, y el servidor es una máquina de Oracle Cloud en México; los dos actúan como encargados, " +
+                    "que no los usan para nada más. Solo los entregaríamos a una autoridad que los pida conforme a la ley.",
                 IconoVisibilidadPrivacidad)
             TarjetaPrivacidad("Tu ubicación",
                 "\"Cerca de mí\" usa tu ubicación aproximada (no la exacta) solo en tu teléfono, para ordenar las actividades por cercanía. " +
                     "No la recibimos ni la guardamos, y si no das permiso la app funciona igual.",
                 Icons.Outlined.LocationOn)
             TarjetaPrivacidad("Las fotos y testimonios",
-                "Se guardan en nuestra propia infraestructura. Antes de publicarse, el equipo los revisa; mientras tanto solo los ves tú. " +
+                "Se guardan en nuestro servidor (en México), no en servicios de terceros. Antes de publicarse, el equipo los revisa; mientras tanto solo los ves tú. " +
                     "Al publicarse aparecen con el nombre de tu familia, nunca con tu correo. Puedes eliminarlos cuando quieras.",
                 IconoFotosPrivacidad)
             TarjetaPrivacidad("Cómo los cuidamos",
-                "Todo viaja por HTTPS. En el teléfono, tu sesión se guarda cifrada con una llave del propio teléfono. En el servidor, " +
+                "Todo viaja por HTTPS. En el teléfono, tu sesión se guarda cifrada con una llave del propio teléfono, y para verlo sin internet solo se guarda el catálogo público (actividades, asociaciones, proyectos y campañas), nunca tus datos. En el servidor, " +
                     "cada cuenta solo puede ver lo suyo, los intentos de adivinar contraseñas se bloquean y queda una bitácora de las acciones " +
                     "sensibles (con una huella de la IP, no la IP).",
                 Icons.Outlined.Lock)

@@ -47,6 +47,10 @@ object RutasActividades {
     const val ARG_ACTIVIDAD_ID = "actividadId"
 
     fun detalle(id: String) = "actividades/$id"
+
+    /** RF-06: quiénes van (administración). */
+    const val INSCRITOS = "actividades/{actividadId}/inscritos"
+    fun inscritos(id: String) = "actividades/$id/inscritos"
 }
 
 /**
@@ -123,7 +127,8 @@ fun NavGraphBuilder.grafoActividades(
             onReintentar = vm::cargar,
             onVerGuardadas = { nav.navigate(RutasActividades.SIN_CONEXION) },
             onVerAsociaciones = onVerAsociaciones,
-            onForzarEstado = vm::siguienteModoDePrueba,
+            // Mantener presionado el título recorre los estados (vacío, error): solo en depuración.
+            onForzarEstado = if (BuildConfig.DEBUG) vm::siguienteModoDePrueba else ({}),
             onSugerir = { nav.sugerir(TipoSugerencia.ACTIVIDAD) },
             cercaDeMi = cerca.aqui,
             buscandoUbicacion = cerca.buscando,
@@ -144,7 +149,8 @@ fun NavGraphBuilder.grafoActividades(
                 if (estado is UiState.Exito) {
                     actividadADuplicar = (estado as UiState.Exito).datos.find { it.actividad.id == id }
                 }
-            }
+            },
+            onVerInscritos = { id -> nav.navigate(RutasActividades.inscritos(id)) { launchSingleTop = true } }
         )
 
         porCompartir?.let { item ->
@@ -301,7 +307,7 @@ fun NavGraphBuilder.grafoActividades(
                 onInscribirme = { onInscribirmeConPrueba(id, simularSinCupo) },
                 simularSinCupo = simularSinCupo,
                 // La casilla de prueba de "se acaban los lugares" solo la ve el admin.
-                onSimularSinCupoChange = if (esAdmin()) ({ simularSinCupo = it }) else null,
+                onSimularSinCupoChange = if (BuildConfig.DEBUG && esAdmin()) ({ simularSinCupo = it }) else null,
                 onVerOtrasActividades = {
                     // Si se llegó desde la lista, se regresa a ella; si no, se abre.
                     if (!nav.popBackStack(RutasActividades.LISTA, inclusive = false)) {
@@ -355,6 +361,15 @@ fun NavGraphBuilder.grafoActividades(
                 onRegresar = { nav.popBackStack() }
             )
         }
+    }
+
+    composable(RutasActividades.INSCRITOS) { entrada ->
+        val id = entrada.arguments?.getString(RutasActividades.ARG_ACTIVIDAD_ID).orEmpty()
+        val vm: InscritosViewModel = viewModel(factory = AppViewModelProvider.Factory)
+        val estadoInscritos by vm.estado.collectAsStateWithLifecycle()
+        val titulo = (LocalContext.current.applicationContext as FamiliasApplication).container.actividadRepository.enMemoria(id)?.actividad?.titulo.orEmpty()
+        LaunchedEffect(id) { vm.cargar(id) }
+        InscritosScreen(titulo = titulo, estado = estadoInscritos, onReintentar = { vm.cargar(id) }, onRegresar = { nav.popBackStack() })
     }
 
     composable(RutasActividades.SIN_CONEXION) { entrada ->

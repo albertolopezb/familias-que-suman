@@ -2,6 +2,7 @@ package mx.tec.familiasquesuman
 
 import android.app.Application
 import mx.tec.familiasquesuman.data.ActividadRepository
+import mx.tec.familiasquesuman.data.local.CatalogoLocal
 import mx.tec.familiasquesuman.data.CampanaRepository
 import mx.tec.familiasquesuman.data.CuentaRepository
 import mx.tec.familiasquesuman.data.EncuestaRepository
@@ -39,6 +40,8 @@ class AppContainer(contexto: android.content.Context) {
     init {
         // Cada llamada a la API lleva el token de la sesión, si la hay.
         ClienteApi.usarProveedorDeToken(sesion)
+        // El catálogo público guardado en el teléfono, para verlo sin conexión.
+        CatalogoLocal.iniciar(contexto)
     }
 }
 

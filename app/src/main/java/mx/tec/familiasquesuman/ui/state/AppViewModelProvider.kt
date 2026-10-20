@@ -41,6 +41,8 @@ object AppViewModelProvider {
         initializer { mx.tec.familiasquesuman.ui.screens.campanas.TengoAlgoParaDonarViewModel() }
         initializer { AjustesViewModel(familiasApplication().container.preferenciasStore) }
         initializer { AvisoPrivacidadViewModel(familiasApplication().container.perfilRepository) }
+        initializer { mx.tec.familiasquesuman.ui.screens.actividades.InscritosViewModel(familiasApplication().container.actividadRepository) }
+        initializer { mx.tec.familiasquesuman.ui.screens.perfil.SolicitudesEliminacionViewModel(familiasApplication().container.perfilRepository) }
         initializer {
             TestimonioViewModel(
                 familiasApplication().container.perfilRepository,

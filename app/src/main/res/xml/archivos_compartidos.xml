@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Lo único que la app comparte con otras apps: la imagen de la invitación a una actividad. -->
+<!-- Lo único que la app comparte con otras apps: la imagen de la invitación a una actividad, y el
+     archivo vacío donde la app de cámara deja la foto que se toma (ui/components/ElegirFoto.kt). -->
 <paths>
     <cache-path name="compartir" path="compartir/" />
+    <cache-path name="camara" path="camara/" />
 </paths>

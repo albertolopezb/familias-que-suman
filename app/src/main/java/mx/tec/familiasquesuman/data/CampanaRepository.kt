@@ -3,7 +3,10 @@ package mx.tec.familiasquesuman.data
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.builtins.ListSerializer
+import mx.tec.familiasquesuman.data.local.CatalogoLocal
 import mx.tec.familiasquesuman.data.red.ApiExcepcion
+import mx.tec.familiasquesuman.data.red.CampanaDto
 import mx.tec.familiasquesuman.data.red.AportacionCuerpo
 import mx.tec.familiasquesuman.data.red.aDominio
 import mx.tec.familiasquesuman.data.red.llamar
@@ -21,11 +24,18 @@ data class Apartado(val articulo: ArticuloMeta, val cantidad: Int, val completad
 /** Las campañas de donación (la app no cobra: solo registra lo que cada familia se compromete a juntar). */
 class CampanaRepository {
 
-    suspend fun getCampanas(): List<Campana> = llamar { campanas() }.map { it.aDominio() }
+    /** Sin conexión salen las guardadas en el teléfono ([CatalogoLocal]); apartar sí pide red. */
+    suspend fun getCampanas(): List<Campana> =
+        CatalogoLocal.conRespaldo(CLAVE_CAMPANAS, ListSerializer(CampanaDto.serializer())) { llamar { campanas() } }
+            .map { it.aDominio() }
 
     suspend fun getCampana(id: String): Campana = try {
-        llamar { campana(id) }.aDominio()
+        CatalogoLocal.conRespaldo("campana/$id", CampanaDto.serializer()) { llamar { campana(id) } }.aDominio()
     } catch (e: ApiExcepcion) {
+        if (e.sinConexion) {
+            CatalogoLocal.leer(CLAVE_CAMPANAS, ListSerializer(CampanaDto.serializer()))
+                ?.firstOrNull { it.id == id }?.let { return it.aDominio() }
+        }
         if (e.estado == 404 || e.estado == 422) throw NoSuchElementException(e.message) else throw e
     }
 
@@ -68,6 +78,8 @@ class CampanaRepository {
     suspend fun borrarCampana(id: String) { llamar { borrarCampana(id) }.exigirExito() }
 
     private companion object {
+        const val CLAVE_CAMPANAS = "campanas"
+
         val DIA_MES: DateTimeFormatter = DateTimeFormatter.ofPattern("d 'de' MMMM", Locale.forLanguageTag("es-MX"))
 
         /** "30 de diciembre" → la próxima vez que caiga ese día (este año o el que sigue). */

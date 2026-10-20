@@ -51,7 +51,7 @@ contraseña a las cuentas de prueba; las variables `AUTH0_*` de tu `.env` ya no 
 ```bash
 docker compose --profile tunel up -d                    # el túnel HTTPS (internet → API)
 docker compose logs tunel | grep trycloudflare          # la dirección pública
-docker compose --profile pruebas run --rm --build pruebas    # las pruebas automáticas (180)
+docker compose --profile pruebas run --rm --build pruebas    # las pruebas automáticas (182)
 bash smoke.sh                                           # prueba de contrato contra la API (35 casos)
 bash smoke.sh https://<algo>.trycloudflare.com          # la misma, por el túnel
 bash seguridad/zap/escanear.sh                          # OWASP ZAP sin y con sesión → seguridad/zap/

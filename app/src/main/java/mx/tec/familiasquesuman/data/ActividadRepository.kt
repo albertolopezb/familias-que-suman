@@ -6,11 +6,18 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.builtins.ListSerializer
+import mx.tec.familiasquesuman.data.local.CatalogoLocal
+import mx.tec.familiasquesuman.data.red.ActividadDto
 import mx.tec.familiasquesuman.data.red.ApiExcepcion
+import mx.tec.familiasquesuman.data.red.AsociacionDto
+import mx.tec.familiasquesuman.data.red.CentroDto
+import mx.tec.familiasquesuman.data.red.ProyectoDto
 import mx.tec.familiasquesuman.data.red.AsociacionCuerpo
 import mx.tec.familiasquesuman.data.red.CiudadDto
 import mx.tec.familiasquesuman.data.red.ClienteApi
 import mx.tec.familiasquesuman.data.red.ErrorDto
+import mx.tec.familiasquesuman.data.red.InscritoDto
 import mx.tec.familiasquesuman.data.red.aDominio
 import mx.tec.familiasquesuman.data.red.llamar
 import mx.tec.familiasquesuman.domain.Actividad
@@ -30,6 +37,9 @@ import java.time.ZoneId
  *
  * Lo que se lee es público; lo de administración manda el token y el SERVIDOR decide si se puede
  * (la app solo esconde los botones). Cualquier falla llega como [ApiExcepcion].
+ *
+ * Lo público se guarda en el teléfono ([CatalogoLocal]): sin conexión, las listas y las fichas
+ * siguen saliendo con lo último que llegó.
  */
 class ActividadRepository {
 
@@ -38,14 +48,21 @@ class ActividadRepository {
     @Volatile private var ciudadesGuardadas: List<CiudadDto> = emptyList()
 
     suspend fun getActividadesConAsociacion(): List<ActividadConAsociacion> =
-        llamar { actividades() }.map { ActividadConAsociacion(it.aDominio(), it.asociacion.aDominio()) }.also { ultimas = it }
+        CatalogoLocal.conRespaldo(CLAVE_ACTIVIDADES, ListSerializer(ActividadDto.serializer())) { llamar { actividades() } }
+            .map { ActividadConAsociacion(it.aDominio(), it.asociacion.aDominio()) }.also { ultimas = it }
 
     suspend fun getActividades(): List<Actividad> = getActividadesConAsociacion().map { it.actividad }
 
     suspend fun getActividadConAsociacion(id: String): ActividadConAsociacion = try {
-        val dto = llamar { actividad(id) }
+        val dto = CatalogoLocal.conRespaldo("actividad/$id", ActividadDto.serializer()) { llamar { actividad(id) } }
         ActividadConAsociacion(dto.aDominio(), dto.asociacion.aDominio())
     } catch (e: ApiExcepcion) {
+        // Sin conexión y sin esa ficha guardada: puede venir en la última lista guardada.
+        if (e.sinConexion) {
+            CatalogoLocal.leer(CLAVE_ACTIVIDADES, ListSerializer(ActividadDto.serializer()))
+                ?.firstOrNull { it.id == id }
+                ?.let { return ActividadConAsociacion(it.aDominio(), it.asociacion.aDominio()) }
+        }
         // Las pantallas ya distinguen "no existe" de "falló la red".
         if (e.estado == 404 || e.estado == 422) throw NoSuchElementException(e.message) else throw e
     }
@@ -56,18 +73,35 @@ class ActividadRepository {
     fun enMemoria(id: String): ActividadConAsociacion? = ultimas.firstOrNull { it.actividad.id == id }
 
     /** Las del directorio de Explorar. */
-    suspend fun getAsociaciones(): List<Asociacion> = llamar { asociaciones() }.map { it.aDominio() }
+    suspend fun getAsociaciones(): List<Asociacion> =
+        CatalogoLocal.conRespaldo("asociaciones", ListSerializer(AsociacionDto.serializer())) { llamar { asociaciones() } }
+            .map { it.aDominio() }
 
     /** También las que solo organizan actividades (Familias que Suman, Regalando Estrellas…). */
-    suspend fun getTodasLasAsociaciones(): List<Asociacion> = llamar { asociaciones(todas = true) }.map { it.aDominio() }
+    suspend fun getTodasLasAsociaciones(): List<Asociacion> =
+        CatalogoLocal.conRespaldo(CLAVE_TODAS, ListSerializer(AsociacionDto.serializer())) { llamar { asociaciones(todas = true) } }
+            .map { it.aDominio() }
 
-    suspend fun getAsociacion(id: String): Asociacion = llamar { asociacion(id) }.aDominio()
+    suspend fun getAsociacion(id: String): Asociacion = try {
+        CatalogoLocal.conRespaldo("asociacion/$id", AsociacionDto.serializer()) { llamar { asociacion(id) } }.aDominio()
+    } catch (e: ApiExcepcion) {
+        if (!e.sinConexion) throw e
+        CatalogoLocal.leer(CLAVE_TODAS, ListSerializer(AsociacionDto.serializer()))
+            ?.firstOrNull { it.id == id }?.aDominio() ?: throw e
+    }
 
-    suspend fun getProyectos(): List<Proyecto> = llamar { proyectos() }.map { it.aDominio() }
+    suspend fun getProyectos(): List<Proyecto> =
+        CatalogoLocal.conRespaldo("proyectos", ListSerializer(ProyectoDto.serializer())) { llamar { proyectos() } }
+            .map { it.aDominio() }
 
-    suspend fun getCentros(): List<CentroVisiteo> = llamar { centros() }.map { it.aDominio() }
+    suspend fun getCentros(): List<CentroVisiteo> =
+        CatalogoLocal.conRespaldo("centros", ListSerializer(CentroDto.serializer())) { llamar { centros() } }
+            .map { it.aDominio() }
 
-    suspend fun getCiudades(): List<CiudadDto> = ciudadesGuardadas.ifEmpty { llamar { ciudades() }.also { ciudadesGuardadas = it } }
+    suspend fun getCiudades(): List<CiudadDto> = ciudadesGuardadas.ifEmpty {
+        CatalogoLocal.conRespaldo("ciudades", ListSerializer(CiudadDto.serializer())) { llamar { ciudades() } }
+            .also { ciudadesGuardadas = it }
+    }
 
     /** El enlace para invitar a otra familia: abre la app (o una página con "Abrir en la app"). */
     suspend fun enlaceDe(actividadId: String): String = llamar { enlace(actividadId) }.url
@@ -142,6 +176,9 @@ class ActividadRepository {
         if (id == null) llamar { crearActividad(cuerpo) } else llamar { editarActividad(id, cuerpo) }
     }
 
+    /** RF-06: quiénes van (lo ve quien registra asistencias; el servidor lo revisa y lo audita). */
+    suspend fun inscritos(actividadId: String): List<InscritoDto> = llamar { inscritos(actividadId) }
+
     suspend fun duplicarActividad(id: String) { llamar { duplicarActividad(id) } }
     suspend fun borrarActividad(id: String) { llamar { borrarActividad(id) }.exigirExito() }
 
@@ -185,6 +222,11 @@ class ActividadRepository {
     suspend fun agregarCentro(centro: CentroVisiteo) { llamar { crearCentro(cuerpoCentro(centro)) } }
     suspend fun editarCentro(centro: CentroVisiteo) { llamar { editarCentro(centro.id, cuerpoCentro(centro)) } }
     suspend fun borrarCentro(id: String) { llamar { borrarCentro(id) }.exigirExito() }
+
+    private companion object {
+        const val CLAVE_ACTIVIDADES = "actividades"
+        const val CLAVE_TODAS = "asociaciones/todas"
+    }
 }
 
 /** Un DELETE que no respondió 2xx se convierte en error, como cualquier otra llamada. */

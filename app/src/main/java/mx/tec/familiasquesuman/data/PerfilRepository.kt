@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.data
 
+import mx.tec.familiasquesuman.data.red.SolicitudEliminacionDto
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import mx.tec.familiasquesuman.data.red.ClienteApi
@@ -49,4 +50,11 @@ class PerfilRepository {
 
     /** Registra la solicitud de eliminación (HU-14). Si ya había una, regresa la misma. */
     suspend fun solicitarEliminacion(correo: String): String = llamar { solicitarEliminacion() }.folio
+
+    // ── Administración (HU-14): atender las solicitudes. El servidor exige `atender:privacidad`. ──
+
+    suspend fun solicitudesDeEliminacion(): List<SolicitudEliminacionDto> = llamar { solicitudesEliminacion() }
+
+    /** Borra la cuenta y todo lo suyo (en el servidor, en cascada) y deja la solicitud como constancia. */
+    suspend fun atenderEliminacion(id: String): SolicitudEliminacionDto = llamar { atenderEliminacion(id) }
 }
