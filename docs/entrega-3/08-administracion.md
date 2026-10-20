@@ -52,7 +52,7 @@ en el teléfono) se miden con el APK de entrega en el dispositivo físico.
 | Identidad propia con JWT y ABAC (se quita Auth0) | — | 15/10/2026 | Cambio de rumbo (8.3) |
 | Refresh tokens, revisión de testimonios, recuperación por correo, avisos del servidor, ZAP con sesión | — | 16/10/2026 | — |
 | Cierre de pendientes del backlog (RNF-02, TT-15, TT-16) | 08/10/2026 | 16/10/2026 | 8 días tarde |
-| Sin conexión, cámara, "quiénes van", eliminación desde la app, documentación final y despliegue en Oracle Cloud | 22/10/2026 | 19 al 21/10/2026 | A tiempo |
+| Sin conexión, cámara, "quiénes van", eliminación desde la app, documentación final y despliegue en Azure | 22/10/2026 | 19 al 21/10/2026 | A tiempo |
 | **Entrega 3** y presentación final | 22/10/2026 | 22/10/2026 | — |
 
 ## 8.3 Desviaciones entre lo planeado y lo ejecutado
@@ -65,6 +65,7 @@ en el teléfono) se miden con el APK de entrega en el dispositivo físico.
 | Favoritos dinámicos (RF-17) | La socia cambió el concepto: debía avisar de lo nuevo | Se reabrió RF-17 y se conectó con RF-22 |
 | Plataformas: de Android e iOS a solo Android | Tiempo del reto y lo visto en el curso | Acordado con la socia |
 | Ajustes pedidos por la socia (duplicar eventos, estilos, "Donar" en lugar de "Apartar") | Revisiones con la socia | Tareas To-do 2 a 5 en Planner, completadas del 5 al 7 de octubre |
+| Servidor en Azure for Students en lugar de Oracle Cloud | Oracle rechazó la tarjeta en dos cuentas; la suscripción de estudiante de Azure solo permite cinco regiones (ninguna en México) y el primer tamaño elegido no tenía capacidad | Un día de pruebas de cuentas y regiones. Quedó en North Central US con Standard_B2als_v2, y el aviso de privacidad se actualizó para declarar dónde está el servidor |
 | Se agregaron pantallas que el backlog daba por hechas ("quiénes van", atender eliminaciones, fichas sin conexión) | La revisión final contra el acta y la rúbrica mostró que el servidor guardaba los datos pero nadie podía consultarlos desde la app | Implementadas con sus pruebas el 19 de octubre |
 
 ## 8.4 Riesgos
@@ -76,8 +77,9 @@ en el teléfono) se miden con el APK de entrega en el dispositivo físico.
 | Sobrecupo por solicitudes simultáneas | Reserva atómica con `SELECT … FOR UPDATE` | La prueba con 8 familias a la vez nunca sobrepasa el cupo; sin el candado entraban 5 en 3 lugares |
 | Datos de menores (inscripciones, testimonios, fotos) | Consentimiento del tutor, revisión antes de publicar, fotos sin EXIF, lista de asistentes sin correos | Cada control con su prueba (§9) |
 | Cambios de requerimientos de la socia | Preguntas registradas y backlog actualizado | Se absorbieron Favoritos y Donar |
+| Gastar el crédito de estudiante antes de tiempo | VM de 2 vCPU (~37 USD/mes con disco e IP); apagarla (`az vm deallocate`) fuera de las demostraciones; borrar el grupo de recursos al terminar | Alcanza para más de 2 meses encendida; sin tarjeta no hay cobros |
 | Disco lleno en la computadora que corre Docker | Cachés y herramientas movidas a otro disco; ZAP instalado en lugar de su imagen | Docker se cayó una vez (13/10) y se recuperó; el servidor de la demo ya no depende de esa computadora |
-| La dirección del túnel cambia y deja al APK sin servidor | Servidor siempre encendido en Oracle Cloud; procedimiento de recompilación documentado | Riesgo aceptado para la demo; con dominio propio se elimina (túnel con nombre) |
+| La dirección del túnel cambia y deja al APK sin servidor | Servidor siempre encendido en Azure; procedimiento de recompilación documentado | Riesgo aceptado para la demo; con dominio propio se elimina (túnel con nombre) |
 | Autoría de commits no refleja quién hizo qué | Evidencia de la distribución en Planner (8.5) | Ver retrospectiva |
 
 ## 8.5 Distribución del trabajo

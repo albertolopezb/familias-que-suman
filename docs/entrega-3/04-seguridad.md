@@ -25,7 +25,7 @@ desplegado. Salida guardada en [`docs/evidencia/smoke.txt`](../evidencia/smoke.t
 |---|---|
 | Contenedores con aislamiento y secretos por variables de entorno | Todo en Docker Compose. Contenedores sin capacidades de Linux (`cap_drop: ALL`), `no-new-privileges`, límites de memoria y procesos, la API con sistema de archivos de solo lectura. Tres redes: `borde` (túnel y API), `datos` (interna, sin internet: base, Redis, almacén) y `monitoreo` (interna). La API recibe solo sus variables (no tiene la contraseña de dueño de la base). Secretos en `backend/.env`, fuera de Git; con `ENTORNO=produccion` la API **se niega a arrancar** si encuentra un secreto de ejemplo |
 | Expuesto por un túnel y consumido por la app | `cloudflared` sale hacia Cloudflare (sin abrir puertos). La API solo cree el encabezado `CF-Connecting-IP` si viene de la IP fija del túnel. La app de release habla solo HTTPS con esa dirección |
-| Servidor endurecido | VM Oracle Cloud en México. Firewall de la VM y lista de seguridad de Oracle en "negar por omisión": solo entra SSH (22) con llave, sin contraseñas; ningún puerto de la API, la base ni Grafana queda expuesto (como el firewall *stateful* de la sesión 24). Ver [`06-manual-instalacion.md`](06-manual-instalacion.md) §6.3 |
+| Servidor endurecido | VM de Azure con dos firewalls en "negar por omisión", como el firewall *stateful* de la sesión 24: el grupo de seguridad de red de Azure y `ufw` en la VM. Solo entra SSH (22) con llave, sin contraseñas; ningún puerto de la API, la base ni Grafana queda expuesto. Ver [`06-manual-instalacion.md`](06-manual-instalacion.md) §6.3 |
 
 ## 4.3 Validación de seguridad
 

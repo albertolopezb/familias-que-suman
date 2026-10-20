@@ -6,7 +6,7 @@ Tres formas de poner el sistema a funcionar, de la más simple a la completa:
 |---|---|
 | Solo usar la app contra el servidor que ya está en internet | §6.1 |
 | Levantar todo en mi computadora (app en el emulador, API en Docker) | §6.2 |
-| Publicar el servidor en internet gratis (Oracle Cloud) | §6.3 |
+| Publicar el servidor en internet (Azure for Students, sin tarjeta) | §6.3 |
 
 Repositorio: https://github.com/albertolopezb/familias-que-suman (tag `v3.0-entrega`).
 
@@ -137,34 +137,53 @@ docker compose exec api python -m app.herramientas permisos <correo> todos
 Con `ninguno` se quitan. Para un permiso suelto: `moderar:contenido`, `registrar:asistencias`,
 `administrar:catalogo` o `atender:privacidad`.
 
-## 6.3 Servidor en internet: Oracle Cloud Always Free
+## 6.3 Servidor en internet: Azure for Students
 
-Gratis y sin fecha de vencimiento. La VM no se duerme, corre el mismo `docker compose` y los datos
-quedan en México.
+Microsoft da **100 USD de crédito sin tarjeta** a estudiantes, verificando con el correo institucional.
+La VM de la demostración cuesta unos 37 USD al mes (cómputo, disco e IP), corre el mismo
+`docker compose` y no se duerme. Si se acaba el crédito, la suscripción se detiene: no hay cobros.
 
 ### 6.3.1 Crear la máquina (una vez)
 
-1. Cuenta en https://cloud.oracle.com (plan *Always Free*; la tarjeta solo se verifica). Región de
-   inicio: **Mexico Central (Querétaro)**.
-2. **Compute → Instances → Create instance**:
-   - **Image:** Canonical Ubuntu 24.04.
-   - **Shape:** Ampere **VM.Standard.A1.Flex**, 4 OCPU y 24 GB de memoria.
-   - **Networking:** red por defecto, con IPv4 pública.
-   - **SSH keys:** pega la llave **pública** (`ssh-keygen -t ed25519 -f oracle_familias`).
-   - **Boot volume:** 100 GB.
-3. No abras puertos: la lista de seguridad por defecto solo deja entrar SSH (22), y así se queda.
+1. Activar la suscripción en https://azure.microsoft.com/es-mx/free/students con el correo `@tec.mx`.
+2. En https://portal.azure.com abrir **Cloud Shell** (ícono `>_`, modo Bash) y elegir la suscripción
+   de estudiante. Si la cuenta también tiene la del Tec (*ITESM - LabVirtual*), esa no permite crear
+   recursos:
+   ```bash
+   az account set --subscription "Azure for Students"
+   ```
+3. Ver en qué regiones deja crear recursos la suscripción. La de estudiante trae la política
+   *Allowed resource deployment regions*; en octubre de 2026 eran `northcentralus`, `canadacentral`,
+   `belgiumcentral`, `brazilsouth` y `norwayeast`, ninguna en México:
+   ```bash
+   az policy assignment list --disable-scope-strict-match --query "[].parameters.listOfAllowedLocations.value" -o json
+   ```
+4. Crear el grupo de recursos y la VM con Ubuntu 24.04, solo SSH y la llave **pública** (la privada
+   se queda en tu computadora):
+   ```bash
+   az group create --name familias-que-suman-rg --location mexicocentral
+   ```
+   ```bash
+   az vm create --resource-group familias-que-suman-rg --name familias-que-suman --location northcentralus --image Canonical:ubuntu-24_04-lts:server:latest --size Standard_B2als_v2 --admin-username azureuser --ssh-key-values "<llave pública ssh-ed25519>" --public-ip-sku Standard --os-disk-size-gb 64 --storage-sku StandardSSD_LRS --nsg-rule SSH
+   ```
+   Si responde *SkuNotAvailable* (sin capacidad), probar otro tamaño de 2 vCPU y 4 GB o más
+   (`Standard_B2s_v2`, `Standard_B2as_v2`) u otra región permitida. La salida trae
+   `publicIpAddress`.
+
+El grupo de seguridad de red solo deja entrar SSH (22). No se abre ningún otro puerto: la API sale a
+internet por el túnel.
 
 ### 6.3.2 Desplegar (y redesplegar)
 
 Desde la raíz del repositorio, en tu computadora:
 
 ```bash
-bash backend/despliegue/oracle.sh <IP pública> <ruta a la llave privada>
+bash backend/despliegue/desplegar.sh <IP pública> azureuser <ruta a la llave privada>
 ```
 
 El script:
 
-1. Instala Docker desde los paquetes de Ubuntu.
+1. Instala Docker desde los paquetes de Ubuntu y deja `ufw` en "negar por omisión", con solo SSH.
 2. Sube `backend/` tal como está en el último commit.
 3. La primera vez genera en la VM un `.env` con **secretos al azar** y `ENTORNO=produccion` (la API no
    arranca con un secreto de ejemplo).
@@ -173,21 +192,30 @@ El script:
    computadora**, en `D:/TEC/.llaves/cuentas-demo.txt`.
 6. Imprime la dirección `https://….trycloudflare.com`.
 
-Volver a correrlo actualiza el código y conserva los datos y los secretos.
+Volver a correrlo actualiza el código y conserva los datos y los secretos. El mismo script sirve para
+Oracle Cloud Always Free (usuario `ubuntu`) o cualquier VM con Ubuntu 24.04.
 
 ### 6.3.3 Operación
 
-Todo se hace por SSH (`ssh -i <llave> ubuntu@<IP>`), en `~/familias/backend`:
+Todo se hace por SSH (`ssh -i <llave> azureuser@<IP>`), en `~/familias/backend`:
 
 | Para | Comando |
 |---|---|
 | Ver el estado | `sudo docker compose ps` |
 | Ver la dirección pública del túnel | `sudo docker compose logs tunel \| grep trycloudflare` |
 | Logs de la API | `sudo docker compose logs -f api` |
-| Grafana y el correo de desarrollo desde tu computadora | `ssh -i <llave> -L 3000:127.0.0.1:3000 -L 8025:127.0.0.1:8025 ubuntu@<IP>` y abrir http://localhost:3000 y http://localhost:8025 |
+| Grafana y el correo de desarrollo desde tu computadora | `ssh -i <llave> -L 3000:127.0.0.1:3000 -L 8025:127.0.0.1:8025 azureuser@<IP>` y abrir http://localhost:3000 y http://localhost:8025 |
 | Respaldo de la base | `sudo docker compose exec db pg_dump -U familias -d familias -Fc > respaldo-$(date +%F).dump` |
 
-**La dirección de Quick Tunnel cambia si se reinicia el contenedor del túnel** (o la VM). Si pasa, hay
+**Cuidar el crédito** (en Cloud Shell):
+
+| Para | Comando |
+|---|---|
+| Apagar la VM (deja de cobrar el cómputo) | `az vm deallocate -g familias-que-suman-rg -n familias-que-suman` |
+| Prenderla | `az vm start -g familias-que-suman-rg -n familias-que-suman` |
+| Borrar todo al terminar el curso | `az group delete -n familias-que-suman-rg --yes` |
+
+**La dirección de Quick Tunnel cambia si se reinicia el contenedor del túnel o la VM.** Si pasa, hay
 que volver a compilar el APK con la nueva `api.url.release`. Con un dominio propio, el túnel con
 nombre (`--profile tunel-nombrado`, guía §10.3) da una dirección fija.
 
@@ -200,6 +228,7 @@ nombre (`--profile tunel-nombrado`, guía §10.3) da una dirección fija.
 | El APK de entrega dice "sin conexión" | `api.url.release` apunta a un túnel viejo: revisa la dirección actual y vuelve a compilar |
 | 429 `demasiados_intentos` al entrar | 5 contraseñas equivocadas: espera 15 minutos |
 | Docker Desktop "unable to start" | Disco lleno: libera espacio |
-| "Out of capacity" al crear la VM en Oracle | Prueba otra *Availability domain* o más tarde |
+| `SkuNotAvailable` o `RequestDisallowedByAzure` al crear la VM en Azure | Otro tamaño, o una región de las que permite la política de la suscripción (§6.3.1) |
+| `AuthorizationFailed` al crear el grupo de recursos | Estás en la suscripción del Tec: `az account set --subscription "Azure for Students"` |
 
 Más casos: guía del backend §14.5.

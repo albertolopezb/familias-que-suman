@@ -6,7 +6,8 @@
 #   bash smoke.sh                                   (contra http://127.0.0.1:8000)
 #   bash smoke.sh https://<algo>.trycloudflare.com  (contra el túnel)
 #
-# Solo necesita bash y curl (Git Bash en Windows). Usa la cuenta admin@correo.com del seed.
+# Solo necesita bash y curl (Git Bash en Windows). Usa la cuenta admin@correo.com del seed; contra un
+# servidor de producción, su contraseña va en ADMIN_CONTRASENA (desplegar.sh la cambia y la guarda).
 #
 # Ojo, los límites también se prueban aquí: el registro acepta 10 por hora por IP y el inicio de
 # sesión 10 por minuto, y "¿olvidaste tu contraseña?" 5 por hora. Si lo corres muchas veces seguidas, algún paso puede dar 429: es el rate
@@ -81,7 +82,7 @@ pedir GET /v1/yo "esto.no.sirve";                      revisar "Token basura: 40
 
 echo "Autorización (ABAC)"
 pedir GET /v1/admin/encuestas "$FAMILIA";              revisar "Una familia no entra a funciones de admin: 403" 403 "sin_permiso"
-pedir POST /v1/sesion/iniciar "" '{"correo":"admin@correo.com","contrasena":"admin123"}'
+pedir POST /v1/sesion/iniciar "" "{\"correo\":\"admin@correo.com\",\"contrasena\":\"${ADMIN_CONTRASENA:-admin123}\"}"
 revisar "Admin del seed inicia sesión" 200 '"access_token"'
 ADMIN="$(token_de)"
 pedir GET /v1/admin/encuestas "$ADMIN";                revisar "El admin sí entra a funciones de admin" 200

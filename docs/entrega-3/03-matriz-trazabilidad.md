@@ -115,7 +115,7 @@ Cada historia se demuestra con las pruebas del requisito que la origina.
 
 ## 3.6 Guion de pruebas manuales en el teléfono (M-xx)
 
-APK de release firmado, contra el servidor desplegado en Oracle Cloud por el túnel HTTPS.
+APK de release firmado, contra el servidor desplegado en Azure por el túnel HTTPS.
 
 | ID | Pasos | Resultado esperado | Resultado |
 |---|---|---|---|

@@ -52,7 +52,7 @@ flowchart TB
         borde["Borde HTTPS<br/>TLS 1.2/1.3 · absorbe ataques de red"]
     end
 
-    subgraph vm["🖥️ Servidor: VM Oracle Cloud Always Free (Ubuntu 24.04 ARM, México) · Docker Compose"]
+    subgraph vm["🖥️ Servidor: VM Azure Standard_B2als_v2 (Ubuntu 24.04, North Central US) · Docker Compose"]
         subgraph redborde["red borde"]
             tunel["cloudflared<br/>(sale hacia Cloudflare; no abre puertos)"]
             api["<b>API</b> · FastAPI (Python 3.12)<br/>JWT HS256 · Argon2id · Oso/Polar (ABAC)<br/>slowapi · Pydantic · SQLAlchemy"]
@@ -162,6 +162,6 @@ La bitácora completa, con fecha y razón de cada una, está en [`docs/bitacora.
 | Avisos con WorkManager cada 15 min, sin Firebase | FCM | Práctica 8: sin cuentas de Google ni otra llave privada; el aviso de privacidad no tiene que declarar a Google. Costo: hasta ~15 min de retraso |
 | Catálogo público guardado con Room para verlo sin conexión | Guardar todo, o nada | Compromiso del acta (fichas sin conexión) sin guardar datos personales en el teléfono |
 | Salida a internet por Cloudflare Tunnel | Abrir puertos / IP pública | HTTPS sin abrir puertos; la red de Cloudflare absorbe ataques de red |
-| Servidor en una VM Oracle Cloud Always Free en México | Render/Railway (se duermen) | Gratis sin dormirse, corre el mismo `docker compose`, y los datos se quedan en México |
+| Servidor en una VM de Azure for Students (2 vCPU, 4 GB) | Oracle Cloud Always Free (rechazó la tarjeta en dos cuentas); Render/Railway (se duermen) | Sin tarjeta ni costo (crédito de estudiante), no se duerme y corre el mismo `docker compose`. La política de la suscripción solo permite regiones fuera de México: se eligió la más cercana y se declara en el aviso |
 | Explorar sin cuenta; la cuenta se pide al inscribirse (registro diferido) | Pedir cuenta al abrir | RF-18: menos fricción y menos datos de quien solo mira |
 | Donación solo informativa | Pagos en línea | Indicación de la socia; no se manejan datos de pago |

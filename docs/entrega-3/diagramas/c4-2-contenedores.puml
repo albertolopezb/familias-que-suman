@@ -12,7 +12,7 @@ System_Boundary(tel, "Teléfono Android (minSdk 26, targetSdk 37)") {
   Container(wm, "RevisarAvisosWorker", "WorkManager", "Recordatorios y avisos cada 15 min con la app cerrada")
 }
 System_Ext(cf, "Cloudflare", "Borde HTTPS")
-System_Boundary(vm, "VM Oracle Cloud Always Free · Ubuntu 24.04 ARM · México · Docker Compose") {
+System_Boundary(vm, "VM Azure Standard_B2als_v2 · Ubuntu 24.04 · North Central US · Docker Compose") {
   Container(tunel, "cloudflared", "Cloudflare Tunnel", "Conexión saliente: no abre puertos")
   Container(api, "API", "FastAPI, Python 3.12", "JWT HS256 + refresh rotado, Argon2id, ABAC con Oso/Polar, rate limit, auditoría")
   ContainerDb(db, "PostgreSQL 16", "red interna", "Datos; la API entra con un usuario sin DDL")

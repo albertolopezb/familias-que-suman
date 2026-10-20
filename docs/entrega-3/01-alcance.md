@@ -10,7 +10,7 @@ aporte lo que el teléfono hace mejor:
 
 La solución es una **app Android nativa** (Kotlin, Jetpack Compose) conectada a una **API propia**
 (FastAPI y PostgreSQL en Docker). La API se publica en internet por un túnel HTTPS de Cloudflare
-desde una VM gratuita de Oracle Cloud en México.
+desde una VM de Microsoft Azure pagada con el crédito de Azure for Students (sin costo para el equipo).
 
 ## 1.1 Compromisos del acta de acuerdos y cómo se cumplieron
 

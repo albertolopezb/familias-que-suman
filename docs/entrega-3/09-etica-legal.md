@@ -67,7 +67,7 @@ registramos en la guía de observación de la OSF. Del lado técnico se cuida el
 Es el mismo texto que la app muestra en Perfil → Ajustes → Aviso de privacidad. El simplificado
 (puntos 1 a 4) aparece al crear la cuenta.
 
-> **Aviso de privacidad integral · App Familias que Suman** (actualizado el 19 de octubre de 2026)
+> **Aviso de privacidad integral · App Familias que Suman** (actualizado el 20 de octubre de 2026)
 >
 > **1. Quién es responsable** *(art. 15-I)*. Familias que Suman, asociación civil, con domicilio en
 > Monterrey, Nuevo León, México. Para cualquier tema de tus datos: hola@familiasquesuman.com. Este aviso
@@ -103,8 +103,9 @@ Es el mismo texto que la app muestra en Perfil → Ajustes → Aviso de privacid
 > Testimonios, encuestas, sugerencias y foto de perfil son opcionales y puedes borrarlos. "Cerca de mí"
 > solo se activa si lo tocas y das permiso. Y puedes pedir que borremos todo.
 >
-> **Dónde se guardan.** En nuestro servidor, una máquina de Oracle Cloud en México: la base de datos
-> PostgreSQL y un almacén propio para las fotos. En tu teléfono solo quedan:
+> **Dónde se guardan.** En nuestro servidor, una máquina de Microsoft Azure en Estados Unidos (región
+> North Central US): la base de datos PostgreSQL y un almacén propio para las fotos. Microsoft solo
+> presta la máquina: no usa ni consulta tus datos. En tu teléfono solo quedan:
 >
 > - tu sesión, cifrada con una llave del propio teléfono;
 > - tus ajustes;
@@ -120,7 +121,7 @@ Es el mismo texto que la app muestra en Perfil → Ajustes → Aviso de privacid
 > - Un servicio de correo, para mandar el código de tu contraseña: solo recibe tu dirección y ese
 >   mensaje.
 > - Cloudflare, para que la app llegue al servidor de forma cifrada.
-> - Oracle Cloud, que es donde está el servidor.
+> - Microsoft Azure, que es donde está el servidor (en Estados Unidos).
 >
 > Los servicios técnicos actúan como encargados y no usan tus datos para nada más. No vendemos tus
 > datos. Solo los entregaríamos a una autoridad que los pida conforme a la ley.
