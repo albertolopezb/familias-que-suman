@@ -27,12 +27,16 @@ favoritos o ver tu perfil.
 El ícono de tu perfil, arriba a la derecha, abre Mi perfil, Mis actividades, Notificaciones y
 Ajustes.
 
+<p><img src="img/app-actividades.png" width="240" alt="Pestaña Actividades"> <img src="img/app-proyectos.png" width="240" alt="Pestaña Proyectos"></p>
+
 ## 5.3 Encontrar una causa y contactarla
 
 1. En **Directorio**, toca una categoría (por ejemplo, *Alimentación*) y luego una asociación.
 2. La ficha dice qué hace, a quién ayuda, qué necesita y dónde está.
 3. Toca **Llamar**, **WhatsApp** o **Correo** (en proyectos y centros, también **Instagram**): se
    abre la app correspondiente con el dato ya puesto.
+
+<p><img src="img/app-directorio.png" width="240" alt="Pestaña Directorio"></p>
 
 **El mapa** (en Inicio) muestra las calles de tu ciudad con los puntos de actividades (morado), proyectos (azul) y donaciones (verde). Filtra por tipo con los botones de arriba, toca un punto para ver su resumen y entrar a su ficha, y usa **Agrandar** para verlo a pantalla completa (**Cerrar** para volver).
 
@@ -55,6 +59,8 @@ permiso, la lista sigue ordenada por fecha.
 5. En la confirmación puedes tocar **Agregar al calendario**: se abre tu calendario con la fecha, la
    hora y el lugar.
 
+<p><img src="img/app-ficha-actividad.png" width="240" alt="Detalle de una actividad"></p>
+
 Un día antes recibirás un **recordatorio**, aunque no abras la app.
 
 **Modificar o cancelar:** Perfil → **Mis actividades** → la actividad. Puedes cambiar quiénes van sin
@@ -67,6 +73,8 @@ perder tus lugares, o **cancelar** hasta 12 horas antes; los lugares se liberan 
 3. Toca **Donar** en un artículo, elige cuántos te comprometes a llevar y confirma. Se resta de lo que
    falta para todas las familias.
 4. **¿Cómo donar?** dice qué llevar, dónde entregarlo y en qué horario.
+
+<p><img src="img/app-donar.png" width="240" alt="Pestaña Donar"></p>
 
 La app no cobra nada ni pide datos de pago: solo registra tu compromiso.
 
