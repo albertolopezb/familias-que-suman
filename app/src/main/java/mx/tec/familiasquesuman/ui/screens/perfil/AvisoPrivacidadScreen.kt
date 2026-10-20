@@ -131,7 +131,8 @@ fun AvisoPrivacidadScreen(
                 IconoVisibilidadPrivacidad)
             TarjetaPrivacidad("Tu ubicación",
                 "\"Cerca de mí\" usa tu ubicación aproximada (no la exacta) solo en tu teléfono, para ordenar las actividades por cercanía. " +
-                    "No la recibimos ni la guardamos, y si no das permiso la app funciona igual.",
+                    "No la recibimos ni la guardamos, y si no das permiso la app funciona igual. " +
+                    "El mapa del Inicio dibuja las calles con OpenStreetMap: tu teléfono les pide las imágenes de la zona que estás viendo, sin tu ubicación ni tus datos.",
                 Icons.Outlined.LocationOn)
             TarjetaPrivacidad("Las fotos y testimonios",
                 "Se guardan en nuestro servidor (una máquina de Microsoft Azure en Estados Unidos), no en servicios de terceros. Antes de publicarse, el equipo los revisa; mientras tanto solo los ves tú. " +

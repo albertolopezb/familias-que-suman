@@ -21,9 +21,11 @@ fun SplashScreen(
 ) {
     var visible by remember { mutableStateOf(false) }
 
+    // Corto a propósito: RNF-01 pide el Inicio con el catálogo en menos de 1.5 s, y el splash no
+    // espera nada (solo enseña la marca). Antes eran 2 s fijos.
     LaunchedEffect(Unit) {
         visible = true
-        delay(1800)
+        delay(400)
         visible = false
         delay(200)
         onSplashFinished()

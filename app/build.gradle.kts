@@ -114,4 +114,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    // El mapa del Inicio con calles de OpenStreetMap (sin llave ni Play Services).
+    implementation(libs.osmdroid.android)
 }

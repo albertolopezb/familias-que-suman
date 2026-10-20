@@ -34,6 +34,10 @@ Ajustes.
 3. Toca **Llamar**, **WhatsApp** o **Correo** (en proyectos y centros, también **Instagram**): se
    abre la app correspondiente con el dato ya puesto.
 
+**El mapa** (en Inicio) muestra las calles de tu ciudad con los puntos de actividades (morado), proyectos (azul) y donaciones (verde). Filtra por tipo con los botones de arriba, toca un punto para ver su resumen y entrar a su ficha, y usa **Agrandar** para verlo a pantalla completa (**Cerrar** para volver).
+
+**Buscar:** en Actividades y en Donar toca **Buscar…** en el encabezado y escribe una palabra (la actividad, la asociación o la colonia); no importan acentos ni mayúsculas. La ✕ cierra la búsqueda. Proyectos y Directorio tienen su buscador siempre visible.
+
 **Cerca de mí** (en Actividades): si lo tocas y das permiso, la lista se ordena de la más cercana a la
 más lejana. Se usa tu ubicación aproximada, solo en el teléfono: no se manda a ningún lado. Si no das
 permiso, la lista sigue ordenada por fecha.

@@ -1,5 +1,7 @@
 package mx.tec.familiasquesuman.ui.screens.actividades
 
+import mx.tec.familiasquesuman.ui.components.coincideBusqueda
+import mx.tec.familiasquesuman.ui.components.BuscadorPlegable
 import androidx.compose.material.icons.outlined.Person
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.tec.familiasquesuman.data.local.CatalogoLocal
@@ -82,6 +84,7 @@ fun ActividadesScreen(
     onCercaDeMi: () -> Unit = {}
 ) {
     val titulo = if (esAdmin) "Actividades (Admin)" else "Actividades"
+    var busqueda by rememberSaveable { mutableStateOf("") }
     val modificadorTitulo = Modifier.pointerInput(Unit) {
         detectTapGestures(onLongPress = { onForzarEstado() })
     }
@@ -114,7 +117,9 @@ fun ActividadesScreen(
                 titulo = titulo,
                 subtitulo = "Actividades en $ciudad",
                 modificadorTitulo = modificadorTitulo
-            )
+            ) {
+                BuscadorPlegable(busqueda, { busqueda = it }, "Buscar actividades…")
+            }
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 80.dp)
@@ -132,7 +137,10 @@ fun ActividadesScreen(
                     }
                     is UiState.Exito -> {
                         // Las que vienen, de la más cercana a la más lejana; las pasadas, de la más reciente a la más vieja.
-                        val (pasadasSinOrden, proximasSinOrden) = estado.datos.partition { it.actividad.yaPaso }
+                        val encontradas = estado.datos.filter {
+                            coincideBusqueda(busqueda, it.actividad.titulo, it.actividad.descripcion, it.asociacion.nombre, it.actividad.direccion)
+                        }
+                        val (pasadasSinOrden, proximasSinOrden) = encontradas.partition { it.actividad.yaPaso }
                         val porFecha = proximasSinOrden.sortedBy { fechaDeTexto(it.actividad.fecha) ?: LocalDate.MAX }
                         val proximas = cercaDeMi?.let { aqui -> porFecha.porCercania(aqui) { it.actividad.coordenada } } ?: porFecha
                         val pasadas = pasadasSinOrden.sortedByDescending { fechaPasadaDeTexto(it.actividad.fecha) ?: LocalDate.MIN }
@@ -143,7 +151,16 @@ fun ActividadesScreen(
                             }
                         }
 
-                        if (proximas.isEmpty()) {
+                        if (busqueda.isNotBlank() && encontradas.isEmpty()) {
+                            item(key = "sin-resultados") {
+                                AvisoLista(
+                                    titulo = "Nada coincide con \"${busqueda.trim()}\"",
+                                    texto = "Prueba con otra palabra: el nombre de la actividad, la asociación o la colonia.",
+                                    boton = null,
+                                    onBoton = {}
+                                )
+                            }
+                        } else if (proximas.isEmpty() && busqueda.isBlank()) {
                             item(key = "sin-actividades") {
                                 AvisoLista(
                                     titulo = "No hay actividades disponibles por ahora",

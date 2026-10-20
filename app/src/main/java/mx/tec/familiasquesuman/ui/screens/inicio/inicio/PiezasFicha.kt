@@ -201,7 +201,7 @@ internal fun Buscador(valor: String, onValor: (String) -> Unit, placeholder: Str
 
 /** Buscador estilo minimalista y curvo */
 @Composable
-internal fun BuscadorEstiloMinimal(valor: String, onValor: (String) -> Unit, placeholder: String) {
+internal fun BuscadorEstiloMinimal(valor: String, onValor: (String) -> Unit, placeholder: String, modificadorCampo: Modifier = Modifier) {
     val forma = RoundedCornerShape(20.dp)
     Row(
         modifier = Modifier
@@ -220,7 +220,7 @@ internal fun BuscadorEstiloMinimal(valor: String, onValor: (String) -> Unit, pla
                 onValueChange = onValor,
                 singleLine = true,
                 textStyle = TextoWeb.Cuerpo,
-                modifier = Modifier.fillMaxWidth()
+                modifier = modificadorCampo.fillMaxWidth()
             )
         }
     }

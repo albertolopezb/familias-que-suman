@@ -1,5 +1,7 @@
 package mx.tec.familiasquesuman.ui.screens.campanas
 
+import mx.tec.familiasquesuman.ui.components.coincideBusqueda
+import mx.tec.familiasquesuman.ui.components.BuscadorPlegable
 import androidx.compose.foundation.layout.WindowInsets
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoApp
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.EncabezadoAzul
@@ -134,12 +136,16 @@ fun CampanasScreen(
     Column(modifier = Modifier.fillMaxSize().padding(innerPadding).background(MaterialTheme.colorScheme.background)) {
     // Qué modo se está viendo. Solo es estado de pantalla (como "qué pestaña"), no de datos.
     var modo by rememberSaveable { mutableStateOf(ModoDonar.CAMPANA) }
+    var busqueda by rememberSaveable { mutableStateOf("") }
 
         EncabezadoAzul(
             etiqueta = "Tu apoyo cuenta",
             titulo = if (esAdmin) "Quiero Donar (Admin)" else "Quiero Donar"
         ) {
             SelectorModoDonar(modo = modo, onElegir = { modo = it })
+            if (modo == ModoDonar.CAMPANA) {
+                BuscadorPlegable(busqueda, { busqueda = it }, "Buscar campañas…")
+            }
         }
 
         if (modo == ModoDonar.TENGO_ALGO) {
@@ -179,8 +185,21 @@ fun CampanasScreen(
                         EstadoVacio(efectivos, totalAbiertas, onQuitarFiltros)
                     }
                 } else {
+                    val encontradas = estado.datos.filter {
+                        coincideBusqueda(busqueda, it.titulo, it.descripcion, it.categoria, nombresAsociacion[it.asociacionId])
+                    }
+                    if (encontradas.isEmpty()) {
+                        Text(
+                            text = "Nada coincide con \"${busqueda.trim()}\". Prueba con otra palabra: la campaña, la asociación o lo que se necesita.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().padding(32.dp)
+                        )
+                        return@Column
+                    }
                     ListaConDatos(
-                        campanas = estado.datos,
+                        campanas = encontradas,
                         nombresAsociacion = nombresAsociacion,
                         filtros = filtros,
                         chipElegido = chipElegido,
