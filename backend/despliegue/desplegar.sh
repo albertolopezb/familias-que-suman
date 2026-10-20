@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# Despliega el backend en una VM de Oracle Cloud Always Free (Ubuntu 24.04, ARM) por SSH.
+# Despliega el backend en una VM Ubuntu 24.04 por SSH (Azure for Students, Oracle Cloud o cualquier otra).
 # Se corre desde tu computadora, en la raíz del repositorio:
 #
-#   bash backend/despliegue/oracle.sh <IP pública> [ruta de la llave SSH]
+#   bash backend/despliegue/desplegar.sh <IP pública> [usuario] [ruta de la llave SSH]
+#
+#   Azure:   bash backend/despliegue/desplegar.sh 20.98.33.13 azureuser
+#   Oracle:  bash backend/despliegue/desplegar.sh <IP> ubuntu
 #
 # Qué hace (manual de instalación §6.3 y plan de implantación §7.4):
-#   1. Instala Docker en la VM desde los paquetes de Ubuntu (sin scripts de terceros).
+#   1. Instala Docker en la VM desde los paquetes de Ubuntu (sin scripts de terceros) y deja el
+#      firewall de la VM en "negar por omisión": solo entra SSH (como el firewall stateful de la s24).
 #   2. Sube backend/ tal como está en el último commit (git archive): se despliega lo versionado.
 #   3. La primera vez crea backend/.env EN LA VM con secretos al azar y ENTORNO=produccion: la API se
 #      niega a arrancar con un secreto de ejemplo. Los secretos nunca salen de la VM.
@@ -14,18 +18,21 @@
 #      deja en tu computadora, en D:/TEC/.llaves/cuentas-demo.txt (fuera del repo, no se imprimen).
 #   6. Imprime la dirección https://…trycloudflare.com para compilar el APK de entrega.
 #
-# Firewall: la imagen de Ubuntu de Oracle ya trae iptables en "negar por omisión" salvo SSH (22), y
-# así se queda: el túnel sale hacia Cloudflare, no hace falta abrir ningún puerto.
+# No hace falta abrir ningún puerto en la nube: el túnel sale hacia Cloudflare.
 # Volver a correrlo actualiza el código y conserva .env, datos y contraseñas (redepliegue).
 
 set -euo pipefail
-IP="${1:?Uso: bash backend/despliegue/oracle.sh <IP> [llave]}"
-LLAVE="${2:-D:/TEC/.llaves/oracle_familias}"
-SSH=(ssh -i "$LLAVE" -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 "ubuntu@$IP")
+IP="${1:?Uso: bash backend/despliegue/desplegar.sh <IP> [usuario] [llave]}"
+USUARIO="${2:-ubuntu}"
+LLAVE="${3:-D:/TEC/.llaves/oracle_familias}"
+SSH=(ssh -i "$LLAVE" -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 "$USUARIO@$IP")
 cd "$(git rev-parse --show-toplevel)"
 
-echo "1/6 Docker en la VM…"
-"${SSH[@]}" 'command -v docker >/dev/null || { sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq docker.io docker-compose-v2 >/dev/null && true; }; sudo systemctl enable --now docker >/dev/null'
+echo "1/6 Docker y firewall en la VM…"
+"${SSH[@]}" 'command -v docker >/dev/null || { sudo apt-get update -qq && sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq docker.io docker-compose-v2 >/dev/null; }
+  sudo systemctl enable --now docker >/dev/null
+  sudo ufw default deny incoming >/dev/null && sudo ufw default allow outgoing >/dev/null && sudo ufw allow OpenSSH >/dev/null && sudo ufw --force enable >/dev/null
+  sudo ufw status | head -1'
 
 echo "2/6 Código (commit $(git rev-parse --short HEAD))…"
 git -c core.autocrlf=false archive --format=tar HEAD backend | "${SSH[@]}" 'mkdir -p ~/familias && tar -x -C ~/familias'
