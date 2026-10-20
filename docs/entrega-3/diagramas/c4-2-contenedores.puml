@@ -1,0 +1,37 @@
+@startuml c4-2-contenedores
+!pragma layout smetana
+!include <C4/C4_Container>
+LAYOUT_WITH_LEGEND()
+title Familias que Suman · C4 nivel 2: contenedores
+
+Person(familia, "Familia / Equipo de la OSF")
+System_Boundary(tel, "Teléfono Android (minSdk 26, targetSdk 37)") {
+  Container(app, "App", "Kotlin, Jetpack Compose, MVVM", "Toda la experiencia; Retrofit/OkHttp solo HTTPS")
+  ContainerDb(room, "catalogo.db", "Room", "Catálogo público para consultar sin conexión")
+  ContainerDb(ks, "Sesión", "Android Keystore, AES-256-GCM", "JWT y refresh token cifrados")
+  Container(wm, "RevisarAvisosWorker", "WorkManager", "Recordatorios y avisos cada 15 min con la app cerrada")
+}
+System_Ext(cf, "Cloudflare", "Borde HTTPS")
+System_Boundary(vm, "VM Oracle Cloud Always Free · Ubuntu 24.04 ARM · México · Docker Compose") {
+  Container(tunel, "cloudflared", "Cloudflare Tunnel", "Conexión saliente: no abre puertos")
+  Container(api, "API", "FastAPI, Python 3.12", "JWT HS256 + refresh rotado, Argon2id, ABAC con Oso/Polar, rate limit, auditoría")
+  ContainerDb(db, "PostgreSQL 16", "red interna", "Datos; la API entra con un usuario sin DDL")
+  ContainerDb(redis, "Redis 8.8", "red interna", "Rate limit, bloqueos, tokens revocados")
+  ContainerDb(s3, "RustFS", "S3, red interna", "Fotos re-codificadas sin EXIF")
+  Container(mail, "Mailpit / SMTP", "red interna", "Códigos de recuperación")
+  Container(mon, "Prometheus + Grafana", "red de monitoreo", "Métricas y alertas de seguridad")
+}
+
+Rel(familia, app, "Usa")
+Rel(app, room, "Guarda / lee sin red")
+Rel(app, ks, "Cifra la sesión")
+Rel(wm, app, "Comparte repositorios")
+Rel(app, cf, "JSON + Bearer", "HTTPS")
+Rel(cf, tunel, "Túnel cifrado")
+Rel(tunel, api, "HTTP en la red borde")
+Rel(api, db, "SQLAlchemy", "consultas parametrizadas")
+Rel(api, redis, "Contadores")
+Rel(api, s3, "Fotos", "S3")
+Rel(api, mail, "SMTP")
+Rel(mon, api, "Lee /metrics")
+@enduml

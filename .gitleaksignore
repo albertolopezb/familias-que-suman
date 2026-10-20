@@ -1,0 +1,3 @@
+# Falso positivo revisado: OTRO_SECRETO es el secreto inventado con que las pruebas firman un token
+# falso para comprobar que la API lo rechaza (test_firmado_con_otro_secreto_se_rechaza). No protege nada.
+7f58c8b3fab11afbd658d2d2bf149488c7402a6a:backend/api/tests/conftest.py:generic-api-key:67

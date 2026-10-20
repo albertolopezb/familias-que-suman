@@ -1,0 +1,29 @@
+@startuml c4-3-componentes-app
+!pragma layout smetana
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Familias que Suman · C4 nivel 3: componentes de la app
+
+Container_Boundary(app, "App Android") {
+  Component(screens, "Pantallas", "Jetpack Compose", "Inicio, Actividades, Proyectos, Donar, Directorio, Perfil, Inscripción, Administración")
+  Component(nav, "Navegación", "Navigation Compose", "NavHost, barra inferior, deep links")
+  Component(vms, "ViewModels", "StateFlow + UiState", "Cargando, Éxito, Error; reglas de pantalla")
+  Component(repos, "Repositorios", "Kotlin", "Actividad, Campaña, Perfil, Cuenta, Testimonio, Encuesta, Sugerencia, Mapa")
+  Component(red, "ClienteApi", "Retrofit, OkHttp", "Token, renovación automática, errores a ApiExcepcion")
+  Component(sesion, "ServicioSesion", "Android Keystore", "Entrar, crear cuenta, refresh, cerrar")
+  Component(local, "CatalogoLocal", "Room", "Respaldo sin conexión de las rutas públicas")
+  Component(dominio, "Dominio", "Kotlin puro", "Modelos y reglas (fechas, niveles, avisos, cercanía)")
+  Component(worker, "RevisarAvisosWorker", "WorkManager", "Avisos con la app cerrada")
+}
+System_Ext(apiext, "API de Familias que Suman", "HTTPS")
+
+Rel(nav, screens, "Muestra")
+Rel(screens, vms, "Observa")
+Rel(vms, repos, "Pide datos")
+Rel(vms, dominio, "Usa")
+Rel(repos, red, "Llama")
+Rel(repos, local, "Guarda / lee sin red")
+Rel(red, sesion, "Toma el token")
+Rel(worker, repos, "Usa")
+Rel(red, apiext, "JSON", "HTTPS")
+@enduml

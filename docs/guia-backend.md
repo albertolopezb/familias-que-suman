@@ -54,12 +54,12 @@ encuestas, aportaciones a campañas, sugerencias, privacidad y administración.
 | Salida a internet | Cloudflare Tunnel (`cloudflared`) | HTTPS público sin abrir puertos |
 | Monitoreo | Prometheus 3.15 + Grafana 13.2 | Métricas, alertas de seguridad, tablero |
 | Escaneo | OWASP ZAP 2.17 | Ataque automático a la API |
-| Pruebas | pytest | 180 pruebas contra la base, Redis y el almacén reales |
+| Pruebas | pytest | 182 pruebas contra la base, Redis y el almacén reales |
 
 **Números de esta entrega:**
 
 - **69 operaciones** documentadas en OpenAPI (más la página pública de invitación y `assetlinks.json`).
-- **180 pruebas automáticas** de la API, todas en verde (§12).
+- **182 pruebas automáticas** de la API, todas en verde (§12).
 - **OWASP ZAP, sin y con sesión: 0 alertas altas, 0 medias, 0 bajas** (1 informativa) (§13).
 - **40 medidas de seguridad** catalogadas (§7), mapeadas a OWASP Top 10 2025, OWASP API Top 10
   2023 y CWE Top 25 (§8).
@@ -730,6 +730,7 @@ de 120/min por IP.
 | PATCH | `/v1/admin/testimonios/{id}` (`{"estado": "aprobado" \| "rechazado"}`) | `moderar:contenido` · se audita `testimonio.aprobado` / `testimonio.rechazado` |
 | GET | `/v1/admin/encuestas?actividad_id=` | `moderar:contenido` |
 | POST | `/v1/admin/asistencias` | `registrar:asistencias` |
+| GET | `/v1/admin/actividades/{id}/inscritos` | `registrar:asistencias` · quiénes van (RF-06): nombre de la familia, integrantes con edad y si van menores; sin correos ni teléfonos; se audita `inscritos.consultar` |
 | GET | `/v1/admin/solicitudes-eliminacion` | `atender:privacidad` |
 | POST | `/v1/admin/solicitudes-eliminacion/{id}/atender` | `atender:privacidad` |
 
@@ -1273,7 +1274,7 @@ certificado de la app. Nadie más puede "robarse" los enlaces.
 
 #### S-39 · Pruebas de seguridad automatizadas
 
-180 pruebas que atacan lo mismo que un atacante: §12.
+182 pruebas que atacan lo mismo que un atacante: §12.
 
 #### S-40 · Monitoreo continuo con alertas
 
@@ -1421,10 +1422,20 @@ Ahora `Usuario.esAdmin` sale de `Sesion.esAdmin`, que llena el servidor con los 
 
 ### 9.5 Pruebas de la app
 
-`./gradlew :app:testDebugUnitTest`: **50 pruebas, 0 fallas** (incluye la revisión de testimonios y
+`./gradlew :app:testDebugUnitTest`: **56 pruebas, 0 fallas** (incluye la caché sin conexión, `CatalogoLocalTest`, la revisión de testimonios y
 el orden por cercanía, `CercaniaTest`). Los repositorios de testimonios y
 encuestas tienen una versión en memoria solo para estas pruebas (`TestimonioRepositoryEnMemoria`,
 `EncuestaRepositoryEnMemoria`).
+
+### 9.6 Lo que se agregó para la entrega final
+
+| Qué | Dónde | Por qué |
+|---|---|---|
+| **Fichas sin conexión** con Room (Práctica 5): la última respuesta de cada ruta pública se guarda en `catalogo.db`; sin red se ve con la franja "Sin conexión · estás viendo lo guardado el…" y sin presumir cupo | `data/local/CatalogoLocal.kt`, `ui/components/AvisoSinConexion.kt`; `CatalogoLocalTest` (5) | Compromiso del acta. Solo lo público: nada de la familia queda en el teléfono |
+| **Foto con la cámara** (Práctica 10): `TakePicture` con FileProvider, sin pedir el permiso `CAMERA`; la dirección del archivo en `rememberSaveable` | `ui/components/ElegirFoto.kt` | Capacidad del dispositivo; la foto pasa por `Fotos.prepararParaSubir` como la de la galería |
+| **Quiénes van** (RF-06): la administración ve las familias inscritas, sus integrantes con edad y si van menores | `GET /v1/admin/actividades/{id}/inscritos`, `InscritosScreen.kt` | La asociación necesita la lista para organizarse y registrar asistencias. Sin correos, con permiso propio y auditado |
+| **Atender solicitudes de eliminación** desde la app | `SolicitudesEliminacionScreen.kt` | El aviso promete la eliminación: ahora se demuestra de punta a punta |
+| Los botones de prueba (notificaciones de demostración, forzar estados, simular sin cupo) ya no los ve una familia en la versión de entrega | `PerfilScreen.kt`, `NavActividades.kt` | Una app de entrega no enseña herramientas de prueba |
 
 ---
 
@@ -1546,7 +1557,7 @@ sesión por HTTP se prueba aparte. **No existe un "modo de prueba" en el servido
 | `test_politicas.py` | 21 | Las reglas de `politicas.polar` contra Oso directo: cada permiso, propiedad, cada motivo de inscripción y su orden, cancelar (12 h), testimonios y su revisión, encuestas, aportaciones, negación por omisión |
 | `test_autorizacion.py` | 13 | BOLA, testimonios ajenos, funciones de admin, mínimo privilegio, mass assignment, correos expuestos |
 | `test_entradas.py` | 23 | SQLi en filtros, ids y cuerpos; caracteres de control; topes; rangos; fechas sin zona; enlaces `javascript:`/`intent:`; XSS en la página de invitación |
-| `test_inscripciones.py` | 10 | Cupo, edad mínima, consentimiento, modificar sin perder lugares, cancelar (no a menos de 12 h), idempotencia, **carrera con 8 familias a la vez** |
+| `test_inscripciones.py` | 12 | Cupo, edad mínima, consentimiento, modificar sin perder lugares, cancelar (no a menos de 12 h), idempotencia, **carrera con 8 familias a la vez**, la lista de quiénes van (solo `registrar:asistencias`, sin correos) |
 | `test_fotos.py` | 7 | EXIF/GPS, HTML disfrazado, políglota, bomba de descompresión, tamaño, foto ajena, nombres raros |
 | `test_aportaciones.py` | 6 | Metas, "ya no alcanza", reintentos, ids ajenos, campaña cerrada, cantidades absurdas |
 | `test_minimo_privilegio.py` | 10 | Lo que el usuario de la base de la API NO puede hacer |
@@ -1555,7 +1566,7 @@ sesión por HTTP se prueba aparte. **No existe un "modo de prueba" en el servido
 | `test_testimonios.py` | 6 | RF-12/HU-11: nace pendiente y no es público; aprobar publica; rechazado no; editar regresa a revisión; la foto en revisión solo la ven su autora y la moderación; solo `moderar:contenido` revisa; bandeja sin correos y auditoría |
 | `test_recuperacion.py` | 8 | RF-18: misma respuesta exista o no la cuenta; el código cambia la contraseña una sola vez y cierra las sesiones; se guarda como HMAC; 5 intentos lo queman; vencido no sirve; pedir otro anula el anterior y hay tope por hora; el de una cuenta no sirve en otra; contraseña débil o código raro no lo gastan |
 | `test_avisos.py` | 6 | RF-16/RF-22: sin sesión 401; cada familia recibe los de su ciudad y los generales; `desde`; solo `administrar:catalogo` crea y borra (auditado); validación; una actividad nueva genera su aviso |
-| **Total** | **180** | **180 aprobadas** |
+| **Total** | **182** | **182 aprobadas** |
 
 **Dos hallazgos reales durante la verificación** (por eso se prueba):
 
@@ -1574,7 +1585,7 @@ sesión por HTTP se prueba aparte. **No existe un "modo de prueba" en el servido
 alguien de afuera. El plan (`backend/seguridad/zap/plan-zap.yaml`) hace **dos pasadas**:
 
 1. **Sin sesión**, como alguien de afuera:
-   - **importa el inventario** de la API (`/openapi.json`): 92 URLs;
+   - **importa el inventario** de la API (`/openapi.json`): 102 URLs;
    - **escaneo pasivo:** revisa cada respuesta (encabezados, cookies, fugas de información…);
    - **escaneo activo:** ataca cada parámetro con SQLi, XSS, inyección de comandos y de código,
      *path traversal*, SSRF, inclusión de archivos, etcétera.
@@ -1621,7 +1632,7 @@ ZAP_JAR=<ruta>/zap-2.17.0.jar JAVA=<ruta>/java ZAP_HOME=<carpeta> bash seguridad
 Solo la pasada sin sesión, sin script: `docker compose --profile zap run --rm zap` (la pasada 2
 verá 401, porque no hay token).
 
-### 13.3 Resultado (ZAP 2.17.0, 15 oct 2026, con identidad propia JWT)
+### 13.3 Resultado (ZAP 2.17.0, 19 oct 2026, versión de entrega)
 
 | Riesgo | Alertas |
 |---|---|
@@ -1630,13 +1641,13 @@ verá 401, porque no hay token).
 | **Bajo** | **0** |
 | Informativo | 1 |
 
-**`exitStatus` aprobó** (código 0). Las dos pasadas tardaron 3 min 23 s y 4 min 10 s de escaneo activo.
+**`exitStatus` aprobó** (código 0). Las dos pasadas tardaron 5 min 56 s y 6 min 43 s de escaneo activo. El escaneo incluye las rutas que llegaron después del 15 de octubre (refresh tokens, recuperación con código, avisos y la lista de quiénes van).
 
 | Alerta | Riesgo | Justificación |
 |---|---|---|
 | **User Agent Fuzzer** (10104) | Informativa | ZAP manda la misma petición con distintos `User-Agent` (navegador viejo, buscadores) y compara código y *hash* del cuerpo. Se repitió a mano en `/v1/campanas/`, `/v1/centros/` y `/v1/fotos/testimonios/`: mismo código con los dos `User-Agent` (307 a la ruta sin `/` final, o 404). La API no lee el `User-Agent` (solo aparece en el texto de `robots.txt`); lo que cambia es el `solicitud` de cada respuesta de error, un id único por petición (§6), así que dos peticiones iguales nunca dan el mismo *hash*. No es una vulnerabilidad: es una observación. |
 
-Lo que vio la API durante el escaneo (contadores de Prometheus, §11; números redondeados):
+Lo que vio la API durante el escaneo del 15 de octubre (contadores de Prometheus, §11; números redondeados; la corrida del 19 se comporta igual):
 
 | Dónde | Respuestas | Qué significa |
 |---|---|---|
@@ -1662,7 +1673,7 @@ Reporte completo: [`backend/seguridad/zap/reporte-zap.html`](../backend/segurida
 ### 13.4 Lo que este escaneo no cubre (y cómo cubrirlo)
 
 - **La administración por dentro.** La cuenta de escaneo es una familia: las rutas de
-  `/v1/admin/…` se probaron en su 403, no en su lógica. Esa lógica está cubierta por las 180
+  `/v1/admin/…` se probaron en su 403, no en su lógica. Esa lógica está cubierta por las 182
   pruebas (§12). Para escanearla, se le darían permisos a la cuenta de escaneo con
   `python -m app.herramientas permisos <correo> todos` antes de pedir el token (a una base de
   desarrollo: ZAP crearía y borraría catálogo).

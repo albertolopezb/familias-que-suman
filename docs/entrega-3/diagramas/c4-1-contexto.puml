@@ -1,0 +1,19 @@
+@startuml c4-1-contexto
+!pragma layout smetana
+!include <C4/C4_Context>
+LAYOUT_WITH_LEGEND()
+title Familias que Suman · C4 nivel 1: contexto
+
+Person(familia, "Familia voluntaria", "Explora, se inscribe con sus hijos, aparta artículos, comparte testimonios")
+Person(admin, "Equipo de Familias que Suman", "Administra el catálogo, modera, envía avisos, ve quiénes van, atiende privacidad")
+System(sistema, "Familias que Suman", "App Android + API propia (FastAPI, PostgreSQL) en Docker")
+System_Ext(cf, "Cloudflare", "Túnel HTTPS (TLS 1.2/1.3): la única puerta desde internet")
+System_Ext(correo, "Servicio de correo", "Código para recuperar la contraseña (Mailpit en desarrollo, SMTP en producción)")
+System_Ext(tel, "Apps del teléfono", "Calendario, WhatsApp, Teléfono, Correo, Mapas, Cámara (Intents)")
+
+Rel(familia, sistema, "Usa", "App Android")
+Rel(admin, sistema, "Administra", "App Android con permisos")
+Rel(sistema, cf, "Publica la API por", "túnel cifrado")
+Rel(sistema, correo, "Manda el código por", "SMTP")
+Rel(sistema, tel, "Abre", "Intents, sin permisos extra")
+@enduml

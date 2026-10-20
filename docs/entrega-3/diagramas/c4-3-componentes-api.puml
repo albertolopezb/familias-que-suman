@@ -1,0 +1,31 @@
+@startuml c4-3-componentes-api
+!pragma layout smetana
+!include <C4/C4_Component>
+LAYOUT_WITH_LEGEND()
+title Familias que Suman · C4 nivel 3: componentes de la API
+
+Container_Boundary(api, "API (FastAPI)") {
+  Component(mw, "Middlewares", "seguridad.py, limites.py", "IP real solo del túnel, Host permitido, tamaño, cabeceras de seguridad, límite global")
+  Component(routers, "Routers", "FastAPI", "sesion, cuenta, catalogo, inscripciones, aportaciones, participacion, sugerencias, avisos, admin, enlaces, salud")
+  Component(ident, "Identidad", "identidad.py", "JWT HS256, refresh rotado, Argon2id, bloqueo por fuerza bruta")
+  Component(pol, "Políticas", "Oso + politicas.polar", "Quién puede qué (ABAC), negar por omisión")
+  Component(esq, "Esquemas", "Pydantic", "Validación estricta de entrada y salida")
+  Component(mod, "Modelos", "SQLAlchemy", "Consultas parametrizadas; FOR UPDATE en el cupo")
+  Component(img, "Imágenes", "Pillow", "Re-codifica y quita EXIF")
+  Component(bit, "Bitácora", "bitacora.py", "Auditoría de acciones sensibles (IP como HMAC)")
+}
+ContainerDb(db, "PostgreSQL")
+ContainerDb(redis, "Redis")
+ContainerDb(s3, "RustFS")
+
+Rel(mw, routers, "Pasa la petición")
+Rel(routers, ident, "¿Quién es?")
+Rel(routers, pol, "¿Puede?")
+Rel(routers, esq, "Valida")
+Rel(routers, mod, "Lee / escribe")
+Rel(routers, img, "Limpia fotos")
+Rel(routers, bit, "Registra")
+Rel(mod, db, "SQL")
+Rel(ident, redis, "Revocados, fallos")
+Rel(img, s3, "Guarda")
+@enduml

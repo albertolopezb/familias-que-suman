@@ -1,0 +1,49 @@
+Prueba de contrato · bash backend/smoke.sh (contra http://127.0.0.1:8000)
+
+Prueba de contrato contra http://127.0.0.1:8000
+
+Público
+  ok    1  La API está viva
+  ok    2  El catálogo es público
+  ok    3  Lo público es solo lo aprobado (RF-12)
+Identificación (JWT)
+  ok    4  Sin token: 401 con WWW-Authenticate
+  ok    5  Registro: crea la cuenta y responde el token
+  ok    6  Registro con correo ocupado: 409
+  ok    7  Nadie se registra como admin (campo extra): 422
+  ok    8  Contraseña equivocada: 401
+  ok    9  Correo inexistente: el mismo 401 (sin enumeración)
+  ok   10  Iniciar sesión: 200 con el token
+  ok   11  Con token: /v1/yo responde la cuenta y no es admin
+  ok   12  Token alterado sin volver a firmar: 401
+  ok   13  Token basura: 401
+Autorización (ABAC)
+  ok   14  Una familia no entra a funciones de admin: 403
+  ok   15  Admin del seed inicia sesión
+  ok   16  El admin sí entra a funciones de admin
+  ok   17  El admin registra a alguien de su familia
+  ok   18  BOLA: otra familia no borra lo ajeno (404, no 403)
+  ok   19  Su dueña sí lo borra
+Entradas
+  ok   20  SQLi en un filtro: 422
+  ok   21  SQLi en un id: 422
+HTTP
+  ok   22  Encabezado HSTS
+  ok   23  Encabezado nosniff
+  ok   24  Encabezado CSP
+  ok   25  Host ajeno: rechazado
+Sesión (refresh token)
+  ok   26  Renovar: tokens nuevos sin pedir la contraseña
+  ok   27  Reusar un refresh token viejo: 401 y se cierra la sesión
+  ok   28  Tras el reuso, el refresh bueno tampoco sirve
+  ok   29  Cerrar sesión: 204
+  ok   30  El token cerrado ya no sirve: 401
+Recuperar la contraseña y avisos
+  ok   31  Recuperar: 202 aunque el correo no exista (sin enumeración)
+  ok   32  Código que nadie pidió: 400
+  ok   33  Avisos sin token: 401
+  ok   34  Avisos con token: 200
+Fuerza bruta
+  ok   35  Tras 5 fallos, el correo se bloquea aunque la contraseña sea buena: 429
+
+Resultado: 35 de 35 pasaron, 0 fallaron.
