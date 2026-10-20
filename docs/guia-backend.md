@@ -1422,7 +1422,7 @@ Ahora `Usuario.esAdmin` sale de `Sesion.esAdmin`, que llena el servidor con los 
 
 ### 9.5 Pruebas de la app
 
-`./gradlew :app:testDebugUnitTest`: **56 pruebas, 0 fallas** (incluye la caché sin conexión, `CatalogoLocalTest`, la revisión de testimonios y
+`./gradlew :app:testDebugUnitTest`: **60 pruebas, 0 fallas** (incluye la caché sin conexión, `CatalogoLocalTest`, los buscadores, `BusquedaTest`, la revisión de testimonios y
 el orden por cercanía, `CercaniaTest`). Los repositorios de testimonios y
 encuestas tienen una versión en memoria solo para estas pruebas (`TestimonioRepositoryEnMemoria`,
 `EncuestaRepositoryEnMemoria`).
