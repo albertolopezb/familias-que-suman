@@ -39,7 +39,6 @@ import mx.tec.familiasquesuman.ui.theme.VerdeCategoriaTexto
 import org.osmdroid.config.Configuration
 import org.osmdroid.events.MapEventsReceiver
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
-import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
@@ -47,6 +46,8 @@ import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import java.io.File
+import kotlinx.coroutines.delay
+import kotlin.math.log2
 
 /**
  * El mapa con calles: OpenStreetMap con osmdroid. No pide llave, cuenta ni Google Play Services,
@@ -88,7 +89,13 @@ internal fun LienzoDeCalles(
 
     // Encuadra la ciudad (o los punteros) la primera vez y cuando cambia el filtro.
     val claves = visibles.joinToString { it.clave }
-    LaunchedEffect(claves, centroDeCiudad) { encuadrar(mapa, centroDeCiudad, visibles) }
+    LaunchedEffect(claves, centroDeCiudad) {
+        encuadrar(mapa, centroDeCiudad, visibles)
+        // Dentro de la página del Inicio, osmdroid termina de acomodarse un momento después y el
+        // primer encuadre queda corrido: se repite cuando ya está quieto (es lo que hace el botón).
+        delay(900)
+        encuadrar(mapa, centroDeCiudad, visibles)
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         AndroidView(
@@ -134,6 +141,12 @@ private fun crearMapa(contexto: Context): MapView {
         maxZoomLevel = 19.0
         // El crédito que pide la licencia de OpenStreetMap.
         overlays.add(CopyrightOverlay(contexto))
+        // Si cambia de tamaño (el primer acomodo, o agrandarlo), se vuelve a encuadrar.
+        addOnLayoutChangeListener { vista, izq, arriba, der, abajo, izqAntes, arribaAntes, derAntes, abajoAntes ->
+            val cambio = (der - izq) != (derAntes - izqAntes) || (abajo - arriba) != (abajoAntes - arribaAntes)
+            @Suppress("UNCHECKED_CAST")
+            if (cambio) (vista.tag as? () -> Unit)?.let { encuadre -> vista.postDelayed({ encuadre() }, 250) }
+        }
         // Mientras el dedo está sobre el mapa, la página del Inicio no se desplaza: el mapa se mueve.
         setOnTouchListener { vista, evento ->
             if (evento.actionMasked == MotionEvent.ACTION_DOWN) vista.parent?.requestDisallowInterceptTouchEvent(true)
@@ -145,16 +158,30 @@ private fun crearMapa(contexto: Context): MapView {
 private fun encuadrar(mapa: MapView, centro: Coordenada, puntos: List<PuntoEnMapa>) {
     val hacer = {
         if (puntos.size >= 2) {
-            val caja = BoundingBox.fromGeoPoints(puntos.map { GeoPoint(it.coordenada.latitud, it.coordenada.longitud) })
-            mapa.zoomToBoundingBox(caja.increaseByScale(1.3f), false, 48)
+            // El centro es el punto medio de los punteros, y el acercamiento el que hace caber el
+            // más alejado (con margen). No se usa zoomToBoundingBox: con el mapa dentro de una página
+            // que se desplaza, osmdroid lo calcula con un alto que no es el final y descuadra todo.
+            val lats = puntos.map { it.coordenada.latitud }
+            val lons = puntos.map { it.coordenada.longitud }
+            val medio = GeoPoint((lats.min() + lats.max()) / 2, (lons.min() + lons.max()) / 2)
+            val baldosa = 256 * mapa.resources.displayMetrics.density          // isTilesScaledToDpi
+            val ancho = mapa.width.coerceAtLeast(1) / baldosa
+            val alto = mapa.height.coerceAtLeast(1) / baldosa
+            val zoomAncho = log2(ancho * 360.0 / (lons.max() - lons.min()).coerceAtLeast(0.005))
+            val zoomAlto = log2(alto * 170.0 / (lats.max() - lats.min()).coerceAtLeast(0.005))
+            mapa.controller.setZoom((minOf(zoomAncho, zoomAlto) - 0.4).coerceIn(10.0, 16.0))
+            mapa.controller.setCenter(medio)
         } else {
             val donde = puntos.firstOrNull()?.coordenada ?: centro
             mapa.controller.setZoom(12.5)
             mapa.controller.setCenter(GeoPoint(donde.latitud, donde.longitud))
         }
     }
-    // Antes del primer acomodo el mapa no sabe su tamaño: se espera a que lo tenga.
-    if (mapa.width > 0 && mapa.height > 0) hacer() else mapa.addOnFirstLayoutListener { _, _, _, _, _ -> hacer() }
+    // Se guarda para repetirlo si el mapa cambia de tamaño: Compose lo acomoda primero con un alto
+    // y luego con el final, y osmdroid conserva la esquina de arriba, no el centro (los punteros
+    // quedaban fuera, hacia arriba).
+    mapa.tag = hacer
+    if (mapa.width > 0 && mapa.height > 0) mapa.postDelayed({ hacer() }, 250)
 }
 
 private fun pintarPunteros(

@@ -1,5 +1,14 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -155,20 +164,49 @@ fun InicioScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // El mapa general de la ciudad, justo después del llamado a la acción.
-            Text(
-                text = "Mapa de $ciudad",
-                style = MaterialTheme.typography.titleLarge,
-                color = AzulBannerFondo
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            MapaGeneral(
-                estado = mapa,
-                onAbrir = onAbrirPunto,
-                onReintentar = onReintentarMapa,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(440.dp)
-            )
+            // El título con su botón para ocultar o mostrar el mapa (el estado sobrevive a girar el teléfono).
+            var mapaVisible by rememberSaveable { mutableStateOf(true) }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Mapa de $ciudad",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = AzulBannerFondo,
+                    modifier = Modifier.weight(1f)
+                )
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(50))
+                        .background(AzulBannerFondo.copy(alpha = 0.08f))
+                        .clickable(onClickLabel = if (mapaVisible) "Ocultar el mapa" else "Mostrar el mapa") { mapaVisible = !mapaVisible }
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (mapaVisible) "Ocultar" else "Ver mapa",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = AzulBannerFondo
+                    )
+                    Icon(
+                        imageVector = if (mapaVisible) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = AzulBannerFondo
+                    )
+                }
+            }
+            if (mapaVisible) {
+                Spacer(modifier = Modifier.height(12.dp))
+                MapaGeneral(
+                    estado = mapa,
+                    onAbrir = onAbrirPunto,
+                    onReintentar = onReintentarMapa,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(440.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
