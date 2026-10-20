@@ -268,7 +268,8 @@ services:
       - ./monitoreo/grafana/tableros:/var/lib/grafana/dashboards:ro
       - grafana-datos:/var/lib/grafana
     <<: *endurecido
-    mem_limit: 384m
+    # Grafana 13 no cabe en 384 MB: relee sus archivos del disco sin parar y se cuelga (20 oct.).
+    mem_limit: 768m
     ports:
       - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
     networks: [monitoreo, local]
