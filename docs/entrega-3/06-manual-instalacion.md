@@ -107,7 +107,7 @@ Pruebas de la app:
 ./gradlew :app:connectedDebugAndroidTest
 ```
 
-La primera son las 56 pruebas locales. La segunda son las pruebas de interfaz y necesitan un
+La primera son las 60 pruebas locales. La segunda son las pruebas de interfaz y necesitan un
 emulador o un teléfono conectado.
 
 ### 6.2.4 APK de entrega firmado

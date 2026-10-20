@@ -38,7 +38,7 @@ repositorio) y se guardan en dos lugares.
 ## 7.4 Procedimiento de despliegue
 
 1. **Antes:**
-   - Las 182 pruebas del servidor y las 56 de la app en verde.
+   - Las 182 pruebas del servidor y las 60 de la app en verde.
    - ZAP sin altas ni medias.
    - Etiquetar el commit (`git tag vX.Y-…`).
 2. **Respaldo** (si ya hay datos):
