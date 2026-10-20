@@ -3,9 +3,9 @@
 | Qué | Enlace |
 |---|---|
 | Repositorio, versión entregada | https://github.com/albertolopezb/familias-que-suman/tree/v3.0-entrega |
-| APK de release firmado | https://github.com/albertolopezb/familias-que-suman/releases/tag/v3.0-entrega (archivo `familias-que-suman-v3.0.apk`) |
+| APK de release firmado | https://drive.google.com/drive/folders/1osTVnL2wIYpvCL74rTf3JJoNcdxOEZq0 (carpeta `APK_firmado_Equipo6`, archivo `familias-que-suman-v3.0.apk`, versión 3.0, 17,481,344 bytes, SHA-256 `18065e33cc77b09003c8f967c786cb6687e98103337b6fa52673a71a75b7c272`) |
 | Backend: instrucciones para levantarlo | [Manual de instalación, §6.2 y §6.3](06-manual-instalacion.md) y [`backend/README.md`](../../backend/README.md) |
-| Backend: servicio desplegado | `https://<dirección>.trycloudflare.com/v1/salud` (servidor en Azure; la dirección vigente se anota el día de la presentación) |
+| Backend: servicio desplegado | https://hunter-marilyn-larger-frequent.trycloudflare.com/v1/salud (VM de Azure for Students, `northcentralus`; es la dirección que trae el APK. Si el túnel se reinicia cambia: ver [Manual de instalación §6.3](06-manual-instalacion.md)) |
 | Video de respaldo de la demostración (≈3 min) | *[pendiente: enlace al video]* |
 | Plan de Planner | *[pendiente: enlace al plan "Reto TC2007B.402"]* y captura del tablero final |
 | Acta de acuerdos | *[pendiente: enlace]* |
