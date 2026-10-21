@@ -1,5 +1,7 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
+import mx.tec.familiasquesuman.domain.Coordenada
+import mx.tec.familiasquesuman.ui.screens.actividades.BusquedaCercana
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
@@ -76,6 +78,10 @@ fun InicioScreen(
     mapa: UiState<MapaDeCiudad> = UiState.Cargando,
     onAbrirPunto: (PuntoEnMapa) -> Unit = {},
     onReintentarMapa: () -> Unit = {},
+    cercaDe: BusquedaCercana = BusquedaCercana(),
+    onBuscarCercaDe: (String) -> Unit = {},
+    onElegirPuntoCercano: (Coordenada) -> Unit = {},
+    onQuitarCercaDe: () -> Unit = {},
     esAdmin: Boolean = false,
     onIrAlPanel: () -> Unit = {}
 ) {
@@ -83,7 +89,6 @@ fun InicioScreen(
     // El encabezado azul (logo, ciudad y perfil) queda fijo, igual que en las demás pantallas.
     // Sin título: el saludo va debajo, fuera del azul.
     EncabezadoAzul(
-        etiqueta = null,
         titulo = null,
         ciudad = ciudad,
         onCiudadSeleccionada = onCambiarCiudad
@@ -202,9 +207,13 @@ fun InicioScreen(
                     estado = mapa,
                     onAbrir = onAbrirPunto,
                     onReintentar = onReintentarMapa,
+                    cercaDe = cercaDe,
+                    onBuscarCercaDe = onBuscarCercaDe,
+                    onElegirPunto = onElegirPuntoCercano,
+                    onQuitarCercaDe = onQuitarCercaDe,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(440.dp)
+                        .height(560.dp)
                 )
             }
 

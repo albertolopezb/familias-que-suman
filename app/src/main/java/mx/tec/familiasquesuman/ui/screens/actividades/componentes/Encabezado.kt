@@ -31,14 +31,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import mx.tec.familiasquesuman.FamiliasApplication
 import mx.tec.familiasquesuman.R
 import mx.tec.familiasquesuman.ui.theme.AzulEncabezado
-import mx.tec.familiasquesuman.ui.theme.MarcaOro
 import mx.tec.familiasquesuman.ui.components.BotonPerfil
 import mx.tec.familiasquesuman.ui.components.SelectorCiudad
 
@@ -83,10 +81,11 @@ fun EncabezadoApp(
 }
 
 /**
- * El encabezado de cada pestaña, todo en azul: arriba el logo y el perfil, luego un
- * rótulo dorado, el título en blanco y la ciudad elegida (Monterrey u Hermosillo), que
- * se puede cambiar desde cualquier pestaña. Debajo, [contenido] lleva lo que cada pestaña
- * necesita tener a la mano: el buscador, las pestañas internas, los filtros.
+ * El encabezado de cada pestaña, todo en azul: arriba el logo y el perfil, luego el título en
+ * blanco y la ciudad elegida (Monterrey u Hermosillo), que se puede cambiar desde cualquier
+ * pestaña. Nada más: sin rótulos ni subtítulos, para que el título se lea de un vistazo.
+ * Debajo, [contenido] lleva lo que cada pestaña necesita tener a la mano: el buscador, las
+ * pestañas internas, los filtros.
  *
  * Si [titulo] es null (el Inicio, que saluda fuera del azul), solo quedan el logo, la ciudad y el perfil.
  *
@@ -96,11 +95,8 @@ fun EncabezadoApp(
  */
 @Composable
 fun EncabezadoAzul(
-    etiqueta: String?,
     titulo: String?,
     modifier: Modifier = Modifier,
-    subtitulo: String? = null,
-    colorEtiqueta: Color = MarcaOro,
     ciudad: String? = null,
     onCiudadSeleccionada: ((String) -> Unit)? = null,
     // El toque largo del título lo usa Actividades para su botón escondido de pruebas.
@@ -154,33 +150,12 @@ fun EncabezadoAzul(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    if (etiqueta != null) {
-                        Text(
-                            text = etiqueta,
-                            style = TextoWeb.Chico.copy(
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.2.sp
-                            ),
-                            color = colorEtiqueta
-                        )
-                    }
-                    Text(
-                        text = titulo,
-                        style = TextoWeb.Titulo.copy(fontSize = 28.sp, lineHeight = 34.sp),
-                        color = Color.White,
-                        modifier = modificadorTitulo.padding(top = 2.dp)
-                    )
-                    if (subtitulo != null) {
-                        Text(
-                            text = subtitulo,
-                            style = TextoWeb.Cuerpo,
-                            color = Color.White.copy(alpha = 0.8f),
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
-                    }
-                }
+                Text(
+                    text = titulo,
+                    style = TextoWeb.Titulo.copy(fontSize = 28.sp, lineHeight = 34.sp),
+                    color = Color.White,
+                    modifier = modificadorTitulo.weight(1f)
+                )
                 Spacer(Modifier.width(12.dp))
                 selectorDeCiudad()
             }

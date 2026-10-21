@@ -9,7 +9,6 @@ import mx.tec.familiasquesuman.ui.components.ubicacionValida
 import mx.tec.familiasquesuman.ui.components.CampoUbicacion
 import mx.tec.familiasquesuman.domain.coordenadaDeTexto
 import mx.tec.familiasquesuman.domain.Coordenada
-import mx.tec.familiasquesuman.domain.porCercania
 import androidx.compose.foundation.border
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.ui.graphics.Color
@@ -76,12 +75,7 @@ fun ActividadesScreen(
     onEditarActividad: (String) -> Unit = {},
     onBorrarActividad: (String) -> Unit = {},
     onVerInscritos: (String) -> Unit = {},
-    onSugerir: () -> Unit = {},
-    /** "Cerca de mí": la ubicación aproximada, solo en el teléfono (ver CercaDeMi.kt). null = por fecha. */
-    cercaDeMi: Coordenada? = null,
-    buscandoUbicacion: Boolean = false,
-    avisoUbicacion: String? = null,
-    onCercaDeMi: () -> Unit = {}
+    onSugerir: () -> Unit = {}
 ) {
     val titulo = if (esAdmin) "Actividades (Admin)" else "Actividades"
     var busqueda by rememberSaveable { mutableStateOf("") }
@@ -113,9 +107,7 @@ fun ActividadesScreen(
                 .background(Web.Fondo)
         ) {
             EncabezadoAzul(
-                etiqueta = "Suma en familia",
                 titulo = titulo,
-                subtitulo = "Actividades en $ciudad",
                 modificadorTitulo = modificadorTitulo
             ) {
                 BuscadorPlegable(busqueda, { busqueda = it }, "Buscar actividades…")
@@ -141,15 +133,8 @@ fun ActividadesScreen(
                             coincideBusqueda(busqueda, it.actividad.titulo, it.actividad.descripcion, it.asociacion.nombre, it.actividad.direccion)
                         }
                         val (pasadasSinOrden, proximasSinOrden) = encontradas.partition { it.actividad.yaPaso }
-                        val porFecha = proximasSinOrden.sortedBy { fechaDeTexto(it.actividad.fecha) ?: LocalDate.MAX }
-                        val proximas = cercaDeMi?.let { aqui -> porFecha.porCercania(aqui) { it.actividad.coordenada } } ?: porFecha
+                        val proximas = proximasSinOrden.sortedBy { fechaDeTexto(it.actividad.fecha) ?: LocalDate.MAX }
                         val pasadas = pasadasSinOrden.sortedByDescending { fechaPasadaDeTexto(it.actividad.fecha) ?: LocalDate.MIN }
-
-                        if (proximas.isNotEmpty()) {
-                            item(key = "cerca-de-mi") {
-                                FiltroCercaDeMi(cercaDeMi != null, buscandoUbicacion, avisoUbicacion, onCercaDeMi)
-                            }
-                        }
 
                         if (busqueda.isNotBlank() && encontradas.isEmpty()) {
                             item(key = "sin-resultados") {
@@ -214,31 +199,6 @@ fun ActividadesScreen(
                     }
                 }
             }
-        }
-    }
-}
-
-/** El botón "Cerca de mí" y, debajo, qué está pasando con la ubicación. */
-@Composable
-private fun FiltroCercaDeMi(activo: Boolean, buscando: Boolean, aviso: String?, onClick: () -> Unit) {
-    Column(Modifier.padding(bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .background(if (activo) Web.Primario else Web.Tarjeta)
-                .border(1.dp, if (activo) Web.Primario else Web.Borde, RoundedCornerShape(50))
-                .clickable(enabled = !buscando, onClick = onClick)
-                .padding(horizontal = 14.dp, vertical = 8.dp)
-        ) {
-            if (buscando) CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp, color = Web.Primario)
-            else Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = if (activo) Color.White else Web.Primario, modifier = Modifier.size(16.dp))
-            Text(if (buscando) "Buscando…" else "Cerca de mí", style = TextoWeb.Chip, color = if (activo) Color.White else Web.Texto)
-        }
-        when {
-            aviso != null -> Text(aviso, style = TextoWeb.Chico)
-            activo -> Text("De la más cercana a la más lejana. Tu ubicación es aproximada y no sale de tu teléfono.", style = TextoWeb.Chico)
         }
     }
 }

@@ -43,6 +43,7 @@ object AppViewModelProvider {
         initializer { AvisoPrivacidadViewModel(familiasApplication().container.perfilRepository) }
         initializer { mx.tec.familiasquesuman.ui.screens.actividades.InscritosViewModel(familiasApplication().container.actividadRepository) }
         initializer { mx.tec.familiasquesuman.ui.screens.perfil.SolicitudesEliminacionViewModel(familiasApplication().container.perfilRepository) }
+        initializer { mx.tec.familiasquesuman.ui.screens.perfil.ResumenAdminViewModel(familiasApplication().container.perfilRepository) }
         initializer {
             TestimonioViewModel(
                 familiasApplication().container.perfilRepository,
@@ -93,7 +94,7 @@ object AppViewModelProvider {
         }
 
         // El mapa del Inicio: los punteros de la ciudad elegida
-        initializer { MapaViewModel(familiasApplication().container.mapaRepository) }
+        initializer { MapaViewModel(familiasApplication().container.mapaRepository, familiasApplication().container.buscadorDeLugares) }
 
         // Parte 4 · Campañas
         initializer {

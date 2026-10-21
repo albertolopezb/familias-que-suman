@@ -74,7 +74,8 @@ class DirectorioViewModel(
                 informacion = v[3].trim(),
                 necesidades = v[4].lines().map { it.trim() }.filter { it.isNotEmpty() },
                 direccion = v[5].trim(),
-                verificado = v[6] == "true"
+                verificado = v[6] == "true",
+                coordenada = coordenadaDeTexto(v[7])          // vacío = no sale en el mapa
             )
             intentar { if (original == null) actividadRepository.agregarCentro(nuevo) else actividadRepository.editarCentro(nuevo) }
             cargar()

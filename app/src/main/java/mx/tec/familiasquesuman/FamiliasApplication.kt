@@ -2,6 +2,7 @@ package mx.tec.familiasquesuman
 
 import android.app.Application
 import mx.tec.familiasquesuman.data.ActividadRepository
+import mx.tec.familiasquesuman.data.BuscadorDeLugares
 import mx.tec.familiasquesuman.data.local.CatalogoLocal
 import mx.tec.familiasquesuman.data.CampanaRepository
 import mx.tec.familiasquesuman.data.CuentaRepository
@@ -34,6 +35,8 @@ class AppContainer(contexto: android.content.Context) {
     }
     val encuestaRepository: EncuestaRepository by lazy { EncuestaRepositoryApi() }
     val mapaRepository: MapaRepository by lazy { MapaRepository(actividadRepository, campanaRepository) }
+    /** "Buscar cerca de" y la ubicación que pone la administración: municipios y OpenStreetMap. */
+    val buscadorDeLugares: BuscadorDeLugares by lazy { BuscadorDeLugares() }
     /** La ciudad y los avisos que se eligen en Ajustes, guardados en el teléfono. */
     val preferenciasStore: PreferenciasStore = PreferenciasStore(contexto)
 

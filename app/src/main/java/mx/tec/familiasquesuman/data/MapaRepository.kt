@@ -6,8 +6,8 @@ import mx.tec.familiasquesuman.domain.PuntoEnMapa
 import mx.tec.familiasquesuman.domain.TipoDePunto
 
 /**
- * Junta actividades, proyectos y campañas de donación de una ciudad en una sola lista de
- * punteros. La latitud y la longitud llegan de la API con cada cosa; lo que no tiene, no sale en
+ * Junta actividades, proyectos, campañas de donación y centros del Directorio de una ciudad en
+ * una sola lista de punteros. La latitud y la longitud llegan de la API con cada cosa; lo que no tiene, no sale en
  * el mapa. No usa la ubicación del teléfono: el mapa es una vista general de la ciudad elegida.
  */
 class MapaRepository(
@@ -71,7 +71,24 @@ class MapaRepository(
                 }
             }
 
-        return MapaDeCiudad(ciudad = ciudad, centro = centro, puntos = actividades + proyectos + donaciones)
+        // Si los centros no cargan, el mapa sale igual con lo demás.
+        val centros = runCatching { actividadRepository.getCentros() }.getOrDefault(emptyList())
+            .filter { it.ciudad == ciudad }
+            .mapNotNull { c ->
+                c.coordenada?.let { donde ->
+                    PuntoEnMapa(
+                        id = c.id,
+                        tipo = TipoDePunto.DIRECTORIO,
+                        titulo = c.nombre,
+                        descripcion = c.resumen,
+                        cuando = c.tipo + if (c.verificado) " · Verificado" else "",
+                        lugar = c.direccion,
+                        coordenada = donde
+                    )
+                }
+            }
+
+        return MapaDeCiudad(ciudad = ciudad, centro = centro, puntos = actividades + proyectos + donaciones + centros)
     }
 
     /** ~100 km alrededor del centro de la ciudad. */

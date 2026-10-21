@@ -139,7 +139,6 @@ fun CampanasScreen(
     var busqueda by rememberSaveable { mutableStateOf("") }
 
         EncabezadoAzul(
-            etiqueta = "Tu apoyo cuenta",
             titulo = if (esAdmin) "Quiero Donar (Admin)" else "Quiero Donar"
         ) {
             SelectorModoDonar(modo = modo, onElegir = { modo = it })

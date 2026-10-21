@@ -230,6 +230,8 @@ class CentroSalida(BaseModel):
     whatsapp: str | None
     instagram: str | None
     ciudad: str
+    latitud: float | None = None
+    longitud: float | None = None
 
 
 class TestimonioSalida(BaseModel):
@@ -664,6 +666,8 @@ class CentroEntrada(Entrada):
     instagram: EnlaceSeguro = ""
     logo: Recurso = ""
     ciudad: Ciudad = "Monterrey"
+    latitud: Latitud | None = None
+    longitud: Longitud | None = None
 
 
 class AsistenciaEntrada(Entrada):
@@ -689,3 +693,26 @@ class AsistenciaSalida(Salida):
     cuenta_id: uuid.UUID
     actividad_id: uuid.UUID
     registrada_en: datetime
+
+
+
+class ResumenSalida(BaseModel):
+    """Los números del panel de administración. Solo conteos: ningún dato de una persona."""
+
+    familias: int                   # cuentas de familia (sin permisos de administración)
+    administradores: int            # cuentas con al menos un permiso
+    acompanantes: int               # personas que las familias registraron además de la titular
+    actividades_proximas: int
+    actividades_pasadas: int
+    proyectos_activos: int
+    campanas: int
+    centros: int
+    asociaciones: int
+    inscripciones_vigentes: int     # sin cancelar, de actividades que no han pasado
+    personas_inscritas: int         # cuántas personas suman esas inscripciones
+    aportaciones: int               # artículos apartados para campañas
+    testimonios_publicados: int
+    testimonios_por_revisar: int
+    sugerencias: dict[str, int]     # las propuestas de las familias por tipo: actividad, campana, proyecto, centro
+    sugerencias_por_revisar: int
+    eliminaciones_pendientes: int

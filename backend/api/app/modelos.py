@@ -252,6 +252,8 @@ class Centro(Base):
     recomendaciones: Mapped[str] = mapped_column(Text, server_default=text("''"))
     instagram: Mapped[str | None] = mapped_column(Text)
     ciudad: Mapped[str] = mapped_column(Text, server_default=text("'Monterrey'"))
+    latitud: Mapped[float | None] = mapped_column(Float)
+    longitud: Mapped[float | None] = mapped_column(Float)
 
 
 class Campana(Base):

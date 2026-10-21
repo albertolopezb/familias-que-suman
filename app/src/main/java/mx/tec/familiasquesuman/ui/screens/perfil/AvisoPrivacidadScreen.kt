@@ -119,7 +119,7 @@ fun AvisoPrivacidadScreen(
                 Icons.Outlined.Info)
             TarjetaPrivacidad("4. Cómo limitar su uso",
                 "En Ajustes apagas los recordatorios y avisos. Testimonios, encuestas, sugerencias y foto de perfil son opcionales y puedes " +
-                    "borrarlos. \"Cerca de mí\" solo se activa si lo tocas y das permiso. Y puedes pedir que borremos todo con el botón de abajo.",
+                    "borrarlos. La app no pide tu ubicación. Y puedes pedir que borremos todo con el botón de abajo.",
                 Icons.Outlined.Settings)
             TarjetaPrivacidad("Quién más los ve",
                 "El equipo de Familias que Suman que lo necesita para su trabajo (por ejemplo, quien registra la asistencia) y, " +
@@ -130,8 +130,9 @@ fun AvisoPrivacidadScreen(
                     "que no los usan para nada más. Solo los entregaríamos a una autoridad que los pida conforme a la ley.",
                 IconoVisibilidadPrivacidad)
             TarjetaPrivacidad("Tu ubicación",
-                "\"Cerca de mí\" usa tu ubicación aproximada (no la exacta) solo en tu teléfono, para ordenar las actividades por cercanía. " +
-                    "No la recibimos ni la guardamos, y si no das permiso la app funciona igual. " +
+                "La app no pide permiso de ubicación: no sabemos dónde estás. En el mapa del Inicio puedes \"Buscar cerca de\" un " +
+                    "municipio, una colonia o una calle que tú escribes (o un punto que tocas): los municipios se encuentran en el teléfono, " +
+                    "y lo demás se busca en OpenStreetMap, que solo recibe ese texto, sin tu cuenta ni tus datos. No lo guardamos. " +
                     "El mapa del Inicio dibuja las calles con OpenStreetMap: tu teléfono les pide las imágenes de la zona que estás viendo, sin tu ubicación ni tus datos.",
                 Icons.Outlined.LocationOn)
             TarjetaPrivacidad("Las fotos y testimonios",

@@ -217,6 +217,8 @@ class ActividadRepository {
         put("whatsapp", c.whatsapp.orEmpty())
         put("instagram", c.instagram.orEmpty())
         put("logo", c.logo.orEmpty())
+        put("ciudad", c.ciudad.ifBlank { "Monterrey" })
+        c.coordenada?.let { put("latitud", it.latitud); put("longitud", it.longitud) }
     }
 
     suspend fun agregarCentro(centro: CentroVisiteo) { llamar { crearCentro(cuerpoCentro(centro)) } }

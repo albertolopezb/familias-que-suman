@@ -85,6 +85,7 @@ interface ApiFamilias {
     // ─── Administración (el servidor revisa el permiso; la app solo enseña los botones) ───
     @GET("v1/admin/actividades/{id}/inscritos") suspend fun inscritos(@Path("id") id: String): List<InscritoDto>
     @GET("v1/admin/solicitudes-eliminacion") suspend fun solicitudesEliminacion(): List<SolicitudEliminacionDto>
+    @GET("v1/admin/resumen") suspend fun resumen(): ResumenDto
     @POST("v1/admin/solicitudes-eliminacion/{id}/atender") suspend fun atenderEliminacion(@Path("id") id: String): SolicitudEliminacionDto
     @GET("v1/admin/encuestas") suspend fun todasLasEncuestas(@Query("actividad_id") actividadId: String? = null): List<EncuestaDto>
     @GET("v1/admin/sugerencias") suspend fun bandejaSugerencias(): List<SugerenciaDto>

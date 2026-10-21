@@ -189,6 +189,8 @@ def centro(c: Centro) -> e.CentroSalida:
         whatsapp=c.whatsapp,
         instagram=c.instagram,
         ciudad=c.ciudad,
+        latitud=c.latitud,
+        longitud=c.longitud,
     )
 
 

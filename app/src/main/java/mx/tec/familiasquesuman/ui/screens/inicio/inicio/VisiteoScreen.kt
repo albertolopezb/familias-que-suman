@@ -120,7 +120,7 @@ fun VisiteoScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
     Column(modifier = Modifier.fillMaxSize().background(Web.Fondo)) {
-        EncabezadoAzul(etiqueta = "Visita y apoya", titulo = "Directorio") {
+        EncabezadoAzul(titulo = "Directorio") {
             Buscador(valor = busqueda, onValor = { busqueda = it }, placeholder = "Buscar centro...")
             Row(
                 modifier = Modifier.horizontalScroll(rememberScrollState()),

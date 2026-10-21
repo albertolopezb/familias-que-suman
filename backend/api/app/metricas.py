@@ -45,4 +45,7 @@ def operacion(nombre: str, resultado: str = "ok") -> None:
 
 def publicar(puerto: int) -> None:
     """Abre el servidor de métricas en su propio hilo. Se llama una vez al arrancar."""
+    from .resumen import registrar_en_prometheus  # importa la base: solo cuando sí hay métricas
+
+    registrar_en_prometheus()
     start_http_server(puerto, addr="0.0.0.0")

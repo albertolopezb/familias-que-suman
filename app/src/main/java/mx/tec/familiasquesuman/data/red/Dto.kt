@@ -136,7 +136,9 @@ data class CentroDto(
     val telefono: String? = null,
     val whatsapp: String? = null,
     val instagram: String? = null,
-    val ciudad: String = "Monterrey"
+    val ciudad: String = "Monterrey",
+    val latitud: Double? = null,
+    val longitud: Double? = null
 )
 
 @Serializable
@@ -385,3 +387,26 @@ typealias CuerpoLibre = JsonObject
 /** El error que responde la API: `{ "error": "...", "codigo": "...", "datos": {...} }`. */
 @Serializable
 data class ErrorDto(val error: String = "", val codigo: String = "", val datos: JsonObject? = null)
+
+/** GET /v1/admin/resumen: solo conteos, ningún dato de una persona. */
+@Serializable
+data class ResumenDto(
+    val familias: Int = 0,
+    val administradores: Int = 0,
+    val acompanantes: Int = 0,
+    val actividadesProximas: Int = 0,
+    val actividadesPasadas: Int = 0,
+    val proyectosActivos: Int = 0,
+    val campanas: Int = 0,
+    val centros: Int = 0,
+    val asociaciones: Int = 0,
+    val inscripcionesVigentes: Int = 0,
+    val personasInscritas: Int = 0,
+    val aportaciones: Int = 0,
+    val testimoniosPublicados: Int = 0,
+    val testimoniosPorRevisar: Int = 0,
+    /** Por tipo: actividad, campana, proyecto, centro. */
+    val sugerencias: Map<String, Int> = emptyMap(),
+    val sugerenciasPorRevisar: Int = 0,
+    val eliminacionesPendientes: Int = 0
+)

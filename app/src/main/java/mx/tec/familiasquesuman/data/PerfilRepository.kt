@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.data
 
+import mx.tec.familiasquesuman.data.red.ResumenDto
 import mx.tec.familiasquesuman.data.red.SolicitudEliminacionDto
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -57,4 +58,7 @@ class PerfilRepository {
 
     /** Borra la cuenta y todo lo suyo (en el servidor, en cascada) y deja la solicitud como constancia. */
     suspend fun atenderEliminacion(id: String): SolicitudEliminacionDto = llamar { atenderEliminacion(id) }
+
+    /** Cuántos hay de cada cosa, para el "Resumen" de la administración (exige `administrar:catalogo`). */
+    suspend fun resumen(): ResumenDto = llamar { resumen() }
 }

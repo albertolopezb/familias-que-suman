@@ -34,6 +34,8 @@ import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TextoWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Web
 import mx.tec.familiasquesuman.ui.theme.AzulCategoriaTexto
+import mx.tec.familiasquesuman.ui.theme.MarcaOro
+import mx.tec.familiasquesuman.ui.theme.MentaCategoriaTexto
 import mx.tec.familiasquesuman.ui.theme.MoradoCategoriaTexto
 import mx.tec.familiasquesuman.ui.theme.VerdeCategoriaTexto
 import org.osmdroid.config.Configuration
@@ -63,7 +65,11 @@ internal fun LienzoDeCalles(
     visibles: List<PuntoEnMapa>,
     claveSeleccionada: String,
     onSeleccionar: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** "Buscar cerca de": el punto desde el que se mide (un puntero dorado). */
+    referencia: Coordenada? = null,
+    /** Mantener el dedo sobre el mapa elige ese punto; null = no hace nada. */
+    onMantener: ((Coordenada) -> Unit)? = null
 ) {
     val contexto = LocalContext.current
     val mapa = remember { crearMapa(contexto) }
@@ -88,19 +94,21 @@ internal fun LienzoDeCalles(
     }
 
     // Encuadra la ciudad (o los punteros) la primera vez y cuando cambia el filtro.
+    // Con un lugar de referencia, el mapa se centra en él; si no, en la ciudad (o los punteros).
     val claves = visibles.joinToString { it.clave }
-    LaunchedEffect(claves, centroDeCiudad) {
-        encuadrar(mapa, centroDeCiudad, visibles)
+    LaunchedEffect(claves, centroDeCiudad, referencia) {
+        val encuadre = { if (referencia != null) centrarEn(mapa, referencia) else encuadrar(mapa, centroDeCiudad, visibles) }
+        encuadre()
         // Dentro de la página del Inicio, osmdroid termina de acomodarse un momento después y el
         // primer encuadre queda corrido: se repite cuando ya está quieto (es lo que hace el botón).
         delay(900)
-        encuadrar(mapa, centroDeCiudad, visibles)
+        encuadre()
     }
 
     Box(modifier = modifier.fillMaxSize()) {
         AndroidView(
             factory = { mapa },
-            update = { vista -> pintarPunteros(vista, visibles, claveSeleccionada, onSeleccionar) },
+            update = { vista -> pintarPunteros(vista, visibles, claveSeleccionada, onSeleccionar, referencia, onMantener) },
             modifier = Modifier.fillMaxSize()
         )
 
@@ -124,7 +132,7 @@ internal fun LienzoDeCalles(
 }
 
 @SuppressLint("ClickableViewAccessibility")
-private fun crearMapa(contexto: Context): MapView {
+internal fun crearMapa(contexto: Context): MapView {
     Configuration.getInstance().apply {
         // OpenStreetMap pide identificar la app que descarga las imágenes.
         userAgentValue = contexto.packageName
@@ -184,19 +192,45 @@ private fun encuadrar(mapa: MapView, centro: Coordenada, puntos: List<PuntoEnMap
     if (mapa.width > 0 && mapa.height > 0) mapa.postDelayed({ hacer() }, 250)
 }
 
+/** Centra el mapa en un punto con acercamiento de colonia (unos 5 km a lo ancho). */
+internal fun centrarEn(mapa: MapView, punto: Coordenada, zoom: Double = 13.0) {
+    val hacer = {
+        mapa.controller.setZoom(zoom)
+        mapa.controller.setCenter(GeoPoint(punto.latitud, punto.longitud))
+    }
+    mapa.tag = hacer
+    if (mapa.width > 0 && mapa.height > 0) mapa.postDelayed({ hacer() }, 250)
+}
+
 private fun pintarPunteros(
     mapa: MapView,
     puntos: List<PuntoEnMapa>,
     claveSeleccionada: String,
-    onSeleccionar: (String) -> Unit
+    onSeleccionar: (String) -> Unit,
+    referencia: Coordenada?,
+    onMantener: ((Coordenada) -> Unit)?
 ) {
     mapa.overlays.removeAll { it is Marker || it is MapEventsOverlay }
-    // Tocar el mapa fuera de un puntero cierra el mini menú.
+    // Tocar el mapa fuera de un puntero cierra el mini menú; mantener el dedo elige ese punto.
     mapa.overlays.add(0, MapEventsOverlay(object : MapEventsReceiver {
         override fun singleTapConfirmedHelper(p: GeoPoint?): Boolean { onSeleccionar(""); return true }
-        override fun longPressHelper(p: GeoPoint?): Boolean = false
+        override fun longPressHelper(p: GeoPoint?): Boolean {
+            if (p == null || onMantener == null) return false
+            onSeleccionar("")
+            onMantener(Coordenada(p.latitude, p.longitude))
+            return true
+        }
     }))
     val densidad = mapa.resources.displayMetrics.density
+    if (referencia != null) {
+        mapa.overlays.add(Marker(mapa).apply {
+            position = GeoPoint(referencia.latitud, referencia.longitud)
+            title = "Desde aquí se mide la distancia"
+            icon = circulo(MarcaOro, (22 * densidad).toInt(), (5 * densidad).toInt())
+            setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+            setOnMarkerClickListener { _, _ -> true }
+        })
+    }
     puntos.forEach { punto ->
         val elegido = punto.clave == claveSeleccionada
         mapa.overlays.add(Marker(mapa).apply {
@@ -210,8 +244,8 @@ private fun pintarPunteros(
     mapa.invalidate()
 }
 
-/** Un círculo del color de la tarjeta (morado, azul o verde) con borde blanco. */
-private fun circulo(color: Color, tamano: Int, borde: Int) = GradientDrawable().apply {
+/** Un círculo del color de la tarjeta (morado, azul, verde o menta) con borde blanco. */
+internal fun circulo(color: Color, tamano: Int, borde: Int) = GradientDrawable().apply {
     shape = GradientDrawable.OVAL
     setColor(color.toArgb())
     setStroke(borde, android.graphics.Color.WHITE)
@@ -223,4 +257,5 @@ private val TipoDePunto.colorDeMapa: Color
         TipoDePunto.ACTIVIDAD -> MoradoCategoriaTexto
         TipoDePunto.PROYECTO -> AzulCategoriaTexto
         TipoDePunto.DONACION -> VerdeCategoriaTexto
+        TipoDePunto.DIRECTORIO -> MentaCategoriaTexto
     }

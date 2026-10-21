@@ -245,7 +245,9 @@ data class CentroVisiteo(
     val recomendaciones: String = "",
     val telefono: String? = null,   // solo dígitos
     val whatsapp: String? = null,   // solo dígitos
-    val instagram: String? = null   // enlace completo
+    val instagram: String? = null,  // enlace completo
+    val ciudad: String = "Monterrey",
+    val coordenada: Coordenada? = null  // null = no sale en el mapa
 )
 
 // ---------------------------------------------------------------------------

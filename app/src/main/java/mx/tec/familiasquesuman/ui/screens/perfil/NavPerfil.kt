@@ -67,6 +67,7 @@ object RutasPerfil {
     const val AJUSTES = "perfil/ajustes"
     const val NOTIFICACIONES = "perfil/notificaciones"
     const val SOLICITUDES_ELIMINACION = "perfil/solicitudes_eliminacion"
+    const val RESUMEN = "perfil/resumen"
     fun testimonio(participacionId: String) = "perfil/testimonio/${Uri.encode(participacionId)}"
     fun encuestaFinal(participacionId: String, titulo: String) =
         "perfil/encuesta_final/${Uri.encode(participacionId)}?titulo=${Uri.encode(titulo)}"
@@ -183,6 +184,12 @@ fun NavGraphBuilder.grafoPerfil(
             onAtender = vm::atender, onMensajeVisto = vm::mensajeVisto,
             onReintentar = vm::cargar, onRegresar = { nav.popBackStack() }
         )
+    }
+    composable(RutasPerfil.RESUMEN) {
+        val vm: ResumenAdminViewModel = viewModel(factory = AppViewModelProvider.Factory)
+        val estado by vm.estado.collectAsStateWithLifecycle()
+        LaunchedEffect(Unit) { vm.cargar() }
+        ResumenAdminScreen(estado = estado, onReintentar = vm::cargar, onRegresar = { nav.popBackStack() })
     }
     composable(RutasPerfil.AJUSTES) {
         val vm: AjustesViewModel = viewModel(factory = AppViewModelProvider.Factory)
@@ -325,6 +332,7 @@ fun NavGraphBuilder.grafoPerfil(
             onTestimoniosClick = { nav.navigate(RutasInicio.TESTIMONIOS) { launchSingleTop = true } },
             onRespuestasClick = { nav.navigate(RutasPerfil.respuestas()) { launchSingleTop = true } },
             onSolicitudesEliminacionClick = { nav.navigate(RutasPerfil.SOLICITUDES_ELIMINACION) { launchSingleTop = true } },
+            onResumenClick = { nav.navigate(RutasPerfil.RESUMEN) { launchSingleTop = true } },
             onRegresar = { nav.popBackStack() },
             familiares = familiares,
             onAgregarFamiliar = cuentaVm::agregarFamiliar,

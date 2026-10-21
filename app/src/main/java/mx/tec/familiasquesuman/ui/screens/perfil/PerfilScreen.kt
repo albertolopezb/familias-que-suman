@@ -20,6 +20,7 @@ import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
@@ -92,6 +93,7 @@ fun PerfilScreen(
     onTestimoniosClick: () -> Unit = {},
     onRespuestasClick: () -> Unit = {},
     onSolicitudesEliminacionClick: () -> Unit = {},
+    onResumenClick: () -> Unit = {},
     familiares: List<Acompanante> = emptyList(),
     onAgregarFamiliar: (Acompanante) -> Unit = {},
     onQuitarFamiliar: (Acompanante) -> Unit = {},
@@ -124,6 +126,7 @@ fun PerfilScreen(
                 onTestimoniosClick = onTestimoniosClick,
                 onRespuestasClick = onRespuestasClick,
                 onSolicitudesEliminacionClick = onSolicitudesEliminacionClick,
+                onResumenClick = onResumenClick,
                 familiares = familiares,
                 onAgregarFamiliar = onAgregarFamiliar,
                 onQuitarFamiliar = onQuitarFamiliar,
@@ -156,6 +159,7 @@ private fun ContenidoPerfil(
     onTestimoniosClick: () -> Unit,
     onRespuestasClick: () -> Unit,
     onSolicitudesEliminacionClick: () -> Unit,
+    onResumenClick: () -> Unit,
     familiares: List<Acompanante>,
     onAgregarFamiliar: (Acompanante) -> Unit,
     onQuitarFamiliar: (Acompanante) -> Unit,
@@ -210,6 +214,10 @@ private fun ContenidoPerfil(
         if (usuarioActual.esAdmin) {
             // --- VISTA SIMPLIFICADA PARA ADMIN ---
             EtiquetaSeccion("PANEL DE CONTROL ADMIN")
+            AccesoPerfil(
+                "Resumen: cuántas familias, actividades e inscripciones hay", Icons.Outlined.Info, onResumenClick,
+                true, Modifier.fillMaxWidth()
+            )
             TarjetaPerfil {
                 Text(
                     text = "Permisos de Edición Activos",

@@ -344,6 +344,14 @@ ON CONFLICT (id) DO UPDATE SET
   telefono = EXCLUDED.telefono, whatsapp = EXCLUDED.whatsapp, logo_clave = EXCLUDED.logo_clave,
   como_ayudar = EXCLUDED.como_ayudar, recomendaciones = EXCLUDED.recomendaciones, instagram = EXCLUDED.instagram;
 
+-- Su lugar en el mapa (igual que la migración V10; solo si todavía no tienen uno).
+UPDATE centros SET latitud = 25.724019, longitud = -100.344149
+ WHERE id IN ('f0000000-0000-0000-0000-000000000004', 'f0000000-0000-0000-0000-000000000005') AND latitud IS NULL;
+UPDATE centros SET latitud = 25.469243, longitud = -100.169873
+ WHERE id = 'f0000000-0000-0000-0000-000000000003' AND latitud IS NULL;
+UPDATE centros SET latitud = 25.587699, longitud = -100.001246
+ WHERE id = 'f0000000-0000-0000-0000-000000000001' AND latitud IS NULL;
+
 -- ─── La familia de prueba (solo se agrega si no existe) ─────────────────────
 INSERT INTO cuentas (id, correo, contrasena_hash, rol, permisos, nombre_familia, ciudad, titular_nombre, titular_nacimiento, titular_sexo, aviso_aceptado_en) VALUES
   ('c0000000-0000-0000-0000-000000000002', 'ana.rodriguez@correo.com',

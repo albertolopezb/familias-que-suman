@@ -116,7 +116,6 @@ fun ProyectosScreen(
                 .background(Web.Fondo)
         ) {
             EncabezadoAzul(
-                etiqueta = "Causas con objetivo",
                 titulo = if (esAdmin) "Proyectos (Admin)" else "Proyectos"
             ) {
                 BuscadorEstiloMinimal(

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
@@ -23,13 +24,17 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import mx.tec.familiasquesuman.domain.coordenadaDeTexto
+import mx.tec.familiasquesuman.ui.screens.actividades.DialogoElegirUbicacion
 
 enum class TipoCampo { TEXTO, NUMERO, MULTILINEA, INTERRUPTOR, UBICACION }
 
@@ -44,27 +49,46 @@ data class CampoAdmin(
 fun ubicacionValida(texto: String): Boolean = texto.isBlank() || coordenadaDeTexto(texto) != null
 
 /**
- * El campo "Ubicación en el mapa": coordenadas o un enlace largo de Google Maps. Lo usan los
- * formularios de actividades, proyectos y campañas para que lo nuevo aparezca en el mapa.
+ * El campo "Ubicación en el mapa" de los formularios de actividades, proyectos, campañas y centros.
+ * Lo fácil es "Elegir en el mapa": se busca la dirección y se toca el lugar (DialogoElegirUbicacion).
+ * Quien ya tiene las coordenadas o un enlace largo de Google Maps también puede pegarlos aquí.
  */
 @Composable
 fun CampoUbicacion(valor: String, onValorChange: (String) -> Unit, modifier: Modifier = Modifier) {
     val valida = ubicacionValida(valor)
-    OutlinedTextField(
-        value = valor,
-        onValueChange = onValorChange,
-        label = { Text("Ubicación en el mapa (opcional)") },
-        placeholder = { Text("25.6694, -100.3098") },
-        isError = !valida,
-        supportingText = {
-            Text(
-                if (valida) "En Google Maps, deja el dedo sobre el lugar y copia las coordenadas, o pega el enlace largo. Vacío: no sale en el mapa."
-                else "No se entiende. Escribe \"latitud, longitud\" o pega el enlace largo de Google Maps (los enlaces cortos maps.app.goo.gl no traen coordenadas)."
-            )
-        },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-        modifier = modifier.fillMaxWidth()
-    )
+    var eligiendo by remember { mutableStateOf(false) }
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("Ubicación en el mapa (opcional)", style = MaterialTheme.typography.labelLarge)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = { eligiendo = true }) {
+                Icon(Icons.Filled.Place, contentDescription = null)
+                Text(if (valor.isBlank()) "Elegir en el mapa" else "Cambiar en el mapa", modifier = Modifier.padding(start = 6.dp))
+            }
+            if (valor.isNotBlank()) TextButton(onClick = { onValorChange("") }) { Text("Quitar") }
+        }
+        OutlinedTextField(
+            value = valor,
+            onValueChange = onValorChange,
+            placeholder = { Text("o pega coordenadas: 25.6694, -100.3098") },
+            singleLine = true,
+            isError = !valida,
+            supportingText = {
+                Text(
+                    if (valida) "Vacío: no sale en el mapa. También acepta un enlace largo de Google Maps."
+                    else "No se entiende. Usa \"Elegir en el mapa\" o escribe \"latitud, longitud\"."
+                )
+            },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+    if (eligiendo) {
+        DialogoElegirUbicacion(
+            inicial = coordenadaDeTexto(valor),
+            onElegir = { onValorChange(it.comoTexto()); eligiendo = false },
+            onCancelar = { eligiendo = false }
+        )
+    }
 }
 
 /** Lo que devuelve un interruptor dentro de la lista de valores. */

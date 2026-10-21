@@ -152,7 +152,9 @@ fun CentroDto.aDominio() = CentroVisiteo(
     recomendaciones = recomendaciones,
     telefono = telefono,
     whatsapp = whatsapp,
-    instagram = instagram
+    instagram = instagram,
+    ciudad = ciudad,
+    coordenada = coordenada(latitud, longitud)
 )
 
 /** [foto] es la ruta del archivo ya descargado en el teléfono (o null). */

@@ -16,7 +16,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from .. import almacen, convertir, esquemas as e, limites
+from .. import almacen, convertir, esquemas as e, limites, resumen
 from ..bitacora import auditar
 from ..db import obtener_db
 from ..errores import ApiError, no_encontrado
@@ -321,6 +321,15 @@ def borrar_centro(request: Request, centro_id: uuid.UUID, s: Sujeto = Depends(ca
     auditar(db, "centro.borrar", "centro", centro_id, s.cuenta_id, {"nombre": c.nombre}, request.state.ip_cliente)
     db.commit()
     return Response(status_code=204)
+
+
+# ─── Resumen ────────────────────────────────────────────────────────────────
+
+@router.get("/resumen", response_model=e.ResumenSalida)
+@limitador.limit(limites.ADMIN, key_func=por_cuenta)
+def ver_resumen(request: Request, s: Sujeto = Depends(catalogo), db: Session = Depends(obtener_db)):
+    """Cuántas familias, actividades, inscripciones… hay. Solo números (los mismos que Grafana)."""
+    return resumen.contar(db)
 
 
 # ─── Privacidad (HU-14) ─────────────────────────────────────────────────────

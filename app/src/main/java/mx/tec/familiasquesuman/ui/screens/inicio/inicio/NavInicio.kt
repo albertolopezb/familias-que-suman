@@ -119,6 +119,7 @@ fun NavGraphBuilder.grafoInicio(
         // El mapa de la ciudad elegida. Se carga al abrir el Inicio y cada vez que cambia la ciudad.
         val mapaVm: MapaViewModel = viewModel(factory = AppViewModelProvider.Factory)
         val mapa by mapaVm.estado.collectAsStateWithLifecycle()
+        val cercaDe by mapaVm.cercaDe.collectAsStateWithLifecycle()
         LaunchedEffect(prefsInicio.ciudad) { mapaVm.cargar(prefsInicio.ciudad) }
         InicioScreen(
             ciudad = prefsInicio.ciudad,
@@ -148,12 +149,17 @@ fun NavGraphBuilder.grafoInicio(
             onProximaClick = { id -> nav.navigate(RutasActividades.detalle(id)) },
             mapa = mapa,
             onReintentarMapa = { mapaVm.cargar(prefsInicio.ciudad) },
+            cercaDe = cercaDe,
+            onBuscarCercaDe = mapaVm::buscarCercaDe,
+            onElegirPuntoCercano = mapaVm::buscarCercaDelPunto,
+            onQuitarCercaDe = mapaVm::quitarCercaDe,
             // El mini menú del mapa lleva al detalle de lo que se tocó.
             onAbrirPunto = { punto ->
                 when (punto.tipo) {
                     TipoDePunto.ACTIVIDAD -> nav.navigate(RutasActividades.detalle(punto.id))
                     TipoDePunto.PROYECTO -> nav.navigate(RutasInicio.proyecto(punto.id))
                     TipoDePunto.DONACION -> nav.navigate(RutasCampanas.detalle(punto.id))
+                    TipoDePunto.DIRECTORIO -> nav.navigate(RutasInicio.centro(punto.id))
                 }
             },
             esAdmin = esAdmin(),
@@ -282,7 +288,8 @@ fun NavGraphBuilder.grafoInicio(
                     CampoAdmin("Información general", actual?.informacion.orEmpty(), TipoCampo.MULTILINEA),
                     CampoAdmin("Necesidades (una por línea)", actual?.necesidades?.joinToString("\n").orEmpty(), TipoCampo.MULTILINEA),
                     CampoAdmin("Dirección", actual?.direccion.orEmpty()),
-                    CampoAdmin("Verificado", (actual?.verificado ?: true).toString(), TipoCampo.INTERRUPTOR)
+                    CampoAdmin("Verificado", (actual?.verificado ?: true).toString(), TipoCampo.INTERRUPTOR),
+                    CampoAdmin("Ubicación en el mapa", actual?.coordenada?.comoTexto().orEmpty(), TipoCampo.UBICACION)
                 ),
                 onGuardar = { valores ->
                     vm.guardarCentro(actual, valores)
