@@ -108,9 +108,11 @@ class ActividadRepository {
 
     // ── Administración ──
 
+    // La ciudad y "en el directorio" viajan siempre: antes, editar una asociación las regresaba al valor por omisión.
     private fun cuerpoAsociacion(a: Asociacion) = AsociacionCuerpo(
         nombre = a.nombre, categoria = a.categoria, descripcion = a.descripcion, direccion = a.direccion,
-        telefono = a.telefono, whatsapp = a.whatsapp, correo = a.correo
+        telefono = a.telefono, whatsapp = a.whatsapp, correo = a.correo,
+        ciudad = a.ciudad.ifBlank { "Monterrey" }, enDirectorio = a.enDirectorio, destacada = a.destacada
     )
 
     suspend fun agregarAsociacion(asociacion: Asociacion) { llamar { crearAsociacion(cuerpoAsociacion(asociacion)) } }

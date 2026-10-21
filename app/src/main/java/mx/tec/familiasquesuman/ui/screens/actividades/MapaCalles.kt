@@ -30,6 +30,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import mx.tec.familiasquesuman.domain.Coordenada
 import mx.tec.familiasquesuman.domain.PuntoEnMapa
 import mx.tec.familiasquesuman.domain.TipoDePunto
+import mx.tec.familiasquesuman.domain.porCercania
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.IconosWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.TextoWeb
 import mx.tec.familiasquesuman.ui.screens.actividades.componentes.Web
@@ -97,7 +98,15 @@ internal fun LienzoDeCalles(
     // Con un lugar de referencia, el mapa se centra en él; si no, en la ciudad (o los punteros).
     val claves = visibles.joinToString { it.clave }
     LaunchedEffect(claves, centroDeCiudad, referencia) {
-        val encuadre = { if (referencia != null) centrarEn(mapa, referencia) else encuadrar(mapa, centroDeCiudad, visibles) }
+        // Con lugar: que se vean él y sus tres más cercanos (los de la lista de abajo).
+        val encuadre = {
+            if (referencia != null) {
+                val aqui = PuntoEnMapa("", TipoDePunto.ACTIVIDAD, "", "", "", "", referencia)
+                encuadrar(mapa, referencia, listOf(aqui) + visibles.porCercania(referencia) { it.coordenada }.take(3))
+            } else {
+                encuadrar(mapa, centroDeCiudad, visibles)
+            }
+        }
         encuadre()
         // Dentro de la página del Inicio, osmdroid termina de acomodarse un momento después y el
         // primer encuadre queda corrido: se repite cuando ya está quieto (es lo que hace el botón).

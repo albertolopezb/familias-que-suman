@@ -75,7 +75,7 @@ Azure: arranque en frío de 117 ms en promedio (meta 1.5 s) y confirmación de i
 
 | Riesgo | Acción tomada | Resultado |
 |---|---|---|
-| Backend no listo a tiempo | Docker Compose desde el primer día del backend; pruebas automáticas contra servicios reales | Backend completo el 13/10 con 180+ pruebas; hoy 190 en verde |
+| Backend no listo a tiempo | Docker Compose desde el primer día del backend; pruebas automáticas contra servicios reales | Backend completo el 13/10 con 180+ pruebas; hoy 191 en verde |
 | Contraseñas y roles de prueba en el código | RNF-02 y TT-15: contraseñas fuera del código, admin por permisos firmados en el token | Se corrigió el atajo `correo.contains("admin")` (guía §9.4); búsqueda de secretos sin hallazgos |
 | Sobrecupo por solicitudes simultáneas | Reserva atómica con `SELECT … FOR UPDATE` | La prueba con 8 familias a la vez nunca sobrepasa el cupo; sin el candado entraban 5 en 3 lugares |
 | Datos de menores (inscripciones, testimonios, fotos) | Consentimiento del tutor, revisión antes de publicar, fotos sin EXIF, lista de asistentes sin correos | Cada control con su prueba (§9) |

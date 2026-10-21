@@ -3,8 +3,8 @@
 **Versión que respalda:** tag `v3.0-entrega` del repositorio.
 **Evidencia automática:**
 
-- Servidor: 190 pruebas pytest contra PostgreSQL, Redis y RustFS reales → [`docs/evidencia/pytest-servidor.txt`](../evidencia/pytest-servidor.txt).
-- App: 64 pruebas locales (JVM) → [`docs/evidencia/pruebas-app.txt`](../evidencia/pruebas-app.txt), más 4 pruebas instrumentadas de Compose corridas en el teléfono físico → [`docs/evidencia/pruebas-instrumentadas.txt`](../evidencia/pruebas-instrumentadas.txt).
+- Servidor: 191 pruebas pytest contra PostgreSQL, Redis y RustFS reales → [`docs/evidencia/pytest-servidor.txt`](../evidencia/pytest-servidor.txt).
+- App: 66 pruebas locales (JVM) → [`docs/evidencia/pruebas-app.txt`](../evidencia/pruebas-app.txt), más 4 pruebas instrumentadas de Compose corridas en el teléfono físico → [`docs/evidencia/pruebas-instrumentadas.txt`](../evidencia/pruebas-instrumentadas.txt).
 - Contrato de la API: `backend/smoke.sh`, 35 casos contra la API levantada → [`docs/evidencia/smoke.txt`](../evidencia/smoke.txt).
 - Seguridad dinámica: OWASP ZAP sin y con sesión → [`backend/seguridad/zap/reporte-zap.html`](../../backend/seguridad/zap/reporte-zap.html).
 - Pruebas manuales en el teléfono físico (guion `M-xx` al final de esta sección).

@@ -81,7 +81,7 @@ bash smoke.sh
 bash seguridad/zap/escanear.sh
 ```
 
-- La primera son las 190 pruebas del servidor.
+- La primera son las 191 pruebas del servidor.
 - La segunda es la prueba de contrato de 35 casos contra la API levantada.
 - La tercera es OWASP ZAP sin y con sesión.
 
@@ -107,7 +107,7 @@ Pruebas de la app:
 ./gradlew :app:connectedDebugAndroidTest
 ```
 
-La primera son las 64 pruebas locales. La segunda son las pruebas de interfaz y necesitan un
+La primera son las 66 pruebas locales. La segunda son las pruebas de interfaz y necesitan un
 emulador o un teléfono conectado.
 
 ### 6.2.4 APK de entrega firmado

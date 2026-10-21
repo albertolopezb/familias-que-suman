@@ -24,7 +24,8 @@ data class AsociacionDto(
     val whatsapp: String = "",
     val correo: String = "",
     val ciudad: String = "Monterrey",
-    val enDirectorio: Boolean = true
+    val enDirectorio: Boolean = true,
+    val destacada: Boolean = false
 )
 
 @Serializable
@@ -378,7 +379,8 @@ data class AsociacionCuerpo(
     val whatsapp: String,
     val correo: String,
     val ciudad: String = "Monterrey",
-    val enDirectorio: Boolean = true
+    val enDirectorio: Boolean = true,
+    val destacada: Boolean = false
 )
 
 /** Para crear y editar actividades, campañas, proyectos y centros: solo los campos que se mandan. */

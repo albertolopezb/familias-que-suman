@@ -16,8 +16,15 @@ data class Asociacion(
     val direccion: String,
     val telefono: String,
     val whatsapp: String,
-    val correo: String
+    val correo: String,
+    val ciudad: String = "Monterrey",
+    val enDirectorio: Boolean = true,
+    /** La administración la pone en "Causas destacadas" del Inicio. */
+    val destacada: Boolean = false
 )
+
+/** "Causas destacadas" del Inicio: las que destacó la administración (hasta 3) o, si ninguna, las dos primeras. */
+fun List<Asociacion>.destacadas(): List<Asociacion> = filter { it.destacada }.take(3).ifEmpty { take(2) }
 
 data class Actividad(
     val id: String,

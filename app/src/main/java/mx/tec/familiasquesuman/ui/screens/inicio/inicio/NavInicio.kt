@@ -22,6 +22,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import mx.tec.familiasquesuman.domain.Asociacion
 import mx.tec.familiasquesuman.domain.CentroVisiteo
+import mx.tec.familiasquesuman.domain.destacadas
 import mx.tec.familiasquesuman.domain.Proyecto
 import mx.tec.familiasquesuman.domain.TipoDePunto
 import mx.tec.familiasquesuman.domain.TipoSugerencia
@@ -126,7 +127,7 @@ fun NavGraphBuilder.grafoInicio(
             onCambiarCiudad = vm::cambiarCiudad,
             asociacion = asociacionDestacada,
             nombreFamilia = sesion?.familia,
-            causas = asociaciones.take(2),
+            causas = asociaciones.destacadas(),
             favoritas = favoritas,
             onAlternarFavorita = { id -> nav.alternarFavorita(cuenta, id) },
             onCausaClick = { id -> nav.navigate(RutasInicio.asociacion(id)) },
@@ -207,10 +208,11 @@ fun NavGraphBuilder.grafoInicio(
                     CampoAdmin("Dirección", actual?.direccion.orEmpty()),
                     CampoAdmin("Teléfono", actual?.telefono.orEmpty()),
                     CampoAdmin("WhatsApp", actual?.whatsapp.orEmpty()),
-                    CampoAdmin("Correo", actual?.correo.orEmpty())
+                    CampoAdmin("Correo", actual?.correo.orEmpty()),
+                    CampoAdmin("Destacar en el Inicio (Causas destacadas)", (actual?.destacada ?: false).toString(), TipoCampo.INTERRUPTOR)
                 ),
                 onGuardar = { valores ->
-                    vm.guardarAsociacion(actual?.id, valores, onListo = cuenta::recargarCatalogo)
+                    vm.guardarAsociacion(actual, valores, onListo = cuenta::recargarCatalogo)
                     creando = false
                     editando = null
                 },

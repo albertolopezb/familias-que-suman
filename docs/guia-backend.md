@@ -54,12 +54,12 @@ encuestas, aportaciones a campañas, sugerencias, privacidad y administración.
 | Salida a internet | Cloudflare Tunnel (`cloudflared`) | HTTPS público sin abrir puertos |
 | Monitoreo | Prometheus 3.15 + Grafana 13.2 | Métricas, alertas de seguridad, tablero |
 | Escaneo | OWASP ZAP 2.17 | Ataque automático a la API |
-| Pruebas | pytest | 190 pruebas contra la base, Redis y el almacén reales |
+| Pruebas | pytest | 191 pruebas contra la base, Redis y el almacén reales |
 
 **Números de esta entrega:**
 
 - **69 operaciones** documentadas en OpenAPI (más la página pública de invitación y `assetlinks.json`).
-- **190 pruebas automáticas** de la API, todas en verde (§12).
+- **191 pruebas automáticas** de la API, todas en verde (§12).
 - **OWASP ZAP, sin y con sesión: 0 alertas altas, 0 medias, 0 bajas** (1 informativa) (§13).
 - **40 medidas de seguridad** catalogadas (§7), mapeadas a OWASP Top 10 2025, OWASP API Top 10
   2023 y CWE Top 25 (§8).
@@ -1276,7 +1276,7 @@ certificado de la app. Nadie más puede "robarse" los enlaces.
 
 #### S-39 · Pruebas de seguridad automatizadas
 
-190 pruebas que atacan lo mismo que un atacante: §12.
+191 pruebas que atacan lo mismo que un atacante: §12.
 
 #### S-40 · Monitoreo continuo con alertas
 
@@ -1424,7 +1424,7 @@ Ahora `Usuario.esAdmin` sale de `Sesion.esAdmin`, que llena el servidor con los 
 
 ### 9.5 Pruebas de la app
 
-`./gradlew :app:testDebugUnitTest`: **64 pruebas, 0 fallas** (incluye la caché sin conexión, `CatalogoLocalTest`, los buscadores, `BusquedaTest`, la revisión de testimonios y
+`./gradlew :app:testDebugUnitTest`: **66 pruebas, 0 fallas** (incluye la caché sin conexión, `CatalogoLocalTest`, los buscadores, `BusquedaTest`, la revisión de testimonios y
 el orden por cercanía, `CercaniaTest`). Los repositorios de testimonios y
 encuestas tienen una versión en memoria solo para estas pruebas (`TestimonioRepositoryEnMemoria`,
 `EncuestaRepositoryEnMemoria`).
@@ -1583,9 +1583,9 @@ sesión por HTTP se prueba aparte. **No existe un "modo de prueba" en el servido
 | `test_seguridad_http.py` | 11 | Encabezados, Host, tamaño, errores sin trazas, rate limit por flujo y **global**, IP falsificada, inventario interno, sin CORS, App Links |
 | `test_testimonios.py` | 6 | RF-12/HU-11: nace pendiente y no es público; aprobar publica; rechazado no; editar regresa a revisión; la foto en revisión solo la ven su autora y la moderación; solo `moderar:contenido` revisa; bandeja sin correos y auditoría |
 | `test_recuperacion.py` | 8 | RF-18: misma respuesta exista o no la cuenta; el código cambia la contraseña una sola vez y cierra las sesiones; se guarda como HMAC; 5 intentos lo queman; vencido no sirve; pedir otro anula el anterior y hay tope por hora; el de una cuenta no sirve en otra; contraseña débil o código raro no lo gastan |
-| `test_resumen.py` | 8 | El resumen de la administración cuenta familias, inscripciones y personas; son solo números; una familia (403), sin sesión (401) o quien solo modera no lo ven; un centro guarda y publica su ubicación, sin ella sigue valiendo y una imposible se rechaza (422); los contadores de seguridad nacen en 0 para que el primer ataque tras un reinicio sí dispare la alerta |
+| `test_resumen.py` | 9 | El resumen de la administración cuenta familias, inscripciones y personas; son solo números; una familia (403), sin sesión (401) o quien solo modera no lo ven; un centro guarda y publica su ubicación, sin ella sigue valiendo y una imposible se rechaza (422); los contadores de seguridad nacen en 0 para que el primer ataque tras un reinicio sí dispare la alerta; la administración destaca una causa y se ve en el catálogo (una familia no puede) |
 | `test_avisos.py` | 6 | RF-16/RF-22: sin sesión 401; cada familia recibe los de su ciudad y los generales; `desde`; solo `administrar:catalogo` crea y borra (auditado); validación; una actividad nueva genera su aviso |
-| **Total** | **190** | **190 aprobadas** |
+| **Total** | **191** | **191 aprobadas** |
 
 **Dos hallazgos reales durante la verificación** (por eso se prueba):
 

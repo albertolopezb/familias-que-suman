@@ -1,5 +1,5 @@
 """El resumen de la administración: cuenta bien, no deja ver a una familia y no trae datos personales.
-Y los centros con ubicación (para que salgan en el mapa)."""
+Y lo que se agregó con él: centros con ubicación (para el mapa) y causas destacadas por la administración."""
 
 from app import identidad
 
@@ -74,3 +74,17 @@ def test_los_contadores_de_seguridad_nacen_en_cero():
 
     for tipo in ("limite_excedido", "credenciales_invalidas", "prohibido", "token_invalido"):
         assert REGISTRY.get_sample_value("familias_eventos_seguridad_total", {"tipo": tipo}) is not None
+
+
+def test_la_administracion_destaca_una_causa_y_se_ve_en_el_catalogo(cliente, admin, familia):
+    cuerpo = {"nombre": "Causa para destacar", "categoria": "Niñez", "ciudad": "Monterrey"}
+    r = cliente.post("/v1/admin/asociaciones", headers=admin.headers, json=cuerpo)
+    assert r.status_code == 201, r.text
+    assert r.json()["destacada"] is False
+    r = cliente.put(f"/v1/admin/asociaciones/{r.json()['id']}", headers=admin.headers, json={**cuerpo, "destacada": True})
+    assert r.status_code == 200, r.text
+    publica = next(a for a in cliente.get("/v1/asociaciones").json() if a["id"] == r.json()["id"])
+    assert publica["destacada"] is True
+    # Una familia no puede destacar nada.
+    otra = cliente.post("/v1/admin/asociaciones", headers=familia.headers, json={**cuerpo, "destacada": True})
+    assert otra.status_code == 403

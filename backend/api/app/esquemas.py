@@ -108,6 +108,7 @@ class AsociacionSalida(Salida):
     correo: str
     ciudad: str
     en_directorio: bool
+    destacada: bool = False
 
 
 class AportacionActividad(BaseModel):
@@ -554,6 +555,7 @@ class AsociacionEntrada(Entrada):
     correo: Correo = ""
     ciudad: Ciudad = "Monterrey"
     en_directorio: bool = True
+    destacada: bool = False
 
 
 class ActividadEntrada(Entrada):

@@ -57,7 +57,7 @@ familias-que-suman/          ← se abre esta carpeta en Android Studio
 
 | Qué | Comando | Resultado |
 |---|---|---|
-| Servidor (contra PostgreSQL, Redis y RustFS reales) | `cd backend && docker compose --profile pruebas run --rm --build pruebas` | 190 pasan |
+| Servidor (contra PostgreSQL, Redis y RustFS reales) | `cd backend && docker compose --profile pruebas run --rm --build pruebas` | 191 pasan |
 | Contrato de la API | `bash backend/smoke.sh` | 35 de 35 |
 | App (JVM) | `./gradlew :app:testDebugUnitTest` | 56 pasan |
 | App (interfaz, en un dispositivo) | `./gradlew :app:connectedDebugAndroidTest` | 4 pruebas de Compose |

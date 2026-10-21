@@ -67,6 +67,8 @@ class Asociacion(Base):
     whatsapp: Mapped[str] = mapped_column(Text, server_default=text("''"))
     correo: Mapped[str] = mapped_column(Text, server_default=text("''"))
     en_directorio: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
+    # La administración la pone en "Causas destacadas" del Inicio (V11).
+    destacada: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))
 
 
 class Actividad(Base):

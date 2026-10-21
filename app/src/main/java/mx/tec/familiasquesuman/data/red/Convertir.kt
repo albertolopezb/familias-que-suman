@@ -52,7 +52,8 @@ fun horario(inicio: LocalDateTime, fin: LocalDateTime?): String =
 
 private fun coordenada(lat: Double?, lng: Double?) = if (lat != null && lng != null) Coordenada(lat, lng) else null
 
-fun AsociacionDto.aDominio() = Asociacion(id, nombre, categoria, descripcion, direccion, telefono, whatsapp, correo)
+fun AsociacionDto.aDominio() =
+    Asociacion(id, nombre, categoria, descripcion, direccion, telefono, whatsapp, correo, ciudad, enDirectorio, destacada)
 
 fun ActividadDto.aDominio(): Actividad {
     val inicio = horaLocal(iniciaEn)

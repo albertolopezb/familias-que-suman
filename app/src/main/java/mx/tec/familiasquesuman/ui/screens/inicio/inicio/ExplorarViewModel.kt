@@ -46,19 +46,22 @@ class ExplorarViewModel(
         }
     }
 
-    fun guardarAsociacion(id: String?, v: List<String>, onListo: () -> Unit = {}) {
+    fun guardarAsociacion(original: Asociacion?, v: List<String>, onListo: () -> Unit = {}) {
         viewModelScope.launch {
-            val asociacion = Asociacion(
-                id = id ?: "a${System.currentTimeMillis()}",
+            val asociacion = (original ?: Asociacion(
+                id = "a${System.currentTimeMillis()}", nombre = "", categoria = "", descripcion = "",
+                direccion = "", telefono = "", whatsapp = "", correo = ""
+            )).copy(
                 nombre = v[0].trim(),
                 categoria = v[1].trim(),
                 descripcion = v[2].trim(),
                 direccion = v[3].trim(),
                 telefono = v[4].trim(),
                 whatsapp = v[5].trim(),
-                correo = v[6].trim()
+                correo = v[6].trim(),
+                destacada = v[7] == "true"
             )
-            intentar { if (id == null) actividadRepository.agregarAsociacion(asociacion) else actividadRepository.editarAsociacion(asociacion) }
+            intentar { if (original == null) actividadRepository.agregarAsociacion(asociacion) else actividadRepository.editarAsociacion(asociacion) }
             cargar()
             onListo()
         }

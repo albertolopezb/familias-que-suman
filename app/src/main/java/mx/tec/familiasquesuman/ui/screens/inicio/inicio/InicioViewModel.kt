@@ -1,5 +1,6 @@
 package mx.tec.familiasquesuman.ui.screens.inicio
 
+import mx.tec.familiasquesuman.domain.destacadas
 import mx.tec.familiasquesuman.ui.state.intentar
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -30,7 +31,7 @@ class InicioViewModel(
 
     private fun cargarDestacados() {
         viewModelScope.launch {
-            intentar { actividadRepository.getAsociaciones() }.onSuccess { _asociacionDestacada.value = it.firstOrNull() }
+            intentar { actividadRepository.getAsociaciones() }.onSuccess { _asociacionDestacada.value = it.destacadas().firstOrNull() }
         }
     }
 }
