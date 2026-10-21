@@ -2,7 +2,7 @@
 
 | Qué | Enlace |
 |---|---|
-| Repositorio, versión entregada | https://github.com/albertolopezb/familias-que-suman/tree/v3.0-entrega |
+| Repositorio, versión entregada | https://github.com/albertolopezb/familias-que-suman/tree/entrega-final |
 | APK de release firmado | https://drive.google.com/drive/folders/1osTVnL2wIYpvCL74rTf3JJoNcdxOEZq0 (carpeta `APK_firmado_Equipo6`, archivo `familias-que-suman-v3.1.apk`, versión 3.1, 17,514,068 bytes, SHA-256 `9cd0859e35af551c7ddd058f37445680138d4e33e0132ecd84a362c4d55802dc`) |
 | Backend: instrucciones para levantarlo | [Manual de instalación, §6.2 y §6.3](06-manual-instalacion.md) y [`backend/README.md`](../../backend/README.md) |
 | Backend: servicio desplegado | https://hunter-marilyn-larger-frequent.trycloudflare.com/v1/salud (VM de Azure for Students, `northcentralus`; es la dirección que trae el APK. Si el túnel se reinicia cambia: ver [Manual de instalación §6.3](06-manual-instalacion.md)) |

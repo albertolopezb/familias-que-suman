@@ -8,7 +8,7 @@ Tres formas de poner el sistema a funcionar, de la más simple a la completa:
 | Levantar todo en mi computadora (app en el emulador, API en Docker) | §6.2 |
 | Publicar el servidor en internet (Azure for Students, sin tarjeta) | §6.3 |
 
-Repositorio: https://github.com/albertolopezb/familias-que-suman (tag `v3.0-entrega`).
+Repositorio: https://github.com/albertolopezb/familias-que-suman (tag `entrega-final`).
 
 ## 6.1 Instalar la app en un teléfono
 
@@ -205,6 +205,7 @@ Todo se hace por SSH (`ssh -i <llave> azureuser@<IP>`), en `~/familias/backend`:
 | Ver la dirección pública del túnel | `sudo docker compose logs tunel \| grep trycloudflare` |
 | Logs de la API | `sudo docker compose logs -f api` |
 | Grafana y el correo de desarrollo desde tu computadora | `ssh -i <llave> -L 3000:127.0.0.1:3000 -L 8025:127.0.0.1:8025 azureuser@<IP>` y abrir http://localhost:3000 y http://localhost:8025 |
+| Enseñar Grafana sin túnel SSH (solo para una presentación) | `sudo docker run -d --name tunel-grafana --restart unless-stopped --network familias-que-suman_local --read-only --memory 128m --security-opt no-new-privileges cloudflare/cloudflared:2026.10.0 tunnel --no-autoupdate --protocol http2 --url http://grafana:3000`; la dirección sale en `sudo docker logs tunel-grafana \| grep trycloudflare`. Pide el usuario y la contraseña de Grafana. Al terminar: `sudo docker rm -f tunel-grafana` |
 | Respaldo de la base | `sudo docker compose exec db pg_dump -U familias -d familias -Fc > respaldo-$(date +%F).dump` |
 
 **Cuidar el crédito** (en Cloud Shell):

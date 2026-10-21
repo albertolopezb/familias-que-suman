@@ -1,6 +1,6 @@
 # 3. Matriz de trazabilidad y evidencia de pruebas
 
-**Versión que respalda:** tag `v3.0-entrega` del repositorio.
+**Versión que respalda:** tag `entrega-final` del repositorio.
 **Evidencia automática:**
 
 - Servidor: 191 pruebas pytest contra PostgreSQL, Redis y RustFS reales → [`docs/evidencia/pytest-servidor.txt`](../evidencia/pytest-servidor.txt).
