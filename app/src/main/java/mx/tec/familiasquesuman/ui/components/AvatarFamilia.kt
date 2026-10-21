@@ -30,7 +30,9 @@ fun AvatarFamilia(
     nombre: String,
     tamano: Dp,
     modifier: Modifier = Modifier,
-    conBorde: Boolean = false
+    conBorde: Boolean = false,
+    /** Sobre el encabezado azul: círculo claro con las iniciales en azul marino, para que no se pierda. */
+    claro: Boolean = false
 ) {
     val base = modifier
         .size(tamano)
@@ -39,14 +41,14 @@ fun AvatarFamilia(
     if (foto != null) {
         FotoUsuario(foto, "Foto de perfil de $nombre", base)
     } else {
-        Box(base.background(MarcaAzul), contentAlignment = Alignment.Center) {
+        Box(base.background(if (claro) Color(0xFFF1F5F9) else MarcaAzul), contentAlignment = Alignment.Center) {
             Text(
                 iniciales(nombre),
                 style = TextStyle(
                     fontFamily = Inter,
                     fontWeight = FontWeight.Bold,
                     fontSize = (tamano.value * 0.36f).sp,
-                    color = MarcaOro
+                    color = if (claro) MarcaAzul else MarcaOro
                 )
             )
         }

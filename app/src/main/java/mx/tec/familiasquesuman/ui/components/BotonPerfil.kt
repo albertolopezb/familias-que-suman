@@ -69,7 +69,7 @@ fun BotonPerfil(modifier: Modifier = Modifier, sobreAzul: Boolean = false) {
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(if (sobreAzul) Color.White.copy(alpha = 0.14f) else Color(0xFFF1F5F9))
+                .background(Color(0xFFF1F5F9))   // claro también sobre el azul, para que no se pierda
                 .clickable { abierto = true }
                 .semantics(mergeDescendants = true) {
                     contentDescription = when {
@@ -82,12 +82,12 @@ fun BotonPerfil(modifier: Modifier = Modifier, sobreAzul: Boolean = false) {
         ) {
             val s = sesion
             if (s != null && !esAdmin) {
-                AvatarFamilia(foto, s.familia, 40.dp)
+                AvatarFamilia(foto, s.familia, 40.dp, conBorde = sobreAzul, claro = sobreAzul)
             } else {
                 Icon(
                     IconosWeb.Usuario,
                     contentDescription = "Mi perfil",
-                    tint = if (sobreAzul) Color.White else AzulMarinoPrimario,
+                    tint = AzulMarinoPrimario,
                     modifier = Modifier.size(20.dp)
                 )
             }
