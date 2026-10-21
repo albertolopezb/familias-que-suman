@@ -28,7 +28,7 @@ desde una VM de Microsoft Azure pagada con el crédito de Azure for Students (si
 
 - App Android en español (Android 8 o superior; la meta del backlog es Android 10+).
 - Directorio de asociaciones y centros por categoría, filtro por ciudad (Monterrey y Hermosillo),
-  "Cerca de mí" opcional, fichas y contacto directo.
+  "Buscar cerca de" un lugar en el mapa (sin pedir la ubicación), fichas y contacto directo.
 - Actividades con cupo en tiempo real, inscripción con acompañantes (consentimiento del tutor para
   menores), cancelación hasta 12 horas antes y "Agregar al calendario".
 - Campañas de donación con filtros y apartado de artículos con meta en tiempo real. La donación es
@@ -54,8 +54,8 @@ desde una VM de Microsoft Azure pagada con el crédito de Azure for Students (si
 - Pagos o donativos en línea.
 - Mensajería entre familias: el único canal es familia ↔ asociación.
 - iOS.
-- Rastreo de ubicación. "Cerca de mí" usa la ubicación aproximada solo en el teléfono y solo cuando
-  se toca.
+- Rastreo de ubicación. La app no pide la ubicación: "Buscar cerca de" usa un lugar que la familia
+  escribe o toca en el mapa.
 - Modo sin conexión completo: sin internet se **consulta** lo guardado. Inscribirse, apartar y todo
   lo que cambia algo requiere conexión, porque el cupo y las metas se deciden en el servidor.
 - Notificaciones instantáneas por Firebase: los avisos llegan con WorkManager, con hasta ~15 min de

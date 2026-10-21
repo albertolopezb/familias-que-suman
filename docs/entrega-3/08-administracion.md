@@ -22,8 +22,9 @@ Azure: arranque en frío de 117 ms en promedio (meta 1.5 s) y confirmación de i
 
 - **RF-16 y TT-13:** decían "push con FCM". Se implementó con WorkManager, sin Firebase (ver 8.3).
 - **RF-17:** pasó de lista estática a favoritos que avisan de lo nuevo, a pedido de la socia.
-- **RF-02:** el filtro por ciudad se mantiene. Se agregó "Cerca de mí" con ubicación aproximada que
-  no sale del teléfono.
+- **RF-02:** el filtro por ciudad se mantiene. "Cerca de mí" con la ubicación aproximada se cambió
+  (20 oct.) por "Buscar cerca de" en el mapa: la familia escribe un lugar o toca un punto, y la app
+  ya no pide permiso de ubicación. El mapa ahora incluye los centros del Directorio.
 - **Nuevos, salidos de la revisión final contra el acta y la rúbrica:**
   - ACTA-01: consulta sin conexión con Room.
   - Lista de "quiénes van" para la asociación: completa RF-06.
@@ -74,7 +75,7 @@ Azure: arranque en frío de 117 ms en promedio (meta 1.5 s) y confirmación de i
 
 | Riesgo | Acción tomada | Resultado |
 |---|---|---|
-| Backend no listo a tiempo | Docker Compose desde el primer día del backend; pruebas automáticas contra servicios reales | Backend completo el 13/10 con 180+ pruebas; hoy 182 en verde |
+| Backend no listo a tiempo | Docker Compose desde el primer día del backend; pruebas automáticas contra servicios reales | Backend completo el 13/10 con 180+ pruebas; hoy 190 en verde |
 | Contraseñas y roles de prueba en el código | RNF-02 y TT-15: contraseñas fuera del código, admin por permisos firmados en el token | Se corrigió el atajo `correo.contains("admin")` (guía §9.4); búsqueda de secretos sin hallazgos |
 | Sobrecupo por solicitudes simultáneas | Reserva atómica con `SELECT … FOR UPDATE` | La prueba con 8 familias a la vez nunca sobrepasa el cupo; sin el candado entraban 5 en 3 lugares |
 | Datos de menores (inscripciones, testimonios, fotos) | Consentimiento del tutor, revisión antes de publicar, fotos sin EXIF, lista de asistentes sin correos | Cada control con su prueba (§9) |

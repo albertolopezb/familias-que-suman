@@ -46,7 +46,7 @@ registramos en la guía de observación de la OSF. Del lado técnico se cuida el
 | RF-06 | Minimización (Ley: LFPDPPP art. 12; Ética) | La asociación ve quiénes van solo con nombre y edad, y solo quien registra asistencias | La lista no contiene ningún correo; una familia o el admin del catálogo reciben 403 | `::test_quien_registra_asistencias_ve_quienes_van_sin_correos`, `::test_una_familia_o_el_admin_del_catalogo_no_ven_quienes_van` | §3.1 RF-06 |
 | RF-12, HU-11 | Cuidado del otro: no exponer a menores (Moral) | Ningún testimonio ni su foto es público hasta que la OSF lo aprueba; editarlo lo regresa a revisión | Un testimonio nuevo no aparece en `GET /v1/testimonios`; su foto solo la ven su autora y la moderación | `test_testimonios.py::test_un_testimonio_nuevo_no_es_publico_hasta_aprobarlo`, `::test_la_foto_en_revision_solo_la_ven_su_autora_y_la_moderacion` | §3.1 RF-12 |
 | RF-12 | Las fotos no delatan dónde viven (Ética; Ley: art. 18) | Toda foto se re-codifica sin EXIF (GPS incluido), en el teléfono y otra vez en el servidor | La foto guardada no tiene EXIF | `test_fotos.py::test_foto_valida_se_guarda_sin_exif`; `Fotos.prepararParaSubir` | §3.1 RF-12 |
-| RF-02 | Ubicación mínima y opcional (Ética; Ley: art. 12) | "Cerca de mí" usa la ubicación aproximada, solo en el teléfono, solo al tocarlo; sin permiso la app funciona | Ninguna ruta de la API recibe la ubicación de la familia; negar el permiso deja la lista por fecha | `CercaniaTest` (2); M-02; manifiesto solo con `ACCESS_COARSE_LOCATION` | §3.1 RF-02 |
+| RF-02 | Ubicación mínima y opcional (Ética; Ley: art. 12) | La app no pide la ubicación: "Buscar cerca de" usa un lugar que la familia escribe o toca en el mapa | Ninguna ruta de la API recibe ubicación de la familia; el manifiesto no pide permisos de ubicación; a OpenStreetMap solo va el texto escrito, sin token | `CercaniaTest` (6); M-02; `AndroidManifest.xml` | §3.1 RF-02 |
 | RNF-02, SEG-02 | Seguridad de los datos (Ley: LFPDPPP art. 18; CPF art. 211 bis) | Contraseñas con Argon2id, códigos como HMAC, sesión del teléfono cifrada, ningún secreto en el repositorio | La base no contiene la contraseña; la búsqueda de secretos no encuentra nada | `::test_la_contrasena_se_guarda_como_hash_argon2id`, `test_recuperacion.py::test_el_codigo_no_se_guarda_en_claro`; `docs/evidencia/secretos.txt` | §3.2 RNF-02, §3.3 SEG-02 |
 | SEG-03 | Nadie ve lo ajeno (Ley: art. 18; Moral) | Una familia no puede leer ni borrar datos de otra | 404 en cualquier recurso ajeno | `test_autorizacion.py::test_bola_no_se_ven_ni_se_borran_acompanantes_ajenos` | §3.3 SEG-03 |
 | RF-18 | No revelar quién tiene cuenta (Ética) | Iniciar sesión y recuperar responden igual exista o no el correo | Mismo código y mensaje en los dos casos | `::test_mismo_mensaje_si_el_correo_no_existe_o_la_contrasena_esta_mal`, `test_recuperacion.py::test_responde_lo_mismo_exista_o_no_la_cuenta` | §3.1 RF-18 |
@@ -100,8 +100,8 @@ Es el mismo texto que la app muestra en Perfil → Ajustes → Aviso de privacid
 > No usamos tus datos para publicidad.
 >
 > **4. Cómo limitar su uso** *(art. 15-IV)*. En Ajustes apagas los recordatorios y avisos.
-> Testimonios, encuestas, sugerencias y foto de perfil son opcionales y puedes borrarlos. "Cerca de mí"
-> solo se activa si lo tocas y das permiso. Y puedes pedir que borremos todo.
+> Testimonios, encuestas, sugerencias y foto de perfil son opcionales y puedes borrarlos. La app no
+> pide tu ubicación. Y puedes pedir que borremos todo.
 >
 > **Dónde se guardan.** En nuestro servidor, una máquina de Microsoft Azure en Estados Unidos (región
 > North Central US): la base de datos PostgreSQL y un almacén propio para las fotos. Microsoft solo
@@ -126,9 +126,10 @@ Es el mismo texto que la app muestra en Perfil → Ajustes → Aviso de privacid
 > Los servicios técnicos actúan como encargados y no usan tus datos para nada más. No vendemos tus
 > datos. Solo los entregaríamos a una autoridad que los pida conforme a la ley.
 >
-> **Tu ubicación.** "Cerca de mí" usa tu ubicación aproximada (no la exacta) solo en tu teléfono, para
-> ordenar las actividades por cercanía. No la recibimos ni la guardamos, y si no das permiso la app
-> funciona igual.
+> **Tu ubicación.** La app no pide permiso de ubicación: no sabemos dónde estás. En el mapa puedes
+> "Buscar cerca de" un municipio, una colonia o una calle que tú escribes (o un punto que tocas): los
+> municipios se encuentran en el teléfono y lo demás se busca en OpenStreetMap, que solo recibe ese
+> texto, sin tu cuenta ni tus datos. No lo guardamos.
 > El mapa del Inicio dibuja las calles con OpenStreetMap: tu teléfono les pide las imágenes de la
 > zona que estás viendo, sin tu ubicación ni tus datos.
 >
@@ -168,7 +169,7 @@ Es el mismo texto que la app muestra en Perfil → Ajustes → Aviso de privacid
 |---|---|
 | Contraseña como huella Argon2id | `identidad.py`; `test_la_contrasena_se_guarda_como_hash_argon2id` |
 | Consentimiento del tutor | `inscripciones.consentimiento_menores_en`; `test_menores_piden_consentimiento` |
-| Ubicación solo en el teléfono | `CercaDeMi.kt`; ninguna ruta de la API la recibe |
+| Sin ubicación de la familia | El manifiesto no pide permisos de ubicación; `BuscadorDeLugares.kt` manda solo el texto, sin token (`CercaniaTest`) |
 | Testimonios revisados y sin correo | `test_testimonios.py`; `test_los_testimonios_publicos_no_exponen_correos` |
 | La institución ve nombres y edades | `GET /v1/admin/actividades/{id}/inscritos` (sin correos); pantalla "Quiénes van" |
 | Eliminación con folio y plazos | Botón en la app → `ELIM-xxxx`; pantalla "Solicitudes de eliminación"; `admin.py::atender` borra en cascada y las fotos del almacén |
@@ -260,7 +261,7 @@ Columnas: dato · nivel · ubicación · protección específica · tiempo de co
 
 | Dato | Nivel | Ubicación | Protección específica | Conservación |
 |---|---|---|---|---|
-| Ubicación aproximada ("Cerca de mí") | Alto | Memoria de la app, nunca en disco | Solo `ACCESS_COARSE_LOCATION`, solo al tocar el botón; no sale del teléfono | Lo que dura la pantalla |
+| Lugar de "Buscar cerca de" (lo que se escribe o se toca) | Bajo | Memoria de la app, nunca en disco | No es la ubicación del teléfono; a OpenStreetMap va solo el texto, sin token ni correo | Lo que dura la pantalla |
 | Correo de la sesión e inscripciones (copia para el worker) | Medio | `CuentasStore` (SharedPreferences privadas) | Sandbox de la app; `allowBackup=false` | Hasta cerrar sesión |
 | Bandeja de avisos | Bajo | `AvisosStore` | Sandbox | Hasta cerrar sesión o desinstalar |
 | Catálogo público | Público | Room `catalogo.db` | — | Se reemplaza en cada consulta con red |
@@ -282,22 +283,26 @@ Solo la administración del catálogo los modifica, y se conservan mientras est�
 - **Alternativas:**
   - (a) GPS preciso enviado al servidor, que ordena y puede sugerir;
   - (b) solo elegir la ciudad a mano;
-  - (c) ubicación aproximada, calculada solo en el teléfono y solo cuando se pide.
+  - (c) ubicación aproximada, calculada solo en el teléfono y solo cuando se pide;
+  - (d) no pedir la ubicación: la familia escribe o toca el lugar desde el que quiere buscar.
 - **Argumentos:**
   - (a) da el mejor orden y permite avisos por cercanía, pero crea un registro de dónde está cada
     familia, que se puede filtrar o pedir;
   - (b) no expone nada, pero no cumple el criterio de RF-02;
   - (c) cumple el criterio con el mínimo dato (LFPDPPP art. 12), aunque el orden es menos fino y no
-    hay avisos por cercanía.
-- **Postura del equipo:** (c). "Un dato que no se recibe no se puede filtrar". Para ordenar una lista,
-  la distancia aproximada basta.
+    hay avisos por cercanía;
+  - (d) cumple el criterio sin ningún dato de ubicación, y además sirve para buscar cerca del trabajo
+    o de la escuela, no solo de donde está el teléfono; a cambio, la familia escribe un lugar.
+- **Postura del equipo:** primero fue (c); en la revisión final (20 oct.) pasamos a (d). "Un dato que
+  no se recibe no se puede filtrar", y uno que ni siquiera se pide, menos.
 - **Decisión concreta:**
-  - el manifiesto pide solo `ACCESS_COARSE_LOCATION`;
-  - el permiso se pide al tocar "Cerca de mí", no al abrir la app;
-  - la distancia se calcula en `CercaDeMi.kt` y ninguna ruta de la API recibe coordenadas de la
-    familia;
-  - sin permiso, la lista sigue por fecha.
-- **Dónde se ve:** botón "Cerca de mí" en Actividades; `AndroidManifest.xml`; `CercaniaTest`; aviso
+  - el manifiesto no pide ningún permiso de ubicación;
+  - "Buscar cerca de" vive en el mapa del Inicio: los municipios de las dos ciudades se resuelven en
+    el teléfono; una colonia o calle se busca en OpenStreetMap (`BuscadorDeLugares.kt`), que solo
+    recibe el texto y la ciudad, sin token ni correo;
+  - la distancia se calcula en el teléfono (`porCercania`, haversine) y ninguna ruta de la API recibe
+    coordenadas de la familia.
+- **Dónde se ve:** el campo "Buscar cerca de" del mapa; `AndroidManifest.xml`; `CercaniaTest`; aviso
   de privacidad, "Tu ubicación".
 
 ### Dilema 2 · Testimonios con fotos de niñas y niños: participación frente a protección

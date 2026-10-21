@@ -66,3 +66,11 @@ def test_un_centro_sin_ubicacion_sigue_valiendo(cliente, admin):
 def test_una_ubicacion_imposible_se_rechaza(cliente, admin):
     r = cliente.post("/v1/admin/centros", headers=admin.headers, json=_centro(latitud=125.0, longitud=-100.3))
     assert r.status_code == 422
+
+
+def test_los_contadores_de_seguridad_nacen_en_cero():
+    """Para que el primer ataque después de un reinicio sí dispare la alerta (increase() necesita el 0)."""
+    from prometheus_client import REGISTRY
+
+    for tipo in ("limite_excedido", "credenciales_invalidas", "prohibido", "token_invalido"):
+        assert REGISTRY.get_sample_value("familias_eventos_seguridad_total", {"tipo": tipo}) is not None

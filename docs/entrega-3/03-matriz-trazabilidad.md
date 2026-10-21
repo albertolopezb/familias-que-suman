@@ -3,8 +3,8 @@
 **Versión que respalda:** tag `v3.0-entrega` del repositorio.
 **Evidencia automática:**
 
-- Servidor: 182 pruebas pytest contra PostgreSQL, Redis y RustFS reales → [`docs/evidencia/pytest-servidor.txt`](../evidencia/pytest-servidor.txt).
-- App: 60 pruebas locales (JVM) → [`docs/evidencia/pruebas-app.txt`](../evidencia/pruebas-app.txt), más 4 pruebas instrumentadas de Compose corridas en el teléfono físico → [`docs/evidencia/pruebas-instrumentadas.txt`](../evidencia/pruebas-instrumentadas.txt).
+- Servidor: 190 pruebas pytest contra PostgreSQL, Redis y RustFS reales → [`docs/evidencia/pytest-servidor.txt`](../evidencia/pytest-servidor.txt).
+- App: 64 pruebas locales (JVM) → [`docs/evidencia/pruebas-app.txt`](../evidencia/pruebas-app.txt), más 4 pruebas instrumentadas de Compose corridas en el teléfono físico → [`docs/evidencia/pruebas-instrumentadas.txt`](../evidencia/pruebas-instrumentadas.txt).
 - Contrato de la API: `backend/smoke.sh`, 35 casos contra la API levantada → [`docs/evidencia/smoke.txt`](../evidencia/smoke.txt).
 - Seguridad dinámica: OWASP ZAP sin y con sesión → [`backend/seguridad/zap/reporte-zap.html`](../../backend/seguridad/zap/reporte-zap.html).
 - Pruebas manuales en el teléfono físico (guion `M-xx` al final de esta sección).
@@ -26,7 +26,7 @@ Cómo leer el estado:
 | ID | Requisito | Criterio de aceptación (del backlog) | Prueba o evidencia | Resultado | Estado |
 |---|---|---|---|---|---|
 | RF-01 | Directorio de asociaciones y centros por categoría | Una familia que abre la app por primera vez encuentra una causa que le interesa sin saber qué buscar | M-01; `smoke.sh` 2 "El catálogo es público" | Pasa | Cumplido |
-| RF-02 | Filtro por ciudad y "cerca de mí", previa autorización | La familia ve primero lo que tiene cerca, y la app sigue siendo útil si no comparte su ubicación | `CercaniaTest.ordenaDeLaMasCercanaALaMasLejanaYLoSinUbicacionAlFinal`, `CercaniaTest.laDistanciaEsRazonable`; M-02 (negar el permiso: la lista sigue por fecha) | Pasan 2 de 2 + M-02 | Cumplido |
+| RF-02 | Filtro por ciudad y "cerca de mí", previa autorización | La familia ve primero lo que tiene cerca, sin compartir su ubicación: en el mapa escribe un municipio, colonia o calle (o toca un punto) y salen los tres lugares más cercanos con su distancia | `CercaniaTest` (6: distancia, orden, texto de la distancia, municipios sin internet, la familia de Apodaca, búsqueda en OpenStreetMap sin token); M-02 | Pasan 6 de 6 + M-02 | Cumplido |
 | RF-03 | Ficha de la asociación | La familia decide si quiere ayudar sin salir de la app | M-03 | Pasa | Cumplido |
 | RF-04 | Actividades con fecha, horario, lugar, qué se hará y si es para niños | La familia sabe si la actividad le acomoda antes de inscribirse | M-04; `test_inscripciones.py::test_edad_minima_se_revisa_en_el_servidor` | Pasa | Cumplido |
 | RF-05 | Lugares disponibles en tiempo real | Si dos familias piden el último lugar a la vez, solo una lo obtiene y la otra recibe un aviso claro; nunca se sobrepasa el cupo | `test_inscripciones.py::test_toctou_varias_familias_a_la_vez_no_sobrepasan_el_cupo` (8 familias a la vez, `FOR UPDATE`), `::test_sin_lugares_suficientes`, `::test_inscribirse_descuenta_lugares` | Pasan 3 de 3 | Cumplido |
@@ -120,7 +120,7 @@ APK de release firmado, contra el servidor desplegado en Azure por el túnel HTT
 | ID | Pasos | Resultado esperado | Resultado |
 |---|---|---|---|
 | M-01 | Abrir la app sin cuenta → Inicio → "¿Cómo quieres ayudar hoy?" → Directorio → una categoría → una asociación | Se llega a una ficha sin buscar | Pendiente |
-| M-02 | Actividades → "Cerca de mí" → negar el permiso; repetir y concederlo | Negado: la lista sigue por fecha. Concedido: la más cercana primero | Pendiente |
+| M-02 | Inicio → mapa → "Buscar cerca de: Apodaca"; luego mantener el dedo sobre otro punto | Sale "Lo más cerca de Apodaca" con 3 lugares y su distancia; el punto tocado cambia la lista. La app no pide permiso de ubicación | Pendiente |
 | M-03 | Abrir la ficha de 3 asociaciones | Qué hace, a quién ayuda, qué necesita, dirección y contacto | Pendiente |
 | M-04 | Abrir una actividad | Fecha, horario, lugar, qué se hará, edad mínima y lugares | Pendiente |
 | M-06 | Inscribirse con 2 acompañantes (uno menor, con consentimiento) → entrar como admin → Actividades → ícono "Quiénes van" | Aparece la familia con sus integrantes y "con menores" | Pasa (2026-10-20): la familia aparece con Sofía (9) y "con menores", vista como familia y como admin |

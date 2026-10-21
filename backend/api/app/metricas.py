@@ -28,6 +28,17 @@ seguridad = Counter(
     "limite_excedido, entrada_invalida, archivo_rechazado, cuerpo_muy_grande, host_invalido…",
     ["tipo"],
 )
+# Cada tipo nace en 0 al arrancar. Si no, tras un reinicio la serie no existe hasta el primer
+# evento, Prometheus ve "nada → 80" y increase() da 0: el primer ataque no dispararía la alerta
+# (se vio en la prueba de carga del 20 de octubre: 80 respuestas 429 y RateLimitDisparado en 0).
+TIPOS_SEGURIDAD = (
+    "credenciales_invalidas", "token_invalido", "token_expirado", "sesion_cerrada", "falta_token",
+    "prohibido", "limite_excedido", "entrada_invalida", "archivo_rechazado", "cuerpo_muy_grande",
+    "host_invalido",
+)
+for _tipo in TIPOS_SEGURIDAD:
+    seguridad.labels(tipo=_tipo)
+
 negocio = Counter(
     "familias_operaciones_total",
     "Operaciones de la app: inscripciones, cancelaciones, aportaciones, testimonios…",

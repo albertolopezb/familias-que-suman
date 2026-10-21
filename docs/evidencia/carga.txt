@@ -1,0 +1,24 @@
+Prueba de carga · 2026-10-20 20:18 · hunter-marilyn-larger-frequent.trycloudflare.com
+Desde una computadora (una IP) por el túnel de Cloudflare hasta la VM de Azure (B2als v2: 2 vCPU, 4 GB).
+Límite global por IP: 120 peticiones por minuto (ventana deslizante, contadores en Redis).
+
+== A · 20 familias abren la app al mismo tiempo (100 peticiones) ==
+peticiones: 100 en 1.7 s
+códigos: 200×100
+tiempo de las 200 (ms): promedio 1084, mediana 1061, p95 1640, máximo 1730
+
+== B · una sola IP manda 200 peticiones seguidas ==
+peticiones: 200 en 4.5 s
+códigos: 200×120, 429×80
+tiempo de las 200 (ms): promedio 238, mediana 201, p95 540, máximo 600
+la primera 429 llegó en la petición n.º 121
+una 429 tarda (ms): mediana 192 (se rechaza sin tocar la base)
+/v1/salud después de la ráfaga: 200 en 288 ms
+
+== Lo mismo visto desde el servidor (Prometheus en la VM, ventanas de 1 min) ==
+A · tiempo dentro de la API con las 100 a la vez: mediana ~140 ms, p95 ~340 ms (sin carga: ~5 ms).
+    El resto del segundo que ve el cliente es abrir 100 conexiones TLS nuevas y el viaje por Cloudflare.
+B · contador familias_http_peticiones_total{estado="429"} = 80 y
+    familias_eventos_seguridad_total{tipo="limite_excedido"} = 80, iguales a las 80 rechazadas.
+    Mientras se rechazaba, la mediana dentro de la API fue ~6 ms: una 429 no consulta la base.
+CPU del proceso de la API: nunca pasó de 0.13 núcleos (de 2).

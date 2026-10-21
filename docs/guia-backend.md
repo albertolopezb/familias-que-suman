@@ -54,12 +54,12 @@ encuestas, aportaciones a campañas, sugerencias, privacidad y administración.
 | Salida a internet | Cloudflare Tunnel (`cloudflared`) | HTTPS público sin abrir puertos |
 | Monitoreo | Prometheus 3.15 + Grafana 13.2 | Métricas, alertas de seguridad, tablero |
 | Escaneo | OWASP ZAP 2.17 | Ataque automático a la API |
-| Pruebas | pytest | 182 pruebas contra la base, Redis y el almacén reales |
+| Pruebas | pytest | 190 pruebas contra la base, Redis y el almacén reales |
 
 **Números de esta entrega:**
 
 - **69 operaciones** documentadas en OpenAPI (más la página pública de invitación y `assetlinks.json`).
-- **182 pruebas automáticas** de la API, todas en verde (§12).
+- **190 pruebas automáticas** de la API, todas en verde (§12).
 - **OWASP ZAP, sin y con sesión: 0 alertas altas, 0 medias, 0 bajas** (1 informativa) (§13).
 - **40 medidas de seguridad** catalogadas (§7), mapeadas a OWASP Top 10 2025, OWASP API Top 10
   2023 y CWE Top 25 (§8).
@@ -1253,9 +1253,11 @@ Ver §11.
   el Keystore. La app renueva sola un minuto antes de que venza el JWT o al recibir 401; si la
   renovación es rechazada (sesión cerrada, contraseña cambiada, reuso detectado) borra todo y pide
   entrar otra vez. Sin red no se pierde la sesión.
-- **"Cerca de mí" sin mandar la ubicación** (`CercaDeMi.kt`, RF-02): permiso **aproximado**
-  (`ACCESS_COARSE_LOCATION`), pedido solo al tocar el botón; la lista se ordena en el teléfono
-  (`porCercania`, haversine) y la ubicación vive solo en memoria. La API nunca la recibe.
+- **"Buscar cerca de" sin la ubicación del teléfono** (RF-02): la app no pide permisos de ubicación.
+  La familia escribe un municipio (se resuelve en el teléfono), una colonia o una calle
+  (`BuscadorDeLugares.kt` pregunta a Nominatim de OpenStreetMap con `httpSinSesion`: sin token, solo
+  el texto) o toca un punto del mapa; la distancia se calcula en el teléfono (`porCercania`). La API
+  nunca recibe coordenadas de la familia.
 - **Token en el encabezado**, nunca en la URL; sin registros del cuerpo ni de los encabezados en
   Logcat (`ClienteApi.kt:71`); tiempos límite (línea 82).
 - **Solo HTTPS y solo CA del sistema** (S-12).
@@ -1274,7 +1276,7 @@ certificado de la app. Nadie más puede "robarse" los enlaces.
 
 #### S-39 · Pruebas de seguridad automatizadas
 
-182 pruebas que atacan lo mismo que un atacante: §12.
+190 pruebas que atacan lo mismo que un atacante: §12.
 
 #### S-40 · Monitoreo continuo con alertas
 
@@ -1422,7 +1424,7 @@ Ahora `Usuario.esAdmin` sale de `Sesion.esAdmin`, que llena el servidor con los 
 
 ### 9.5 Pruebas de la app
 
-`./gradlew :app:testDebugUnitTest`: **60 pruebas, 0 fallas** (incluye la caché sin conexión, `CatalogoLocalTest`, los buscadores, `BusquedaTest`, la revisión de testimonios y
+`./gradlew :app:testDebugUnitTest`: **64 pruebas, 0 fallas** (incluye la caché sin conexión, `CatalogoLocalTest`, los buscadores, `BusquedaTest`, la revisión de testimonios y
 el orden por cercanía, `CercaniaTest`). Los repositorios de testimonios y
 encuestas tienen una versión en memoria solo para estas pruebas (`TestimonioRepositoryEnMemoria`,
 `EncuestaRepositoryEnMemoria`).
@@ -1507,6 +1509,10 @@ eso existe la página con el botón. En cuanto haya dominio propio, se abre dire
 | `familias_http_duracion_segundos` | método, ruta | Latencia (p50/p95) |
 | `familias_eventos_seguridad_total` | tipo | `token_invalido`, `token_expirado`, `sesion_cerrada`, `falta_token`, `prohibido`, `limite_excedido`, `entrada_invalida`, `archivo_rechazado`, `cuerpo_muy_grande`, `host_invalido` |
 | `familias_operaciones_total` | operación, resultado | Inscripciones, cancelaciones, aportaciones, testimonios, encuestas |
+| `familias_registros` | tipo | Cuántos hay: familias, acompañantes, actividades, inscripciones vigentes, propuestas por tipo, pendientes (`app/resumen.py`; solo conteos, se recalcula cada 60 s). Lo mismo que `GET /v1/admin/resumen` y la pantalla "Resumen" del perfil admin |
+
+Los contadores de seguridad nacen en 0 al arrancar (`TIPOS_SEGURIDAD`): sin eso, tras un reinicio el
+primer ataque no dispara su alerta, porque `increase()` no ve el salto de "no existe" a 80.
 
 ### 11.2 Las alertas
 
@@ -1525,7 +1531,19 @@ eso existe la página con el botón. En cuanto haya dominio propio, se abre dire
 | `ErroresDelServidor` | > 5 % de 5xx por 2 min | Fallas |
 | `LatenciaAlta` | p95 > 1 s por 5 min | Lentitud o carga |
 
-### 11.3 Grafana
+### 11.3 Prueba de carga
+
+`python backend/seguridad/carga/prueba_carga.py https://<túnel>.trycloudflare.com` (solo lecturas
+públicas; resultado en `docs/evidencia/carga.txt`). Medido el 20 de octubre contra Azure:
+
+| Escenario | Resultado |
+|---|---|
+| A · 20 familias abren la app a la vez (100 peticiones juntas) | 100 de 100 con 200. Dentro de la API: mediana ~140 ms, p95 ~340 ms. En el cliente ~1 s (100 conexiones TLS nuevas por Cloudflare) |
+| B · una IP manda 200 seguidas | Pasan exactamente 120 (el límite por minuto); las 80 siguientes reciben 429 en ~6 ms sin tocar la base; `/v1/salud` sigue en 200 |
+
+La CPU de la API no pasó de 0.13 núcleos de 2.
+
+### 11.4 Grafana
 
 `http://localhost:3000` → carpeta **Familias que Suman** → **API · Familias que Suman**. Se carga
 solo (`monitoreo/grafana/provisioning/` + `monitoreo/grafana/tableros/api.json`): disponibilidad,
@@ -1565,8 +1583,9 @@ sesión por HTTP se prueba aparte. **No existe un "modo de prueba" en el servido
 | `test_seguridad_http.py` | 11 | Encabezados, Host, tamaño, errores sin trazas, rate limit por flujo y **global**, IP falsificada, inventario interno, sin CORS, App Links |
 | `test_testimonios.py` | 6 | RF-12/HU-11: nace pendiente y no es público; aprobar publica; rechazado no; editar regresa a revisión; la foto en revisión solo la ven su autora y la moderación; solo `moderar:contenido` revisa; bandeja sin correos y auditoría |
 | `test_recuperacion.py` | 8 | RF-18: misma respuesta exista o no la cuenta; el código cambia la contraseña una sola vez y cierra las sesiones; se guarda como HMAC; 5 intentos lo queman; vencido no sirve; pedir otro anula el anterior y hay tope por hora; el de una cuenta no sirve en otra; contraseña débil o código raro no lo gastan |
+| `test_resumen.py` | 8 | El resumen de la administración cuenta familias, inscripciones y personas; son solo números; una familia (403), sin sesión (401) o quien solo modera no lo ven; un centro guarda y publica su ubicación, sin ella sigue valiendo y una imposible se rechaza (422); los contadores de seguridad nacen en 0 para que el primer ataque tras un reinicio sí dispare la alerta |
 | `test_avisos.py` | 6 | RF-16/RF-22: sin sesión 401; cada familia recibe los de su ciudad y los generales; `desde`; solo `administrar:catalogo` crea y borra (auditado); validación; una actividad nueva genera su aviso |
-| **Total** | **182** | **182 aprobadas** |
+| **Total** | **190** | **190 aprobadas** |
 
 **Dos hallazgos reales durante la verificación** (por eso se prueba):
 
