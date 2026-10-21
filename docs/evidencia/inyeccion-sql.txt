@@ -1,0 +1,28 @@
+Intentos de inyección SQL contra el servidor en Azure (20 de octubre de 2026, por el túnel de Cloudflare).
+Capa 1: validación (422). Capa 2: consultas parametrizadas (el último pasa la forma y llega como texto: lista vacía).
+
+$ GET /v1/actividades?ciudad=Monterrey' OR '1'='1
+{"error":"Revisa 'ciudad': String should match pattern '^[\\w .,'-]+$'","codigo":"dato_invalido","solicitud":"d0be41eaf68046cd","campo":"ciudad"}
+→ HTTP 422
+
+$ GET /v1/actividades/1 OR 1=1
+{"error":"Revisa 'actividad_id': Input should be a valid UUID, invalid character: found ` ` at 1","codigo":"dato_invalido","solicitud":"b2379fe0e95043e9","campo":"actividad_id"}
+→ HTTP 422
+
+$ POST /v1/sesion/iniciar  correo = ' OR 1=1 --
+{"error":"Revisa 'correo': no es un correo válido","codigo":"dato_invalido","solicitud":"28a91a50cef347f5","campo":"correo"}
+→ HTTP 422
+
+$ POST /v1/sesion/iniciar  correo = a@b.mx'; DROP TABLE cuentas;--
+{"error":"Revisa 'correo': no es un correo válido","codigo":"dato_invalido","solicitud":"05a141f531ed48a6","campo":"correo"}
+→ HTTP 422
+
+$ GET /v1/yo  (sin token)
+{"error":"Necesitas iniciar sesión para esto.","codigo":"falta_token","solicitud":"ef036b545dd148e0"}
+→ HTTP 401
+$ GET /v1/actividades?ciudad=Monterrey' OR 'a
+[]
+→ HTTP 200
+
+$ GET /v1/actividades?ciudad=Monterrey (normal)
+11 actividades
