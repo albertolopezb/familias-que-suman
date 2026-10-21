@@ -14,7 +14,7 @@ Repositorio: https://github.com/albertolopezb/familias-que-suman (tag `v3.0-entr
 
 Requisitos: teléfono Android 8.0 o superior con internet.
 
-1. Descarga `familias-que-suman-v3.0.apk` (enlace en la sección 10 del documento).
+1. Descarga `familias-que-suman-v3.1.apk` (enlace en la sección 10 del documento).
 2. Ábrelo en el teléfono. La primera vez, Android pide permitir **instalar apps de origen
    desconocido** para el navegador o el administrador de archivos: acéptalo solo para esta
    instalación.
@@ -23,13 +23,13 @@ Requisitos: teléfono Android 8.0 o superior con internet.
 **Por cable, desde una computadora** (depuración USB activada en *Opciones de desarrollador*):
 
 ```bash
-adb install -r familias-que-suman-v3.0.apk
+adb install -r familias-que-suman-v3.1.apk
 ```
 
 Comprobar que el APK es el original (firmado por el equipo):
 
 ```bash
-apksigner verify --print-certs familias-que-suman-v3.0.apk
+apksigner verify --print-certs familias-que-suman-v3.1.apk
 ```
 
 Debe decir `CN=Familias que Suman, OU=TC2007B` y la huella SHA-256 `88:c7:bb:77:…:87:0c`.

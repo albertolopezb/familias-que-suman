@@ -25,7 +25,7 @@ registramos en la guía de observación de la OSF. Del lado técnico se cuida el
 - las fotos se reducen a 1600 px antes de subirse;
 - los avisos se revisan en un solo trabajo cada 15 minutos que Android agrupa;
 - no hay servicios de terceros duplicados;
-- el servidor es una sola VM ARM de bajo consumo.
+- el servidor es una sola VM pequeña (2 núcleos, 4 GB) que se apaga cuando no se usa.
 
 **Delitos cibernéticos.** Los riesgos del módulo que aplican a esta app y lo que hace cada control:
 
