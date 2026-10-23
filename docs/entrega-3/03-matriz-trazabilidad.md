@@ -105,9 +105,9 @@ Cada historia se demuestra con las pruebas del requisito que la origina.
 
 | Nivel | Qué se prueba | Herramienta | Evidencia |
 |---|---|---|---|
-| Unitarias (JVM) | Reglas de avisos, niveles, fechas, cercanía, coordenadas, encuestas, caché sin conexión | JUnit, ViewModel con repositorio falso | `docs/evidencia/pruebas-app.txt` (60) |
+| Unitarias (JVM) | Reglas de avisos, niveles, fechas, cercanía, coordenadas, encuestas, caché sin conexión | JUnit, ViewModel con repositorio falso | `docs/evidencia/pruebas-app.txt` (66) |
 | Interfaz (instrumentadas) | Estados cargando/vacío/error, filtros y Atrás en Compose | Compose UI Test en el teléfono físico | `docs/evidencia/pruebas-instrumentadas.txt` (4 de 4) |
-| Integración del servidor | Cada regla contra PostgreSQL, Redis y RustFS reales; políticas Oso directas | pytest en Docker | `docs/evidencia/pytest-servidor.txt` (182) |
+| Integración del servidor | Cada regla contra PostgreSQL, Redis y RustFS reales; políticas Oso directas | pytest en Docker | `docs/evidencia/pytest-servidor.txt` (191) |
 | Contrato | La API levantada responde lo que promete, incluidos los rechazos | `backend/smoke.sh` (bash + curl) | `docs/evidencia/smoke.txt` (35) |
 | Concurrencia | 8 familias por los mismos lugares a la vez | pytest con hilos y `Barrier` | `test_toctou_varias_familias_a_la_vez_no_sobrepasan_el_cupo` |
 | Seguridad dinámica (DAST) | SQLi, XSS, inyección, cabeceras, fugas, sin y con sesión | OWASP ZAP 2.17 | `backend/seguridad/zap/` |

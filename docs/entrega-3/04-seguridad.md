@@ -54,5 +54,5 @@ cuenta de escaneo sin datos reales.
 | Informativo | 1 (*User Agent Fuzzer*) |
 
 La alerta informativa no es una vulnerabilidad. ZAP compara respuestas con distintos `User-Agent`;
-la API no lo lee, y lo que cambia es el `solicitud` único de cada respuesta de error. Reporte:
+la API no lo lee, y lo que cambia es el campo `solicitud`, único en cada respuesta de error. Reporte:
 [`backend/seguridad/zap/reporte-zap.html`](../../backend/seguridad/zap/reporte-zap.html).

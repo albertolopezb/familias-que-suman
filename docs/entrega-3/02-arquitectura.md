@@ -62,7 +62,7 @@ flowchart TB
             redis[("Redis 8.8<br/>rate limit · bloqueos · sesiones cerradas")]
             s3[("RustFS (S3)<br/>fotos sin EXIF")]
             mail["Mailpit / SMTP"]
-            migrar["Flyway<br/>migraciones V1…V9"]
+            migrar["Flyway<br/>migraciones V1…V11"]
         end
         subgraph redmon["red monitoreo (interna)"]
             prom["Prometheus"]

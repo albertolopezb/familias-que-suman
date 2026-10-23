@@ -253,7 +253,7 @@ Columnas: dato · nivel · ubicación · protección específica · tiempo de co
 | Tokens revocados | Bajo | Redis | Contraseña de Redis; red interna | Hasta que vence el token |
 | `recuperaciones.huella` (código de 6 dígitos) | Crítico | `recuperaciones` | Se guarda como HMAC, no el código; 5 intentos; un solo uso | Vence a los 15 min; la fila se borra con la cuenta |
 | Intentos fallidos por correo | Bajo | Redis | La clave es el SHA-256 del correo, no el correo | 15 minutos |
-| `auditoria.ip_hmac` | Bajo (seudónimo) | `auditoria` | HMAC-SHA256 de la IP: sin la llave no se recupera la IP | Indefinida. Pendiente: definir un plazo (propuesta: 12 meses) |
+| `auditoria.ip_hmac` | Bajo (seudónimo) | `auditoria` | HMAC-SHA256 de la IP: sin la llave no se recupera la IP | Mientras exista la cuenta; el equipo propone 12 meses como plazo a acordar con la OSF |
 | `auditoria.actor_id`, `accion`, `detalle` | Medio | `auditoria` | La API solo puede agregar renglones: no editarlos ni borrarlos (`test_minimo_privilegio.py`); sin nombres | Indefinida (misma propuesta) |
 | `solicitudes_eliminacion.correo`, `folio` | Medio | `solicitudes_eliminacion` | Solo quien atiende la privacidad | Indefinida, como constancia y bloqueo (art. 24) |
 

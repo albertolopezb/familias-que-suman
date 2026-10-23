@@ -161,7 +161,7 @@ La VM de la demostración cuesta unos 37 USD al mes (cómputo, disco e IP), corr
 4. Crear el grupo de recursos y la VM con Ubuntu 24.04, solo SSH y la llave **pública** (la privada
    se queda en tu computadora):
    ```bash
-   az group create --name familias-que-suman-rg --location mexicocentral
+   az group create --name familias-que-suman-rg --location northcentralus
    ```
    ```bash
    az vm create --resource-group familias-que-suman-rg --name familias-que-suman --location northcentralus --image Canonical:ubuntu-24_04-lts:server:latest --size Standard_B2als_v2 --admin-username azureuser --ssh-key-values "<llave pública ssh-ed25519>" --public-ip-sku Standard --os-disk-size-gb 64 --storage-sku StandardSSD_LRS --nsg-rule SSH
