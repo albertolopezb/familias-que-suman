@@ -20,7 +20,7 @@ import mx.tec.familiasquesuman.data.red.ClienteApi
 
 /**
  * El catálogo guardado en el teléfono: lo último que respondió la API de actividades, asociaciones,
- * proyectos, campañas y centros, para consultar las fichas SIN CONEXIÓN (acta de acuerdos).
+ * proyectos, campañas y centros, para consultar las fichas SIN CONEXIÓN (RF-29).
  *
  * Es Room, como en la Práctica 5, con una sola tabla: la respuesta de cada ruta pública tal como
  * llegó (JSON) y cuándo llegó. Así no hay que duplicar el modelo del servidor en entidades.

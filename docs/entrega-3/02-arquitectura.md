@@ -160,7 +160,7 @@ La bitácora completa, con fecha y razón de cada una, está en [`docs/bitacora.
 | Cupo con `SELECT … FOR UPDATE` dentro de la transacción | Contar en la app | Dos familias por el último lugar: solo una lo obtiene (RF-05) |
 | Fotos a un almacén S3 (RustFS), re-codificadas sin EXIF | Guardarlas en la base / MinIO | La base solo guarda la clave; MinIO comunitario dejó de recibir parches |
 | Avisos con WorkManager cada 15 min, sin Firebase | FCM | Práctica 8: sin cuentas de Google ni otra llave privada; el aviso de privacidad no tiene que declarar a Google. Costo: hasta ~15 min de retraso |
-| Catálogo público guardado con Room para verlo sin conexión | Guardar todo, o nada | Compromiso del acta (fichas sin conexión) sin guardar datos personales en el teléfono |
+| Catálogo público guardado con Room para verlo sin conexión | Guardar todo, o nada | Consulta de fichas sin conexión (RF-29) sin guardar datos personales en el teléfono |
 | Salida a internet por Cloudflare Tunnel | Abrir puertos / IP pública | HTTPS sin abrir puertos; la red de Cloudflare absorbe ataques de red |
 | Servidor en una VM de Azure for Students (2 vCPU, 4 GB) | Oracle Cloud Always Free (rechazó la tarjeta en dos cuentas); Render/Railway (se duermen) | Sin tarjeta ni costo (crédito de estudiante), no se duerme y corre el mismo `docker compose`. La política de la suscripción solo permite regiones fuera de México: se eligió la más cercana y se declara en el aviso |
 | Explorar sin cuenta; la cuenta se pide al inscribirse (registro diferido) | Pedir cuenta al abrir | RF-18: menos fricción y menos datos de quien solo mira |

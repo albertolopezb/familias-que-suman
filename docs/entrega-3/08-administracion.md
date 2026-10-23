@@ -3,13 +3,18 @@
 Plan en Planner: **Reto TC2007B.402** (exportado el 15 de octubre de 2026 y actualizado para esta
 entrega). Captura del tablero final en la sección 10.
 
+**Nota sobre el registro.** El tablero ya tenía los requerimientos, historias, tareas técnicas y la
+lista del documento final. El trabajo de backend, seguridad, despliegue en Azure y modo sin conexión
+se hizo sin darlo de alta tarea por tarea; el 22 de octubre se agregaron como tareas «(retroactivo)»
+con las fechas reales que muestra el historial de Git y se marcaron completadas ese día (Planner
+guarda como fecha de cierre el momento en que se marca, no la fecha de la tarea).
+
 ## 8.1 Backlog final y estado de los requerimientos
 
 | Tipo | Total | Terminados | Parciales | Fuera |
 |---|---|---|---|---|
-| Requerimientos funcionales (RF-01 a RF-28) | 28 | 28 | 0 | 0 |
-| Compromiso del acta: fichas sin conexión (ACTA-01) | 1 | 1 | 0 | 0 |
-| Requerimientos no funcionales (RNF-01 a RNF-07) | 7 | 5 (RNF-01, 02, 04, 06 y 07) | 2: RNF-03 (cumple en el código; la rotación se demuestra en la presentación) y RNF-05 (no se probó en Android 10 exacto) | 0 |
+| Requerimientos funcionales (RF-01 a RF-29) | 29 | 28 | 1: RF-20 (el filtro por categoría y «Urgentes» sobre las campañas está en el código pero oculto en la pantalla; ver §3.7) | 0 |
+| Requerimientos no funcionales (RNF-01 a RNF-07) | 7 | 6 (RNF-01, 02, 03, 04, 06 y 07) | 1: RNF-05 (no se probó en Android 10 exacto) | 0 |
 | Historias de usuario (HU-01 a HU-14) | 14 | 14 | 0 | 0 |
 | Tareas técnicas (TT-01 a TT-16) | 16 | 16 | 0 | 0 |
 
@@ -25,8 +30,8 @@ Azure: arranque en frío de 117 ms en promedio (meta 1.5 s) y confirmación de i
 - **RF-02:** el filtro por ciudad se mantiene. "Cerca de mí" con la ubicación aproximada se cambió
   (20 oct.) por "Buscar cerca de" en el mapa: la familia escribe un lugar o toca un punto, y la app
   ya no pide permiso de ubicación. El mapa ahora incluye los centros del Directorio.
-- **Nuevos, salidos de la revisión final contra el acta y la rúbrica:**
-  - ACTA-01: consulta sin conexión con Room.
+- **Nuevos, salidos de la revisión final contra los requerimientos y la rúbrica:**
+  - RF-29: consulta sin conexión con Room.
   - Lista de "quiénes van" para la asociación: completa RF-06.
   - Pantalla para atender solicitudes de eliminación: completa RF-15 y HU-14.
   - Foto con cámara.
@@ -66,10 +71,11 @@ Azure: arranque en frío de 117 ms en promedio (meta 1.5 s) y confirmación de i
 | Identidad: Auth0 del 13 al 15 de octubre y luego JWT propio | Se eligió Auth0 por el diagrama del profesor antes de leer el anexo de identidad del curso y la guía s23, que piden emitir los tokens propios | Dos días de retrabajo (migración V7, app, pruebas, guía). A cambio, refresh tokens rotados y bloqueo por correo propios |
 | Notificaciones con WorkManager en lugar de FCM (RF-16, TT-13) | FCM pide cuenta de Google, Play Services y otra llave en el servidor, y obliga a declarar a Google en el aviso de privacidad; la Práctica 8 enseña a hacerlo sin Firebase | Los avisos llegan con hasta ~15 min de retraso. Aceptado y documentado |
 | Favoritos dinámicos (RF-17) | La socia cambió el concepto: debía avisar de lo nuevo | Se reabrió RF-17 y se conectó con RF-22 |
-| Plataformas: de Android e iOS a solo Android | Tiempo del reto y lo visto en el curso | Acordado con la socia |
+| Plataformas: de Android e iOS a solo Android | Tiempo del reto y lo visto en el curso | Decisión del equipo; no se formalizó con la socia. iOS queda como siguiente paso |
+| Alertas por cercanía con GPS (*geofencing*, caso de uso del documento de requerimientos) | Privacidad (dilema 1, §9.4) y tiempo: pedir la ubicación y seguirla no se justificaba para ordenar una lista | "Buscar cerca de" con un lugar que la familia escribe, y avisos por intereses y urgencias de la ciudad (RF-22), sin ubicación |
 | Ajustes pedidos por la socia (duplicar eventos, estilos, "Donar" en lugar de "Apartar") | Revisiones con la socia | Tareas To-do 2 a 5 en Planner, completadas del 5 al 7 de octubre |
 | Servidor en Azure for Students en lugar de Oracle Cloud | Oracle rechazó la tarjeta en dos cuentas; la suscripción de estudiante de Azure solo permite cinco regiones (ninguna en México) y el primer tamaño elegido no tenía capacidad | Un día de pruebas de cuentas y regiones. Quedó en North Central US con Standard_B2als_v2, y el aviso de privacidad se actualizó para declarar dónde está el servidor |
-| Se agregaron pantallas que el backlog daba por hechas ("quiénes van", atender eliminaciones, fichas sin conexión) | La revisión final contra el acta y la rúbrica mostró que el servidor guardaba los datos pero nadie podía consultarlos desde la app | Implementadas con sus pruebas el 19 de octubre |
+| Se agregaron pantallas que el backlog daba por hechas ("quiénes van", atender eliminaciones, fichas sin conexión) | La revisión final contra los requerimientos y la rúbrica mostró que el servidor guardaba los datos pero nadie podía consultarlos desde la app | Implementadas con sus pruebas el 19 de octubre |
 
 ## 8.4 Riesgos
 
@@ -131,8 +137,9 @@ persona para que `git shortlog` sea legible.
 2. **Elegir tecnología antes de leer los anexos del curso.** Auth0 se integró y se quitó en dos días
    porque el anexo de identidad pedía emitir tokens propios.
 3. **Planner al final.** Los RNF, historias y tareas técnicas se capturaron casi al cierre, y las
-   tareas del documento final seguían "sin iniciar" a una semana de la entrega. Planner dejó de
-   servir para anticipar y se volvió un registro.
+   tareas del documento final seguían "sin iniciar" a una semana de la entrega. Lo del backend, la seguridad y
+   el despliegue ni se dio de alta: se agregó como tareas retroactivas el 22 de octubre. Planner dejó
+   de servir para anticipar y se volvió un registro.
 4. **Commits desde una cuenta compartida.** El historial no muestra el trabajo de cada quien.
 5. **Atajos en el cliente.** El rol de administrador salió primero de "el correo contiene *admin*".
    Se corrigió, pero ningún proceso lo habría detectado antes de la revisión de seguridad.

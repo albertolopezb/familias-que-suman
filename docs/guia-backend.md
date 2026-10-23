@@ -1433,7 +1433,7 @@ encuestas tienen una versión en memoria solo para estas pruebas (`TestimonioRep
 
 | Qué | Dónde | Por qué |
 |---|---|---|
-| **Fichas sin conexión** con Room (Práctica 5): la última respuesta de cada ruta pública se guarda en `catalogo.db`; sin red se ve con la franja "Sin conexión · estás viendo lo guardado el…" y sin presumir cupo | `data/local/CatalogoLocal.kt`, `ui/components/AvisoSinConexion.kt`; `CatalogoLocalTest` (5) | Compromiso del acta. Solo lo público: nada de la familia queda en el teléfono |
+| **Fichas sin conexión** con Room (Práctica 5): la última respuesta de cada ruta pública se guarda en `catalogo.db`; sin red se ve con la franja "Sin conexión · estás viendo lo guardado el…" y sin presumir cupo | `data/local/CatalogoLocal.kt`, `ui/components/AvisoSinConexion.kt`; `CatalogoLocalTest` (5) | RF-29, decisión del equipo. Solo lo público: nada de la familia queda en el teléfono |
 | **Foto con la cámara** (Práctica 10): `TakePicture` con FileProvider, sin pedir el permiso `CAMERA`; la dirección del archivo en `rememberSaveable` | `ui/components/ElegirFoto.kt` | Capacidad del dispositivo; la foto pasa por `Fotos.prepararParaSubir` como la de la galería |
 | **Quiénes van** (RF-06): la administración ve las familias inscritas, sus integrantes con edad y si van menores | `GET /v1/admin/actividades/{id}/inscritos`, `InscritosScreen.kt` | La asociación necesita la lista para organizarse y registrar asistencias. Sin correos, con permiso propio y auditado |
 | **Atender solicitudes de eliminación** desde la app | `SolicitudesEliminacionScreen.kt` | El aviso promete la eliminación: ahora se demuestra de punta a punta |

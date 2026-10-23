@@ -12,17 +12,34 @@ La solución es una **app Android nativa** (Kotlin, Jetpack Compose) conectada a
 (FastAPI y PostgreSQL en Docker). La API se publica en internet por un túnel HTTPS de Cloudflare
 desde una VM de Microsoft Azure pagada con el crédito de Azure for Students (sin costo para el equipo).
 
-## 1.1 Compromisos del acta de acuerdos y cómo se cumplieron
+## 1.1 Acuerdos con el socio formador y cómo se cumplieron
 
-> Acta de acuerdos con la socia formadora: *[enlace al acta]*.
-> Requerimientos del equipo: https://docs.google.com/document/d/1E9YGMQR1R2KuULSeeNgVbwip-9pn6ljhmjwBu2FMb7o
+**Sobre el acta de acuerdos.** No existe un acta independiente firmada con el socio formador. El
+acuerdo de alcance quedó en dos documentos, que son los que esta entrega toma como referencia:
 
-| Compromiso | Cómo quedó | Evidencia |
+- **Requerimientos Iniciales Validados** (RF-01 a RF-15, con su columna «Decisión del socio
+  formador»), el documento que el profesor publicó en Canvas.
+- **Requerimientos Equipo 6**, la versión ampliada del equipo: RF-01 a RF-23, casos de uso,
+  preguntas y respuestas con la representante del socio formador, historias de usuario y el enlace
+  al backlog en Planner:
+  https://docs.google.com/document/d/1E9YGMQR1R2KuULSeeNgVbwip-9pn6ljhmjwBu2FMb7o
+
+RF-24 a RF-29 se agregaron al backlog durante el desarrollo; en la matriz (§3) se indica su origen.
+
+**Lo que pidió el socio formador** (requerimientos validados y sesiones con su representante):
+
+| Pedido | Cómo quedó | Evidencia |
 |---|---|---|
-| Consulta de proyectos sociales activos, con filtrado por categoría y detalle | Pestañas Proyectos, Donar (filtros por categoría y urgencia) y Directorio, con ficha de cada uno | RF-09, RF-20 |
-| Contacto directo por WhatsApp, llamada e Instagram | Botones en fichas de asociación, proyecto y centro que abren la app correspondiente con el dato puesto | RF-08 |
-| Consulta de fichas de proyectos y actividades sin conexión | El catálogo público se guarda en el teléfono (Room); sin internet se ve lo guardado, con aviso de la fecha y sin presumir cupo | ACTA-01, `CatalogoLocalTest` |
-| Comunicación cifrada HTTPS/TLS con autenticación por tokens JWT | TLS 1.2/1.3 en todo el camino público; JWT propio de 15 min con refresh rotado | SEG-01, SEG-07 |
+| Consulta de proyectos y campañas activos, con filtrado por categoría y detalle | Pestañas Proyectos, Donar (filtros por categoría y urgencia) y Directorio, con ficha de cada uno | RF-09, RF-20 |
+| Contacto directo con la asociación en un toque | Botones de llamada, WhatsApp, correo e Instagram en las fichas, que abren la app correspondiente con el dato puesto | RF-08 |
+| Una app que aproveche el teléfono: avisos que llegan solos y una sesión que se queda abierta | Recordatorio 24 h antes y avisos de la ciudad con la app cerrada (WorkManager); sesión cifrada que se renueva sola | RF-16, RF-18, RF-22 |
+
+**Lo que agregó el equipo** (no venía de los requerimientos del socio):
+
+| Decisión | Cómo quedó | Evidencia |
+|---|---|---|
+| Consulta de fichas sin conexión | El catálogo público se guarda en el teléfono (Room); sin internet se ve lo guardado, con aviso de la fecha y sin presumir cupo | RF-29, `CatalogoLocalTest` |
+| Comunicación cifrada HTTPS/TLS y autenticación con tokens JWT | Pedidas por la rúbrica de seguridad de la Entrega 3 y el curso: TLS 1.2/1.3 en todo el camino público; JWT propio de 15 min con refresh rotado | SEG-01, SEG-07 |
 
 ## 1.2 Qué entra
 
@@ -54,9 +71,23 @@ desde una VM de Microsoft Azure pagada con el crédito de Azure for Students (si
 - Pagos o donativos en línea.
 - Mensajería entre familias: el único canal es familia ↔ asociación.
 - iOS.
-- Rastreo de ubicación. La app no pide la ubicación: "Buscar cerca de" usa un lugar que la familia
-  escribe o toca en el mapa.
+- Rastreo de ubicación y alertas por cercanía con GPS (*geofencing*). La app no pide la ubicación:
+  "Buscar cerca de" usa un lugar que la familia escribe o toca en el mapa (dilema 1, §9.4).
 - Modo sin conexión completo: sin internet se **consulta** lo guardado. Inscribirse, apartar y todo
   lo que cambia algo requiere conexión, porque el cupo y las metas se deciden en el servidor.
 - Notificaciones instantáneas por Firebase: los avisos llegan con WorkManager, con hasta ~15 min de
   retraso.
+
+## 1.4 Operación sin conexión y sincronización posterior
+
+La rúbrica pide que, si hay operación sin conexión, la sincronización posterior evite duplicados o
+pérdida de información. En esta entrega el modo sin conexión es de **solo lectura**: se guarda y se
+consulta el catálogo público, y lo único que el teléfono escribe sin red es esa copia de lo ya
+publicado, que la respuesta nueva del servidor reemplaza completa cuando vuelve la red.
+
+Todo lo que cambia datos (inscribirse, cancelar, apartar artículos, testimonios) **requiere
+conexión** y se decide en el servidor. Por eso **no hay cola de operaciones pendientes ni
+sincronización posterior: no hay nada que pueda duplicarse o perderse al volver la red**. Y aun con
+una red inestable, los reintentos no duplican: inscribirse es un `PUT` idempotente (la misma
+petición dos veces deja una sola inscripción) y apartar artículos nunca pasa de lo que falta
+(RF-21, `test_aportaciones.py`; RF-05 y RF-06, `test_inscripciones.py`).

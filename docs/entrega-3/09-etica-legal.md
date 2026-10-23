@@ -51,7 +51,7 @@ registramos en la guía de observación de la OSF. Del lado técnico se cuida el
 | SEG-03 | Nadie ve lo ajeno (Ley: art. 18; Moral) | Una familia no puede leer ni borrar datos de otra | 404 en cualquier recurso ajeno | `test_autorizacion.py::test_bola_no_se_ven_ni_se_borran_acompanantes_ajenos` | §3.3 SEG-03 |
 | RF-18 | No revelar quién tiene cuenta (Ética) | Iniciar sesión y recuperar responden igual exista o no el correo | Mismo código y mensaje en los dos casos | `::test_mismo_mensaje_si_el_correo_no_existe_o_la_contrasena_esta_mal`, `test_recuperacion.py::test_responde_lo_mismo_exista_o_no_la_cuenta` | §3.1 RF-18 |
 | RF-10 | No lucrar con la ayuda (Moral) | La app no procesa pagos ni pide datos financieros | No hay pantalla de pago ni dependencia de pagos | Revisión de `app/build.gradle.kts` y de las pantallas de Donar; M-10 | §3.1 RF-10 |
-| ACTA-01 | Lo que se guarda en el teléfono es solo lo público (Ética; Ley: art. 12) | Sin conexión solo se consulta el catálogo público, nunca datos de la familia | La tabla `respuestas` de Room solo guarda rutas públicas | `CatalogoLocalTest`; `CatalogoLocal.kt` (lista de claves) | §3.1 ACTA-01 |
+| RF-29 | Lo que se guarda en el teléfono es solo lo público (Ética; Ley: art. 12) | Sin conexión solo se consulta el catálogo público, nunca datos de la familia | La tabla `respuestas` de Room solo guarda rutas públicas | `CatalogoLocalTest`; `CatalogoLocal.kt` (lista de claves) | §3.1 RF-29 |
 
 ## 9.2 Aviso de privacidad
 
@@ -376,7 +376,7 @@ Solo la administración del catálogo los modifica, y se conservan mientras est�
 
 ### Dilema 5 · Sin conexión: comodidad frente a datos en el teléfono
 
-- **El dilema.** El acta pide consultar las fichas sin conexión. Lo más cómodo sería guardar todo en
+- **El dilema.** El equipo se comprometió (RF-29) a consultar las fichas sin conexión. Lo más cómodo sería guardar todo en
   el teléfono, incluidas inscripciones y perfil. Pero un teléfono se pierde o se presta, y ahí
   quedarían nombres y edades de los hijos.
 - **Alternativas:**

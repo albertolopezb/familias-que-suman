@@ -16,7 +16,7 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * El catálogo sin conexión (compromiso del acta: consultar fichas sin internet). La tabla de Room
+ * El catálogo sin conexión (RF-29: consultar fichas sin internet). La tabla de Room
  * se cambia por una en memoria: lo que se prueba es la regla, no SQLite.
  */
 class CatalogoLocalTest {
