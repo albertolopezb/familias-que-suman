@@ -165,3 +165,65 @@ La bitácora completa, con fecha y razón de cada una, está en [`docs/bitacora.
 | Servidor en una VM de Azure for Students (2 vCPU, 4 GB) | Oracle Cloud Always Free (rechazó la tarjeta en dos cuentas); Render/Railway (se duermen) | Sin tarjeta ni costo (crédito de estudiante), no se duerme y corre el mismo `docker compose`. La política de la suscripción solo permite regiones fuera de México: se eligió la más cercana y se declara en el aviso |
 | Explorar sin cuenta; la cuenta se pide al inscribirse (registro diferido) | Pedir cuenta al abrir | RF-18: menos fricción y menos datos de quien solo mira |
 | Donación solo informativa | Pagos en línea | Indicación de la socia; no se manejan datos de pago |
+
+## 2.6 Modelo de datos (entidad-relación)
+
+Las 27 tablas de PostgreSQL, creadas por las migraciones Flyway `V1` a `V11`
+(`backend/db/migrations/`), en tres diagramas para que se lean. Cada línea es una llave foránea,
+«uno a muchos» de la tabla de la izquierda a la de la derecha. `cuentas` y `ciudades` son el centro:
+casi todo lo que la familia hace cuelga de su cuenta, y todo el catálogo público se filtra por
+ciudad. Los atributos no se dibujan; están en la [Guía del backend](../guia-backend.md) (§5) y en
+las migraciones.
+
+**a) La familia y su cuenta**
+
+```mermaid
+erDiagram
+    ciudades ||--o{ cuentas : tiene
+    cuentas ||--o{ acompanantes : tiene
+    cuentas ||--o{ favoritos : tiene
+    cuentas ||--o{ preferencias : tiene
+    cuentas ||--o{ sesiones : tiene
+    cuentas ||--o{ recuperaciones : tiene
+    cuentas ||--o{ solicitudes_eliminacion : tiene
+    cuentas ||--o{ sugerencias : tiene
+```
+
+**b) Actividades y participación**
+
+```mermaid
+erDiagram
+    asociaciones ||--o{ actividades : tiene
+    ciudades ||--o{ actividades : tiene
+    ciudades ||--o{ avisos : tiene
+    actividades ||--o{ avisos : tiene
+    actividades ||--o{ inscripciones : tiene
+    cuentas ||--o{ inscripciones : tiene
+    inscripciones ||--o{ inscripcion_personas : tiene
+    actividades ||--o{ invitaciones : tiene
+    cuentas ||--o{ invitaciones : tiene
+    actividades ||--o{ asistencias : tiene
+    cuentas ||--o{ asistencias : tiene
+    asistencias ||--o{ respuestas_encuesta : tiene
+    asistencias ||--o{ testimonios : tiene
+```
+
+**c) Catálogo y donaciones**
+
+```mermaid
+erDiagram
+    ciudades ||--o{ asociaciones : tiene
+    asociaciones ||--o{ campanas : tiene
+    ciudades ||--o{ campanas : tiene
+    ciudades ||--o{ centros : tiene
+    proyectos ||--o{ formas_apoyo : tiene
+    campanas ||--o{ articulos_meta : tiene
+    campanas ||--o{ opciones_donacion : tiene
+    campanas ||--o{ puntos_entrega : tiene
+    articulos_meta ||--o{ aportaciones : tiene
+    cuentas ||--o{ aportaciones : tiene
+```
+
+La tabla `auditoria` no tiene llaves foráneas a propósito: guarda quién hizo qué con la identidad
+seudonimizada (HMAC de la IP), de modo que borrar una cuenta no obliga a borrar su rastro de
+seguridad.
