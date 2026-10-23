@@ -157,3 +157,14 @@ persona para que `git shortlog` sea legible.
 | Atajos de seguridad | Una revisión de seguridad por sprint (aunque sea corta), con OWASP ZAP y la lista de controles de la rúbrica |
 | Validación tardía | Mostrar a la socia un prototipo navegable de cada función nueva antes de programarla |
 | Dirección del servidor que cambia | Conseguir un dominio y un túnel con nombre al inicio, no al final |
+
+## 8.7 Captura del tablero de Planner
+
+Estado del plan **Reto TC2007B.402** el 22 de octubre de 2026, al cerrar la entrega: 118 tareas,
+todas completadas (de ellas, 12 se dieron de alta ese día como «(retroactivo)», ver el inicio de
+este capítulo). Enlace al plan en la sección 10.
+
+![Tablero por cubeta: To-do 35, Documento final 18, Requerimientos Funcionales 29](../evidencia/planner-tablero.jpg)
+
+![Gráficas del plan: 0 tareas pendientes; por prioridad y por cubeta](../evidencia/planner-graficas.jpg)
+
