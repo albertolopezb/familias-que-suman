@@ -75,11 +75,11 @@ import mx.tec.familiasquesuman.ui.theme.Tinta
 import mx.tec.familiasquesuman.ui.theme.TintaSuave
 
 /**
- * La web no tiene filtros en "Donar a campaña", así que se ocultan. El código de los filtros
- * (chips, hoja y píldoras) sigue aquí y en CampanasViewModel: para volver a mostrarlos
- * (RF-20) basta con poner esto en `true`.
+ * Los filtros de "Donar a campaña" (RF-20): chips de categoría, hoja de filtros y píldoras de los
+ * activos. La web no los tiene, pero el requerimiento los pide y la matriz de trazabilidad los
+ * demuestra; con `false` se ocultan sin quitar el código.
  */
-private const val MostrarFiltrosEnLista = false
+private const val MostrarFiltrosEnLista = true
 
 /**
  * P-09, P-09b, P-09c y P-09d: la lista de campañas con sus cuatro estados.

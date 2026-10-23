@@ -79,7 +79,7 @@ class MapaViewModel(
 
     /** Mantener el dedo sobre el mapa: busca cerca de ese punto. */
     fun buscarCercaDelPunto(coordenada: Coordenada) {
-        _cercaDe.value = BusquedaCercana(lugar = LugarDeReferencia("el punto que elegiste", coordenada))
+        _cercaDe.value = BusquedaCercana(lugar = LugarDeReferencia("un punto que elegiste", coordenada))
     }
 
     fun quitarCercaDe() {

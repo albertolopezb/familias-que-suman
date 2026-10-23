@@ -13,7 +13,7 @@ guarda como fecha de cierre el momento en que se marca, no la fecha de la tarea)
 
 | Tipo | Total | Terminados | Parciales | Fuera |
 |---|---|---|---|---|
-| Requerimientos funcionales (RF-01 a RF-29) | 29 | 28 | 1: RF-20 (el filtro por categoría y «Urgentes» sobre las campañas está en el código pero oculto en la pantalla; ver §3.7) | 0 |
+| Requerimientos funcionales (RF-01 a RF-29) | 29 | 29 | 0 | 0 |
 | Requerimientos no funcionales (RNF-01 a RNF-07) | 7 | 6 (RNF-01, 02, 03, 04, 06 y 07) | 1: RNF-05 (no se probó en Android 10 exacto) | 0 |
 | Historias de usuario (HU-01 a HU-14) | 14 | 14 | 0 | 0 |
 | Tareas técnicas (TT-01 a TT-16) | 16 | 16 | 0 | 0 |

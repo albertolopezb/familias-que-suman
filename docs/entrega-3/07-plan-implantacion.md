@@ -7,7 +7,7 @@ Cómo poner el sistema en operación con Familias que Suman, de la entrega del r
 | Pieza | Versión |
 |---|---|
 | Repositorio | tag `entrega-final` |
-| App Android | `versionName 3.0`, `versionCode 3`, firmada con la llave del equipo (SHA-256 `88:C7:BB:77:6B:BF:3C:49:3F:D3:38:CC:14:17:33:60:74:EB:65:52:BC:8E:88:45:EC:E6:AE:7C:E8:F2:87:0C`); Android 8.0+ (`minSdk 26`), `targetSdk 37` |
+| App Android | `versionName 3.2`, `versionCode 5`, firmada con la llave del equipo (SHA-256 `88:C7:BB:77:6B:BF:3C:49:3F:D3:38:CC:14:17:33:60:74:EB:65:52:BC:8E:88:45:EC:E6:AE:7C:E8:F2:87:0C`); Android 8.0+ (`minSdk 26`), `targetSdk 37` |
 | API | FastAPI, Python 3.12, imagen construida del mismo tag |
 | Esquema de la base | Flyway `V1` a `V9` |
 | Servidor | VM de Microsoft Azure (Azure for Students), Standard_B2als_v2, Ubuntu 24.04, North Central US, con Docker Compose |

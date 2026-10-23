@@ -44,7 +44,7 @@ Cómo leer el estado:
 | RF-17 | Favoritos que se actualizan | La familia guarda una asociación y la encuentra sin buscarla; se entera de lo nuevo | `AvisosTest.avisa_lo_nuevo_de_una_asociacion_favorita_si_no_estan_inscritos`, `::avisa_que_cierra_una_campana_favorita`; M-17 | Pasan 2 de 2 | Cumplido |
 | RF-18 | Cuenta con registro diferido y recuperación | Se recorre la app sin cuenta; al tocar "Inscribirme" se pide cuenta una vez y regresa a la misma actividad | `test_identidad.py::test_registro_crea_la_cuenta_y_entra`; `test_recuperacion.py` (8); `smoke.sh` 5-10 y 31-32; M-18 | Pasan 9 de 9 + M-18 | Cumplido |
 | RF-19 | Cancelar hasta 12 h antes; los lugares se liberan | Con menos de 12 h se rechaza; el contador sube de inmediato | `test_inscripciones.py::test_cancelar_libera_lugares`, `::test_no_se_cancela_a_menos_de_12_horas`; `test_politicas.py::test_cancelar_solo_hasta_12_horas_antes` | Pasan 3 de 3 | Cumplido |
-| RF-20 | Filtrar campañas por categoría | Solo se ve lo que cumple el filtro | `TengoAlgoParaDonarViewModelTest.todosYTodasLasCategoriasConservanElFiltroExactoYOrden`; `TengoAlgoParaDonarUiTest.filtrosExpansionYAccionesEntreganLosDatosOriginales`; M-20 | Pasan 2 de 2; M-20 parcial (2026-10-22): el filtro de «Tengo algo para donar» funciona; el de campañas está oculto | Parcialmente cumplido: se filtra por lo que se quiere aportar, pero el filtro por categoría y «Urgentes» sobre las campañas no se ve en la app entregada (Hallazgo 2) |
+| RF-20 | Filtrar campañas por categoría | Solo se ve lo que cumple el filtro | `TengoAlgoParaDonarViewModelTest.todosYTodasLasCategoriasConservanElFiltroExactoYOrden`; `TengoAlgoParaDonarUiTest.filtrosExpansionYAccionesEntreganLosDatosOriginales`; M-20 | Pasan 2 de 2; M-20 (2026-10-22, APK 3.2) | Cumplido |
 | RF-21 | Apartar artículos de una campaña | No se aparta más de lo que falta; un reintento no cuenta doble | `test_aportaciones.py` (6): `::test_no_se_aparta_mas_de_lo_que_falta`, `::test_reintento_con_el_mismo_id_no_cuenta_doble` (idempotencia), `::test_campana_cerrada` | Pasan 6 de 6 | Cumplido |
 | RF-22 | Avisos personalizados (intereses y urgencias de la ciudad) | La familia recibe urgencias de su ciudad y lo nuevo de lo que sigue | `test_avisos.py` (6): `::test_cada_familia_recibe_los_de_su_ciudad_y_los_generales`, `::test_una_actividad_nueva_genera_su_aviso`; `AvisosDelServidorTest` (2); M-22 (la administración envía un aviso y llega con la app cerrada) | Pasan 8 de 8 + M-22 | Cumplido |
 | RF-23 | Métricas gráficas de impacto | La gráfica usa datos reales | `FechasYNivelesTest.cuentaLasActividadesPorMes`; `test_historial_e_impacto_salen_de_las_asistencias` | Pasan 2 de 2 | Cumplido |
@@ -134,7 +134,7 @@ APK de release firmado, contra el servidor desplegado en Azure por el túnel HTT
 | M-16 | Inscribirse a una actividad de mañana; admin → Perfil → "Avisos con la app cerrada (en 20 s)"; cerrar la app | Llega el recordatorio como notificación | No ejecutada: pide la cuenta de administración (botón de avisos en 20 s). Evidencia sustituta: `AvisosTest` (3 pruebas) y M-22 (aviso del servidor con la app cerrada, 2026-10-20) |
 | M-17 | Marcar una asociación como favorita; la administración publica una actividad suya | Llega el aviso de lo nuevo | No ejecutada: pide la cuenta de administración. Evidencia sustituta: `AvisosTest` (2 pruebas) y M-22 |
 | M-18 | Sin cuenta, abrir una actividad → "Unirme" → crear cuenta | Al terminar regresa a la misma actividad | Pasa (2026-10-20) |
-| M-20 | Donar → filtros por categoría y urgentes | Solo se ve lo que cumple | Parcial (2026-10-22, teléfono): «Tengo algo para donar» filtra por lo que se quiere aportar (Todos: 5 centros, Ropa: 4, Juguetes: 2). El filtro por categoría y «Urgentes» sobre las campañas está en el código pero oculto en la pantalla (Hallazgo 2, §3.7) |
+| M-20 | Donar → filtros por categoría y urgentes | Solo se ve lo que cumple | Pasa (2026-10-22, emulador Android 17, APK 3.2): en Donar se ven las categorías y «Filtros»; Alimentos deja «Suma a su Mesa», Ropa dice que no hay campañas de ropa y la hoja de filtros ofrece categoría y «Solo las que cierran esta semana». Con el APK 3.1 en el teléfono los filtros de campañas estaban ocultos (Hallazgo 2); «Tengo algo para donar» filtraba bien (Todos: 5 centros, Ropa: 4, Juguetes: 2) |
 | M-22 | Admin → "Enviar aviso a las familias" (urgencia de Monterrey) → app cerrada en otra cuenta de Monterrey | Llega la notificación | Pasa (2026-10-20) tras activar "Urgencias de tu ciudad" en Ajustes: las urgencias son opcionales (vienen apagadas) y al teléfono solo llegan de 8:00 a 21:00; fuera de ese horario quedan en la bandeja |
 | M-26 | Cambiar de Monterrey a Hermosillo | No aparece nada de la otra ciudad | Pasa (2026-10-20) |
 | M-27 | Marcar y desmarcar el corazón | Se refleja en "Mis favoritos" | Pasa (2026-10-22, teléfono): al marcar «Preparar despensas de fin de mes» aparece en «Mis favoritos» y al quitarla desaparece |
@@ -154,11 +154,13 @@ Lo marcado "Pendiente" queda para correrlo en la demostración con el mismo APK.
 
 ## 3.7 Hallazgos de las pruebas del 22 de octubre
 
-Los encontramos al correr las pruebas pendientes con el APK de entrega. Se dicen aquí porque afectan
-estados de la matriz.
+Los encontramos al correr las pruebas pendientes con el APK 3.1 en el teléfono. Se corrigieron en el
+**APK 3.2** (`versionCode 5`, 66 pruebas unitarias en verde) y los arreglos se comprobaron en el
+emulador (Android 17); las demás pruebas de la corrida se hicieron con el 3.1, que solo difiere en
+estos tres cambios.
 
-| # | Hallazgo | Causa | Efecto en la matriz | Qué se haría |
+| # | Hallazgo | Causa | Efecto en la matriz | Corrección en 3.2 |
 |---|---|---|---|---|
-| 1 | Al abrir el detalle de una campaña sin asociación, la app muestra por error «Sin conexión · estás viendo lo guardado…» y la franja se queda en otras pantallas | El detalle hace, además de `GET /v1/campanas/{id}` (200), una segunda llamada con barra final; el servidor la responde 307 hacia una dirección `http://` y la app, que prohíbe HTTP en claro, la trata como falta de servidor | Cosmético: los datos sí llegan. Nota en M-10 | Validar que el id no venga vacío antes de llamar y apagar la redirección de barras en la API (`redirect_slashes=False`) |
-| 2 | Los filtros de campañas (categoría y «Urgentes») no se ven | El código está, pero `MostrarFiltrosEnLista = false` en `CampanasScreen.kt` (la web no los tiene) | RF-20 pasa a «Parcialmente cumplido» | Poner la constante en `true` y recompilar |
-| 3 | El texto dice «Cerca de el punto que elegiste» | Falta la contracción «del» en la cadena | Ninguno | Corregir el texto |
+| 1 | Al abrir el detalle de una campaña sin asociación, la app mostraba por error «Sin conexión · estás viendo lo guardado…» | El detalle pedía además `v1/asociaciones/` con el id vacío; el servidor lo respondía 307 hacia `http://` y la app, que prohíbe HTTP en claro, lo tomaba por falta de servidor | Cosmético: los datos sí llegaban (nota en M-10) | No se pide la asociación si el id viene vacío (`DetalleCampanaViewModel`); el detalle ya no muestra la franja |
+| 2 | Los filtros de campañas (categoría y «Urgentes») no se veían | `MostrarFiltrosEnLista = false` en `CampanasScreen.kt` (la web no los tiene) | RF-20 estaba «Parcialmente cumplido» | Constante en `true`; M-20 pasa en 3.2 |
+| 3 | El texto decía «Cerca de el punto que elegiste» | Faltaba la contracción | Ninguno | Ahora dice «Cerca de un punto que elegiste» |

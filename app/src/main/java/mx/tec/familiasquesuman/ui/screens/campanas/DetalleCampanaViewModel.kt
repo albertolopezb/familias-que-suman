@@ -82,7 +82,9 @@ class DetalleCampanaViewModel(
                 UiState.Error("No se encontró la campaña")
             }
             val campana = (_estado.value as? UiState.Exito)?.datos
-            if (campana != null) {
+            // Una campaña sin asociación no la pide: con el id vacío la ruta quedaba con barra final
+            // y el servidor la redirigía a http://, lo que la app (solo HTTPS) tomaba por "sin conexión".
+            if (campana != null && campana.asociacionId.isNotBlank()) {
                 _nombreAsociacion.value = try {
                     actividadRepo.getAsociacion(campana.asociacionId).nombre
                 } catch (e: Exception) {
